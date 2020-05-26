@@ -65,6 +65,10 @@ impl SourceFinder {
         Ok(())
     }
 
+    pub fn add_embedded_source(&mut self, name: RcStr, data: &'static str) {
+        self.cache.insert(name, SourceItem::Embedded { data });
+    }
+
     pub fn add_native<F>(&mut self, name: RcStr, f: F)
     where
         F: FnOnce(&mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> + 'static,
@@ -73,7 +77,7 @@ impl SourceFinder {
             .insert(name, SourceItem::Native { body: Box::new(f) });
     }
 
-    pub fn load(&mut self, name: &RcStr) -> Result<SourceItem, SourceFinderError> {
+    pub(crate) fn load(&mut self, name: &RcStr) -> Result<SourceItem, SourceFinderError> {
         if let Some(item) = self.cache.remove(name) {
             Ok(item)
         } else {
@@ -109,12 +113,15 @@ fn get_file_path_for_module(root: &Path, name: &str) -> RcPath {
     path.into()
 }
 
-pub enum SourceItem {
+pub(crate) enum SourceItem {
     File {
         path: RcPath,
         data: RcStr,
     },
     Native {
         body: Box<dyn FnOnce(&mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>>>,
+    },
+    Embedded {
+        data: &'static str,
     },
 }

@@ -1,3 +1,4 @@
+pub(super) const SOURCE: &str = r######"
 import _os
 import _os.proc as osproc
 
@@ -79,3 +80,4 @@ def run(*args, **kwargs) = {
     proc = Process(*args, **kwargs)
     proc.wait()
 }
+"######;

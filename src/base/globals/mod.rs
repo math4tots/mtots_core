@@ -91,6 +91,7 @@ impl Globals {
             symbol_registry,
         };
         globals.add_builtin_native_modules();
+        super::emb::install_embedded_sources(&mut globals);
         globals
     }
 
@@ -331,12 +332,16 @@ impl Globals {
         self.finder.add_root(root);
     }
 
-    pub fn add_source_roots_from_str(&mut self, roots: &str) {
+    pub fn add_source_roots_from_path_str(&mut self, roots: &str) {
         self.finder.add_roots_from_str(roots);
     }
 
     pub fn add_roots_from_env(&mut self) -> Result<(), std::env::VarError> {
         self.finder.add_roots_from_env()
+    }
+
+    pub fn add_embedded_source(&mut self, module_name: RcStr, data: &'static str) {
+        self.finder.add_embedded_source(module_name, data);
     }
 
     pub fn add_native_module<F>(&mut self, name: RcStr, f: F)
@@ -383,12 +388,16 @@ impl Globals {
                     let module = self.exec_module(name.clone(), Some(path), data.into())?;
                     self.module_registry.insert(name.clone(), module);
                 }
+                Ok(SourceItem::Embedded { data }) => {
+                    let module = self.exec_module(name.clone(), None, data.into())?;
+                    self.module_registry.insert(name.clone(), module);
+                }
             };
         }
         Ok(self.module_registry.get(name).unwrap().clone())
     }
 
-    pub fn load_prelude(&mut self) -> EvalResult<()> {
+    fn load_prelude(&mut self) -> EvalResult<()> {
         let module = self.load_by_str("__prelude")?;
         for (key_symbol, value) in module.map_clone() {
             let name = self.symbol_rcstr(key_symbol);

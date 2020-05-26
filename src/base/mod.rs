@@ -1,6 +1,7 @@
 mod ast;
 mod code;
 mod compiler;
+mod emb;
 mod entry;
 mod eval;
 mod frontend;
