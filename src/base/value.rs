@@ -1122,9 +1122,7 @@ impl NativeIterator {
     where
         F: FnMut(&mut Globals, Value) -> GeneratorResult + 'static,
     {
-        NativeIterator {
-            f: Box::new(f),
-        }
+        NativeIterator { f: Box::new(f) }
     }
 
     pub fn resume(&mut self, globals: &mut Globals, value: Value) -> GeneratorResult {
