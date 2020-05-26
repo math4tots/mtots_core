@@ -1,0 +1,74 @@
+
+trait Foo {
+    static def foo() = 'Foo::foo return value'
+}
+
+class Bar {
+    static def bar() = 'Bar::bar ---'
+}
+
+class Baz(Foo) {
+    [foo, bar]
+
+    def add_one_to_foo(self) = self.foo + 1
+}
+
+class NoExplicitFields(Foo)
+
+def __test_static_method_call() {
+    assert_eq(Foo::foo(), 'Foo::foo return value')
+    assert_eq(Bar::bar(), 'Bar::bar ---')
+
+    """
+    When an invalid attribute is retrieved, we should throw
+    """
+    assert_raises(AttributeError, def = Foo::not_a_valid_attr)
+
+    """
+    Static methods are not inherited
+    """
+    assert_raises(AttributeError, def = Baz::foo())
+}
+
+def __test_class_with_call() {
+    r###"
+    Test custom static '__call' methods
+
+    By default, calling a class acts as though it redirects to __malloc,
+    but classes can override this behavior by explicitly defining a __call method
+    "###
+    class ClassWithCall {
+        [a, b]
+        static def __call(x) = __malloc(ClassWithCall, [x, x + x])
+    }
+    cwc = ClassWithCall(5)
+    assert_eq(type(cwc), ClassWithCall)
+    assert_eq(cwc.a, 5)
+    assert_eq(cwc.b, 10)
+
+    trait TraitWithCall {
+        static def __call() = 12345
+    }
+
+    assert_eq(TraitWithCall(), 12345)
+
+    trait TraitWithoutCall {}
+
+    assert_raises(AttributeError, def = TraitWithoutCall())
+}
+
+def __test_instantiation() {
+    baz = Baz('foo value 123', 565656)
+    assert_eq(baz.foo, 'foo value 123')
+    assert_eq(baz.bar, 565656)
+
+    baz = Baz(55.555, foo='---')
+    assert_eq(baz.foo, '---')
+    assert_eq(baz.bar, 55.555)
+
+    baz = Baz(foo=150, bar='j')
+    assert_eq(baz.add_one_to_foo(), 151)
+
+    no_explicit_fields = NoExplicitFields()
+    assert_eq(type(no_explicit_fields), NoExplicitFields)
+}

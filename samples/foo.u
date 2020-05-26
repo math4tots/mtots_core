@@ -1,0 +1,23 @@
+print('hi')
+
+def main() {
+    total = 0
+    for i in range(10 ** 7) {
+        total = total + i
+    }
+    print('total = ' + str(total))
+    print("Hello world")
+}
+
+def* foo() {
+    yield 1
+    yield 2
+    yield 3
+}
+
+for i in foo() {
+    print('i = ' + str(i))
+}
+
+print(foo())
+main()

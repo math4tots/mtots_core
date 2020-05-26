@@ -1,0 +1,42 @@
+def __test_literals() {
+    empty = [:]
+    assert_eq(empty.len(), 0)
+    assert_eq(str(empty), '[:]')
+
+    single = [1: 'a']
+    assert_eq(single.len(), 1)
+}
+
+def __test_list_keys() {
+    d = [[1, 2, 3]: 'hi', [2, 4]: 'b', [1, 2, 3]: 'c']
+    assert_eq(
+        str(d),
+        '[[1, 2, 3]: "c", [2, 4]: "b"]',
+    )
+}
+
+def __test_mutable_map() {
+    d = @[:]
+    assert(d != [:])
+    assert_eq(d.len(), 0)
+    assert_eq(d, @[:])
+    assert_eq(d.move(), [:])
+
+    d = @[:]
+    d[111] = 'aaa'
+    assert_eq(d, @[111: 'aaa'])
+    assert_eq(d.len(), 1)
+    d[222] = 'bbb'
+    assert_eq(d, @[222: 'bbb', 111: 'aaa'])
+    assert_eq(d.len(), 2)
+    assert_eq(d[222], 'bbb')
+    assert(d.has_key(222))
+    assert(!d.has_key('bbb'))
+
+    d[222] = 'b2'
+    assert(d != @[222: 'bbb', 111: 'aaa'])
+    assert_eq(d, @[222: 'b2', 111: 'aaa'])
+    assert_eq(d.move(), [111: 'aaa', 222: 'b2'])
+
+    assert_raises(KeyError, def = d[333])
+}

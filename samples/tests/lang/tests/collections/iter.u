@@ -1,0 +1,16 @@
+
+
+def __test_map() {
+    ""
+
+    """
+    'map' can be used in the monad sense,
+    """
+    assert_eq([1, 2, 3].iter().map(def(x) = x + 1).list(), [2, 3, 4])
+
+    """
+    But the 'map' method with no args also builds a map
+    from an iterator of pairs
+    """
+    assert_eq([['a', 1], ['b', 2]].iter().map(), ['a': 1, 'b': 2])
+}

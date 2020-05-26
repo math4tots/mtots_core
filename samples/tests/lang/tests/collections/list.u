@@ -1,0 +1,40 @@
+def __test_from_list() {
+    """
+    Ensure that creating a list from pre-existing list
+    does not create a new copy
+    """
+    list = [1, 2, 3]
+    other_list = List(list)
+    assert(list is other_list)
+    assert(list is not [1, 2, 3])
+    assert_eq(list, [1, 2, 3])
+}
+
+def __test_from_iterator() {
+    """
+    Test that you can create a list object from iterators
+    """
+    assert_eq(List(range(5)), [0, 1, 2, 3, 4])
+
+    original = ['a', 'b', 'c']
+    list = List(original.iter())
+
+    assert_eq(list, original)
+    assert(list is not original)
+}
+
+def __test_mutable_list() {
+    list = @[1, 2, 3]
+    assert_eq(list[0], 1)
+    list[0] = 'aaa'
+    assert_eq(list[0], 'aaa')
+    assert_eq(list, @['aaa', 2, 3])
+    assert_eq(list.move(), ['aaa', 2, 3])
+
+    list = @[]
+    for i in range(5, 9) {
+        list.push(i)
+    }
+    assert_eq(list, @[5, 6, 7, 8])
+    assert_eq(list.move(), [5, 6, 7, 8])
+}

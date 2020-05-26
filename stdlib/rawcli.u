@@ -1,0 +1,4 @@
+r###"
+Simple CLI api that wraps ANSI escape codes and stty
+"###
+

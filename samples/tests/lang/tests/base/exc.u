@@ -1,0 +1,115 @@
+
+
+except FooE {
+    def ""
+}
+
+except BarE(FooE) {
+    [a, b]
+
+    def "bar({a}, {b})"
+}
+
+def __test_str() {
+    assert_eq(str(BarE(123, 789)), "lang.tests.base.exc::BarE: bar(123, 789)")
+    assert_eq(
+        str(FooE('Some Foo error happened')),
+        "lang.tests.base.exc::FooE: Some Foo error happened",
+    )
+}
+
+def __test_raise() {
+    assert_raises(FooE, def = __raise(FooE("hi")))
+    assert_raises(FooE, def = __raise(BarE('a', 'b')))
+    assert_raises(BarE, def = __raise(BarE('a', 'b')))
+    assert_raises(Exception, def = __raise(BarE('a', 'b')))
+
+    r###"
+    FooE is not a runtime error
+    "###
+    assert_raises(FooE, def = {
+        assert_raises(RuntimeError, def = __raise(FooE('xx')))
+    })
+
+    r###"
+    Raising a non-unique reference is an error
+    "###
+    assert_raises(RuntimeError, def = {
+        assert_raises(FooE, def = {
+            exc = FooE('xx')
+            __raise(exc)
+        })
+    })
+
+    r###"
+    If the exception is saved to a variable, using 'del'
+    on the variable should allow it to still be used in __raise
+    "###
+    assert_raises(FooE, def = {
+        exc = FooE('xx')
+        __raise(del exc)
+    })
+}
+
+def __test_try() {
+
+    r##"
+    Case 1: Test when exception is thrown and caught
+    "##
+    side_effects = @[]
+
+    ret = __try(def = {
+        side_effects.push('before raise')
+        __raise(FooE('hi'))
+        side_effects.push('after raise')
+        'end of main def'
+    }, FooE, def(e) = {
+        'FooE was caught'
+    }, def {
+        side_effects.push('finally called')
+    })
+
+    assert_eq(side_effects.move(), ['before raise', 'finally called'])
+    assert_eq(ret, 'FooE was caught')
+
+    r##"
+    Case 2: Test when exception is thrown, but does not match
+    "##
+    side_effects = @[]
+
+    assert_raises(FooE, def {
+        ret = __try(def = {
+            side_effects.push('before raise')
+            __raise(FooE('hi'))
+            side_effects.push('after raise')
+            'end of main def'
+        }, RuntimeError, def(e) = {
+            'RuntimeError was caught'
+        }, def {
+            side_effects.push('finally called')
+        })
+    })
+
+    assert_eq(side_effects.move(), ['before raise', 'finally called'])
+
+    r##"
+    Case 3: No exception is thrown
+    "##
+    side_effects = @[]
+
+    ret = __try(def = {
+        side_effects.push('before raise')
+        """
+        Don't actually raise anything this time ...
+        """
+        side_effects.push('after raise')
+        'end of main def'
+    }, FooE, def(e) = {
+        'FooE was caught'
+    }, def {
+        side_effects.push('finally called')
+    })
+
+    assert_eq(side_effects.move(), ['before raise', 'after raise', 'finally called'])
+    assert_eq(ret, 'end of main def')
+}

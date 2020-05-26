@@ -1,0 +1,95 @@
+def __test_mutable_string() {
+    s = MutableString("")
+    s.extend('hello')
+    assert_eq(s.move(), 'hello')
+    assert_eq(s.move(), '')
+
+    s.extend('hello ')
+    s.extend('world')
+    assert_eq(s.len(), 'hello world'.len())
+    assert_eq(s, MutableString('hello world'))
+    assert_eq(s.move(), 'hello world')
+    assert(s != MutableString('hello world'))
+    assert_eq(s, MutableString(''))
+
+    assert_eq(MutableString(''), @'')
+
+    s = @''
+    for i in range(4) {
+        s.extend(' ' + str(i))
+    }
+    assert_eq(str(s), '@" 0 1 2 3"')
+    assert_eq(s.move(), ' 0 1 2 3')
+}
+
+def __test_split() {
+    assert_eq(''.words().to(List), [])
+    assert_eq('asdf'.words().to(List), ['asdf'])
+    assert_eq('aaa bbb ccdd'.words().to(List), ['aaa', 'bbb', 'ccdd'])
+    assert_eq("hello world".words().to(List), ['hello', 'world'])
+
+    assert_eq(
+        'hello world'.lines().to(List),
+        ['hello world'],
+    )
+    assert_eq(
+        'hello world\nhello world again'.lines().to(List),
+        ['hello world', 'hello world again'],
+    )
+    assert_eq(
+        'hello world\nhello world again\n'.lines().to(List),
+        ['hello world', 'hello world again', ''],
+    )
+    assert_eq(
+        'hello world\n\nhello world again\n'.lines().to(List),
+        ['hello world', '', 'hello world again', ''],
+    )
+    assert_eq(
+        'hello world\n\nhello world again\n\n'.lines().to(List),
+        ['hello world','', 'hello world again', '', ''],
+    )
+
+    assert_eq(''.split('01').list(), [''])
+    assert_eq('a01'.split('01').list(), ['a', ''])
+    assert_eq('a01xx'.split('01').list(), ['a', 'xx'])
+    assert_eq('abc01fff02jjjj hi**'.split('01').list(), ['abc', 'fff02jjjj hi**'])
+    assert_eq('abc01fff02jjjj hi**01'.split('01').list(), ['abc', 'fff02jjjj hi**', ''])
+}
+
+def __test_rust_style_string_literal() {
+    assert_eq(
+        r###"
+        Hello world
+        "###,
+        """
+        Hello world
+        """,
+    )
+
+    assert_eq(
+        r###"
+        ##"
+        "###,
+        """
+        ##"
+        """,
+    )
+
+    assert_eq(
+        r###"
+        "##
+        "###,
+        """
+        "##
+        """,
+    )
+
+    assert_eq(
+        r###"
+        r###"
+        "###,
+        """
+        r###"
+        """,
+    )
+}

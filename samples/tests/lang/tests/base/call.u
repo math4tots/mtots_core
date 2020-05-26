@@ -1,0 +1,60 @@
+def __test_variadic() {
+    def foo(*args) = {
+        args.map(def(x) = x + 1)
+    }
+    assert_eq(foo(1, 2, 3), [2, 3, 4])
+
+    def bar(a, b, c) = {
+        a + b + c
+    }
+    assert_eq(bar(*['x', 'y', 'z']), 'xyz')
+
+    def mixed(a, b, c, *rest) = {
+        [
+            'a': a,
+            'b': b,
+            'c': c,
+            'rest': rest,
+        ]
+    }
+    assert_eq(
+        mixed(22, 33, 44, 55, 66, 77, 88),
+        [
+            'a': 22,
+            'b': 33,
+            'c': 44,
+            'rest': [55, 66, 77, 88],
+        ]
+    )
+    assert_eq(
+        mixed(22, 33, a=44),
+        [
+            'a': 44,
+            'b': 22,
+            'c': 33,
+            'rest': [],
+        ]
+    )
+    assert_eq(
+        mixed(22, 33, a=44, *[55, 66, 77, 88]),
+        [
+            'a': 44,
+            'b': 22,
+            'c': 33,
+            'rest': [55, 66, 77, 88],
+        ]
+    )
+    """
+    Putting normal positional arguments after keyword
+    arguments is a parse error
+    """
+}
+
+def __test_keyword_table() {
+    def foo(a, b, c) = [a, b, c]
+
+    assert_eq(
+        foo(**Table(a='aaa', c='ccc', b='bbb')),
+        ['aaa', 'bbb', 'ccc']
+    )
+}

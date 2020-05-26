@@ -1,0 +1,42 @@
+r###"
+
+cls && export MTOTS_PATH="stdlib" && time cargo run -- samples/tests
+
+"###
+import os
+import os::PIPE
+import os::UTF8
+import os::Process
+
+def main() {
+    root = __file.parent().canon()
+    for [dirpath, _subdirs, filepaths] in os::walk(root.join("lang")) {
+        for filepath in sorted(filepaths) {
+            name = str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
+            print(name)
+            module = __import(name)
+            keys = module.keys()
+            if keys {
+                for attr in keys {
+                    attr_str = str(attr)
+                    if attr_str.starts_with('__test_') {
+                        print('  ' + attr_str)
+                        module.get(attr)()
+                    }
+                }
+            } else {
+                print('  no tests')
+            }
+        }
+    }
+}
+
+if __name == '__main' {
+    main()
+}
+
+"""
+print(os::run("ls", ['.'], stdout=PIPE, stderr=PIPE, encoding=UTF8))
+print(os::run("pwd", stdout=PIPE, stderr=PIPE, encoding=UTF8))
+print(Process)
+"""
