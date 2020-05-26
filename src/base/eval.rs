@@ -34,8 +34,6 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::rc::Rc;
 
-pub const OFFSET_UNKNOWN: usize = std::usize::MAX;
-
 #[derive(Debug)]
 pub enum EvalError {
     UninitializedValue,

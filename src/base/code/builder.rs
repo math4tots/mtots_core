@@ -20,6 +20,7 @@ use std::rc::Rc;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Label(usize);
 
+#[allow(dead_code)]
 enum PseudoOpcode {
     LineNumber(usize), // Indicates line number for following opcodes
     Label(Label),      // target of a jump location
@@ -221,11 +222,6 @@ impl CodeBuilder {
         index
     }
 
-    fn load_const_without_constmap(&mut self, value: Value) {
-        let index = self.add_to_constants(value);
-        self.code.push(PseudoOpcode::LoadConst(index));
-    }
-
     pub fn load_const<CV: Into<ConstValue>>(&mut self, cv: CV) {
         let cv = cv.into();
         let index = if let Some(index) = self.constmap.get(&cv) {
@@ -345,6 +341,7 @@ impl CodeBuilder {
         self.code.push(PseudoOpcode::Jump(label));
     }
 
+    #[allow(dead_code)]
     pub fn pop_jump_if_true(&mut self, label: Label) {
         self.code.push(PseudoOpcode::PopJumpIfTrue(label));
     }

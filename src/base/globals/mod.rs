@@ -44,6 +44,7 @@ pub use nclss::BuiltinClasses;
 #[derive(Debug)]
 pub struct ErrorIndicator;
 
+#[allow(dead_code)]
 pub struct Globals {
     trace: Vec<(RcStr, usize)>,                 // (module-name, lineno) pairs
     line_cache: HashMap<(RcStr, usize), RcStr>, // maps (module-name, lineno) to lines

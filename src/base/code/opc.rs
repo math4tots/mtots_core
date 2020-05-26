@@ -164,6 +164,7 @@ macro_rules! define_opcodes {
         /// It's pretty obvious that this is going to be called heavily in
         /// tight loops, so we mark it inline(always).
         #[inline(always)]
+        #[allow(dead_code)]
         pub(super) fn step(
             $globals: &mut Globals,
             $frame: &mut Frame,
@@ -214,6 +215,7 @@ impl OpcodeArgumentType {
     }
 }
 
+#[allow(dead_code)]
 pub struct OpcodeInfo {
     name: &'static str,
 
@@ -237,6 +239,7 @@ impl OpcodeInfo {
         self.argtypes
     }
 
+    #[allow(dead_code)]
     pub fn branches_func(&self) -> fn(&[usize], usize) -> Vec<(usize, usize, usize)> {
         self.branches
     }

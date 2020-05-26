@@ -1,4 +1,3 @@
-use std::cmp;
 /// Failable sort
 /// I can't use the builtin sorting functions, because they
 /// don't support the case where the comparison operation itself
@@ -67,13 +66,6 @@ where
     Ok(())
 }
 
-/// Calls gsort, but with trivial type arguments for
-/// the error handling parts so that at least the sorting
-/// part is easier to test
-pub fn msort<V: Default + cmp::Ord>(arr: &mut [V]) {
-    gsort::<(), V, _, ()>(&mut (), arr, |_, lhs, rhs| Ok(lhs < rhs)).unwrap()
-}
-
 fn mkvec<T: Default>(n: usize) -> Vec<T> {
     let mut ret = Vec::new();
     for _ in 0..n {
@@ -92,6 +84,14 @@ use Command::*;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cmp;
+
+    /// Calls gsort, but with trivial type arguments for
+    /// the error handling parts so that at least the sorting
+    /// part is easier to test
+    pub fn msort<V: Default + cmp::Ord>(arr: &mut [V]) {
+        gsort::<(), V, _, ()>(&mut (), arr, |_, lhs, rhs| Ok(lhs < rhs)).unwrap()
+    }
 
     #[test]
     fn test() {

@@ -1110,7 +1110,6 @@ impl Class {
 }
 
 pub struct NativeIterator {
-    done: bool,
     f: Box<dyn FnMut(&mut Globals, Value) -> GeneratorResult>,
 }
 impl fmt::Debug for NativeIterator {
@@ -1124,7 +1123,6 @@ impl NativeIterator {
         F: FnMut(&mut Globals, Value) -> GeneratorResult + 'static,
     {
         NativeIterator {
-            done: false,
             f: Box::new(f),
         }
     }
