@@ -32,8 +32,6 @@ use util::divmod;
 use util::gsort;
 use util::FailableEq;
 use util::FailableHash;
-use util::RcPath;
-use util::RcStr;
 use util::UnorderedHasher;
 
 pub use base::main;
@@ -65,5 +63,7 @@ pub use base::ValueKind;
 pub use base::SOURCE_FILE_EXTENSION;
 pub use util::GMap;
 pub use util::HMap;
+pub use util::RcPath;
+pub use util::RcStr;
 pub use util::Symbol;
 pub use util::SymbolRegistryHandle;
