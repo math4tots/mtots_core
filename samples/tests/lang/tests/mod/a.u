@@ -1,0 +1,5 @@
+import lang.tests.mod.nested
+
+def __test_directory_module() {
+    assert_eq(nested::foo, 'foo value in nested/__main.u')
+}

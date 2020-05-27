@@ -17,6 +17,7 @@ pub const MTOTS_PATH: &str = "MTOTS_PATH";
 #[derive(Debug)]
 pub enum SourceFinderError {
     SourceNotFound,
+    ConflictingModulePaths(Vec<RcPath>),
     IOError(io::Error),
 }
 
@@ -87,7 +88,7 @@ impl SourceFinder {
 
     fn load_nocache(&mut self, name: &RcStr) -> Result<SourceItem, SourceFinderError> {
         for root in &self.roots {
-            let path = get_file_path_for_module(root, name);
+            let path = get_file_path_for_module(root, name)?;
             if path.is_file() {
                 let data = match fs::read_to_string(&path) {
                     Ok(data) => data.into(),
@@ -100,7 +101,23 @@ impl SourceFinder {
     }
 }
 
-fn get_file_path_for_module(root: &Path, name: &str) -> RcPath {
+fn get_file_path_for_module(root: &Path, name: &str) -> Result<RcPath, SourceFinderError> {
+    // foo/bar/__main.u
+    let folder_path = get_file_nested_path_for_module(root, name);
+
+    // foo/bar.u
+    let short_path = get_file_short_path_for_module(root, name);
+
+    if folder_path.is_file() && short_path.is_file() {
+        Err(SourceFinderError::ConflictingModulePaths(vec![folder_path, short_path]))
+    } else if folder_path.is_file() {
+        Ok(folder_path)
+    } else {
+        Ok(short_path)
+    }
+}
+
+fn get_file_short_path_for_module(root: &Path, name: &str) -> RcPath {
     let mut path = root.to_owned();
     let mut parts = name.split(".").peekable();
     while let Some(part) = parts.next() {
@@ -110,6 +127,16 @@ fn get_file_path_for_module(root: &Path, name: &str) -> RcPath {
             path.push(format!("{}.{}", part, SOURCE_FILE_EXTENSION));
         }
     }
+    path.into()
+}
+
+fn get_file_nested_path_for_module(root: &Path, name: &str) -> RcPath {
+    let mut path = root.to_owned();
+    let mut parts = name.split(".");
+    while let Some(part) = parts.next() {
+        path.push(part);
+    }
+    path.push("__main.u");
     path.into()
 }
 

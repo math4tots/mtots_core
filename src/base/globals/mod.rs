@@ -380,7 +380,10 @@ impl Globals {
                     return self.set_io_error(error);
                 }
                 Err(SourceFinderError::SourceNotFound) => {
-                    return self.set_exc_str(&format!("Module {:?} not found", name.str(),));
+                    return self.set_exc_str(&format!("Module {:?} not found", name.str()));
+                }
+                Err(SourceFinderError::ConflictingModulePaths(paths)) => {
+                    return self.set_exc_str(&format!("Conflicting paths for module ({:?})", paths));
                 }
                 Ok(SourceItem::Native { body }) => {
                     let map = body(self)?;
