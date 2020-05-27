@@ -43,12 +43,17 @@ PIPE = :pipe
 NULL = :null
 UTF8 = :utf8
 
+except ProcessError(OSError) {
+    [status, stdout, stderr]
+    def "Process failed with {status}"
+}
+
 class Process {
     r###"
     Exposing Rust's 'Command'/'process' API
     "###
 
-    [proc, encoding]
+    [proc, encoding, check]
 
     static def __call(
             cmd,
@@ -57,13 +62,14 @@ class Process {
             stdout=nil,
             stderr=nil,
             encoding=nil,
-            dir=nil) = {
+            dir=nil,
+            check=true) = {
         stdin = stdin or INHERIT
         stdout = stdout or INHERIT
         stderr = stderr or INHERIT
         __malloc(
             Process,
-            [osproc::spawn(cmd, args, stdin, stdout, stderr, dir), encoding],
+            [osproc::spawn(cmd, args, stdin, stdout, stderr, dir), encoding, check],
         )
     }
 
@@ -72,6 +78,11 @@ class Process {
         if self.encoding is not nil {
             stdout = stdout.decode(self.encoding)
             stderr = stderr.decode(self.encoding)
+        }
+        if self.check {
+            if status {
+                __raise(ProcessError(status, stdout, stderr))
+            }
         }
         [status, stdout, stderr]
     }
