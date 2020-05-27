@@ -217,7 +217,7 @@ impl Lexer {
             if c.is_ascii_digit() || num_dot {
                 let dp1: usize = s
                     .chars()
-                    .take_while(|c| c.is_ascii_digit())
+                    .take_while(|c| c.is_ascii_digit() || *c == '_')
                     .map(|c| c.len_utf8())
                     .sum();
 
@@ -226,12 +226,12 @@ impl Lexer {
                     let dp1_with_dot = dp1 + '.'.len_utf8();
                     let dp2: usize = s[dp1_with_dot..]
                         .chars()
-                        .take_while(|c| c.is_ascii_digit())
+                        .take_while(|c| c.is_ascii_digit() || *c == '_')
                         .map(|c| c.len_utf8())
                         .sum();
                     let dp = dp1_with_dot + dp2;
                     let text = &s[..dp];
-                    let token = Token::Float(text.parse().unwrap());
+                    let token = Token::Float(filter_underscores(text).parse().unwrap());
                     add(&mut tokens, &mut pos_info, token, pos, lineno);
                     incr(&mut s, &mut pos, dp);
                 } else if &s[..dp1] == "0" && s[dp1..].chars().next() == Some('x') {
@@ -239,18 +239,19 @@ impl Lexer {
                     let dp1_with_x = dp1 + 'x'.len_utf8();
                     let dp2: usize = s[dp1_with_x..]
                         .chars()
-                        .take_while(|c| c.is_ascii_hexdigit())
+                        .take_while(|c| c.is_ascii_hexdigit() || *c == '_')
                         .map(|c| c.len_utf8())
                         .sum();
                     let dp = dp1_with_x + dp2;
                     let text = &s[dp1_with_x..dp];
-                    let token = Token::Int(i64::from_str_radix(text, 16).unwrap());
+                    let token =
+                        Token::Int(i64::from_str_radix(&filter_underscores(text), 16).unwrap());
                     add(&mut tokens, &mut pos_info, token, pos, lineno);
                     incr(&mut s, &mut pos, dp);
                 } else {
                     // int
                     let text = &s[..dp1];
-                    let token = Token::Int(text.parse().unwrap());
+                    let token = Token::Int(filter_underscores(text).parse().unwrap());
                     add(&mut tokens, &mut pos_info, token, pos, lineno);
                     incr(&mut s, &mut pos, dp1);
                 }
@@ -364,6 +365,10 @@ fn add<'a>(
 ) {
     tokens.push(token);
     posinfos.push((offset, lineno));
+}
+
+fn filter_underscores(s: &str) -> String {
+    s.chars().filter(|c| *c != '_').collect()
 }
 
 #[cfg(test)]

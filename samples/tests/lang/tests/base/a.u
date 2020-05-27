@@ -55,3 +55,13 @@ def __test_subscript() {
 def __test_exc() {
     assert_raises(TypeError, def = 5 + '5')
 }
+
+def __test_numbers_with_underscores() {
+    assert_eq(1000000000, 1000_000_000)
+    assert_eq(1000000000, 1000_000_000_)
+    assert_eq(5.555666, 5.555_666)
+    assert_eq(5.555666, 5.555_666_)
+    assert_eq(5.555666, 5_.555_666_)
+    assert_eq(0xA_B, 16 * 10 + 11)
+    assert_eq(0xA_B_, 16 * 10 + 11)
+}
