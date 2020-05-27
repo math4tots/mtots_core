@@ -160,6 +160,17 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             Eval::try_(globals, fs::create_dir_all(path))?;
             Ok(Value::Nil)
         }),
+        NativeFunction::simple0(sr, "copy", &["from", "to"], |globals, args, _kwargs| {
+            // Copies the contents of one file to another.
+            // This function will also copy the permission bits of the original file to
+            // the destination file.
+            // Note that if from and to both point to the same file, then the file will
+            // likely get truncated by this operation.
+            let from = Eval::expect_path(globals, &args[0])?;
+            let to = Eval::expect_pathlike(globals, &args[1])?;
+            Eval::try_(globals, fs::copy(from, to))?;
+            Ok(Value::Nil)
+        }),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
