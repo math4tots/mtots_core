@@ -172,7 +172,7 @@ define_punctuators! {
     Else "else",
     Except "except",
     False "false",
-    Finally "finally",
+    Final "final",
     For "for",
     From "from",
     If "if",
