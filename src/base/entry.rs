@@ -28,26 +28,69 @@ pub fn main(globals: &mut Globals) {
 
     match interpreter_args.as_slice() {
         &[_, path] => {
-            let path = Path::new(path);
-            if path.is_file() {
-                if let Err(error) = globals.add_file_as_module("__main".into(), path.into()) {
-                    eprintln!("Could not read script: {:?}", error);
-                    std::process::exit(1);
-                }
-            } else if path.is_dir() {
-                globals.add_source_root(path.into());
-            } else {
-                eprintln!("Expected file or directory but got {:?}", path);
-                std::process::exit(1);
-            }
-            if let Err(_) = globals.load_main() {
-                let error = globals.exc_move();
-                eprint!("{}\n{}", error, globals.trace_fmt());
-                std::process::exit(1);
-            }
+            run(globals, &[], RunTarget::Path(&path));
+        }
+        &[_, extra_source, "-m", module_name] => {
+            run(globals, &[extra_source], RunTarget::Module(module_name));
+        }
+        &[_, "-m", module_name] => {
+            run(globals, &[], RunTarget::Module(module_name));
         }
         _ => {
             eprintln!("<path-to-script> [-- args...]");
         }
+    }
+}
+
+enum RunTarget<'a> {
+    Path(&'a str),
+    Module(&'a str),
+}
+
+fn run(globals: &mut Globals, extra_sources: &[&str], target: RunTarget) {
+    for source in extra_sources {
+        add_source(globals, source, None);
+    }
+    let module_name = match target {
+        RunTarget::Path(path) => {
+            add_source(globals, path, Some("__main"));
+            "__main"
+        }
+        RunTarget::Module(module_name) => {
+            module_name
+        }
+    };
+    if let Err(_) = globals.load_main(module_name) {
+        let error = globals.exc_move();
+        eprint!("{}\n{}", error, globals.trace_fmt());
+        std::process::exit(1);
+    }
+}
+
+fn add_source(globals: &mut Globals, pathstr: &str, name: Option<&str>) {
+    let path = Path::new(pathstr);
+    if path.is_file() {
+        let path_basename = pathstr.split('.').next_back().unwrap();
+        let module_name = match name {
+            Some(name) => name,
+            None => {
+                if path_basename.ends_with(".u") {
+                    let len = path_basename.len();
+                    &path_basename[..len - ".u".len()]
+                } else {
+                    path_basename
+                }
+            }
+        };
+        if let Err(error) = globals.add_file_as_module(module_name.into(), path.into()) {
+            eprintln!("Could not read script: {:?}", error);
+            std::process::exit(1);
+        }
+    } else if path.is_dir() {
+        // NOTE: in this case the name parameter is ignored
+        globals.add_source_root(path.into());
+    } else {
+        eprintln!("Expected file or directory but got {:?}", path);
+        std::process::exit(1);
     }
 }

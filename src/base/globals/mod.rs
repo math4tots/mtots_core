@@ -413,9 +413,9 @@ impl Globals {
         Ok(())
     }
 
-    pub fn load_main(&mut self) -> EvalResult<()> {
+    pub fn load_main(&mut self, main_module_name: &str) -> EvalResult<()> {
         self.load_prelude()?;
-        self.load_by_str("__main")?;
+        self.load_by_str(main_module_name)?;
         Ok(())
     }
 
