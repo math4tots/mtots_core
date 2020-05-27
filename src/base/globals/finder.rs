@@ -102,7 +102,7 @@ impl SourceFinder {
 }
 
 fn get_file_path_for_module(root: &Path, name: &str) -> Result<RcPath, SourceFinderError> {
-    // foo/bar/__main.u
+    // foo/bar/__init.u
     let folder_path = get_file_nested_path_for_module(root, name);
 
     // foo/bar.u
@@ -136,7 +136,7 @@ fn get_file_nested_path_for_module(root: &Path, name: &str) -> RcPath {
     while let Some(part) = parts.next() {
         path.push(part);
     }
-    path.push("__main.u");
+    path.push("__init.u");
     path.into()
 }
 
