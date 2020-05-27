@@ -225,7 +225,10 @@ impl Globals {
     }
 
     pub fn set_exc_legacy<T>(&mut self, error: EvalError) -> Result<T, ErrorIndicator> {
-        self.set_exc_other(format!("{}", error).into())
+        match error {
+            EvalError::IOError(error) => self.set_io_error(error),
+            _ => self.set_exc_other(format!("{}", error).into())
+        }
     }
 
     pub fn set_kind_error<T>(

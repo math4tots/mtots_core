@@ -101,6 +101,65 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let string = Eval::try_(globals, fs::read_to_string(path))?;
             Ok(string.into())
         }),
+        NativeFunction::simple0(sr, "read_bytes", &["self"], |globals, args, _kwargs| {
+            // read the entire contents of a file to a string
+            let path = Eval::expect_path(globals, &args[0])?;
+            let bytes = Eval::try_(globals, fs::read(path))?;
+            Ok(Value::Bytes(bytes.into()))
+        }),
+        NativeFunction::simple0(sr, "write", &["self", "data"], |globals, args, _kwargs| {
+            // create a file or replace the contents of an existing file
+            let path = Eval::expect_path(globals, &args[0])?;
+            match &args[1] {
+                Value::String(s) => Eval::try_(globals, fs::write(path, s.str()))?,
+                Value::Bytes(b) => Eval::try_(globals, fs::write(path, &**b))?,
+                _ => {
+                    Eval::expect_bytes(globals, &args[1])?;
+                    panic!("Path.write should have panic'd")
+                }
+            }
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "remove_file", &["self"], |globals, args, _kwargs| {
+            // removes a file
+            let path = Eval::expect_path(globals, &args[0])?;
+            Eval::try_(globals, fs::remove_file(path))?;
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "remove_dir_all", &["self"], |globals, args, _kwargs| {
+            // removes a directory after removing all its contents
+            let path = Eval::expect_path(globals, &args[0])?;
+            Eval::try_(globals, fs::remove_dir_all(path))?;
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "remove_dir", &["self"], |globals, args, _kwargs| {
+            // removes a directory
+            let path = Eval::expect_path(globals, &args[0])?;
+            Eval::try_(globals, fs::remove_dir(path))?;
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "remove", &["self"], |globals, args, _kwargs| {
+            // removes a file or directory
+            let path = Eval::expect_path(globals, &args[0])?;
+            if path.is_dir() {
+                Eval::try_(globals, fs::remove_dir_all(path))?;
+            } else {
+                Eval::try_(globals, fs::remove_file(path))?;
+            }
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "mkdir", &["self"], |globals, args, _kwargs| {
+            // creates a directory
+            let path = Eval::expect_path(globals, &args[0])?;
+            Eval::try_(globals, fs::create_dir(path))?;
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "mkdirp", &["self"], |globals, args, _kwargs| {
+            // creates a directory and all its parents as needed
+            let path = Eval::expect_path(globals, &args[0])?;
+            Eval::try_(globals, fs::create_dir_all(path))?;
+            Ok(Value::Nil)
+        }),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
