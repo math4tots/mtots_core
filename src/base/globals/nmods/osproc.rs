@@ -24,7 +24,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 sr,
                 "spawn",
                 (
-                    &["cmd", "args", "stdin", "stdout", "stderr"],
+                    &["cmd", "args", "stdin", "stdout", "stderr", "dir"],
                     &[],
                     None,
                     None,
@@ -52,6 +52,13 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     cmd.stdin(stdin);
                     cmd.stdout(stdout);
                     cmd.stderr(stderr);
+
+                    if let Value::Nil = &args[5] {
+                        // If nil is passed, just inherit the working directory
+                    } else {
+                        let dir = Eval::expect_pathlike(globals, &args[5])?;
+                        cmd.current_dir(dir);
+                    }
 
                     let child: Child = match cmd.spawn() {
                         Ok(child) => child,

@@ -1,4 +1,4 @@
-
+import os
 
 def __test_dir_list() {
     assert(__file.is_file())
@@ -66,4 +66,33 @@ def __test_remove() {
     filepath.write('hi')
     assert_raises(OSError, def = filepath.remove_dir())
     filepath.remove_file()
+}
+
+def __test_process_with_working_dir() {
+    """
+    TODO: Try to address this for windows
+    """
+    if os::name != "windows" {
+        paths = (
+            os::run(
+                "ls",
+                stdout=:pipe,
+                encoding=:utf8,
+                dir=__file.parent().parent())[1]
+                    .words()
+                    .list()
+        )
+        assert(paths.has(str(__file.parent().basename())))
+
+        paths = (
+            os::run(
+                "ls",
+                stdout=:pipe,
+                encoding=:utf8,
+                dir=__file.parent())[1]
+                    .words()
+                    .list()
+        )
+        assert(!paths.has(str(__file.parent().basename())))
+    }
 }
