@@ -20,7 +20,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             (&["self"], &[], None, Some("kwargs")),
             |globals, args, kwargs| {
                 let mut table =
-                    Eval::move_table_or_clone(globals, args.into_iter().next().unwrap())?
+                    Eval::move_or_clone_table(globals, args.into_iter().next().unwrap())?
                         .map_move();
                 for (key, val) in kwargs.unwrap() {
                     table.insert(key, val);
@@ -35,9 +35,9 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             |globals, args, _kwargs| {
                 let mut args = args.into_iter();
                 let mut table =
-                    Eval::move_table_or_clone(globals, args.next().unwrap())?.map_move();
+                    Eval::move_or_clone_table(globals, args.next().unwrap())?.map_move();
                 for arg in args {
-                    let arg = Eval::move_table_or_clone(globals, arg)?.map_move();
+                    let arg = Eval::move_or_clone_table(globals, arg)?.map_move();
                     table.extend(arg);
                 }
                 Ok(Value::Table(Table::new(table).into()))

@@ -25,14 +25,18 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             };
             Ok(basename)
         }),
-        NativeFunction::simple0(
+        NativeFunction::snew(
             sr,
             "join",
-            &["self", "relpath"],
+            (&["self"], &[], Some("args"), None),
             |globals, args, _kwargs| {
-                let path = Eval::expect_path(globals, &args[0])?;
-                let relpath = Eval::expect_pathlike(globals, &args[1])?;
-                Ok(path.join(relpath).into())
+                let mut args = args.into_iter();
+                let mut path = Eval::move_or_clone_path(globals, args.next().unwrap())?;
+                for arg in args {
+                    let part = Eval::expect_pathlike(globals, &arg)?;
+                    path.push(part)
+                }
+                Ok(path.into())
             },
         ),
         NativeFunction::simple0(
@@ -46,7 +50,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 // returns self unchanged if the two paths share no common ancestor
                 let path = Eval::expect_path(globals, &args[0])?;
                 let start = Eval::expect_pathlike(globals, &args[1])?;
-                if let Some(common) = common_path(path, &start) {
+                if let Some(common) = common_path(path, start) {
                     let mut ret = PathBuf::new();
                     for _ in 0..start.strip_prefix(common).unwrap().iter().count() {
                         ret.push("..");
@@ -180,7 +184,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         sr,
         "__call",
         &["x"],
-        |globals, args, _kwargs| Ok(Eval::expect_pathlike(globals, &args[0])?.into()),
+        |globals, args, _kwargs| Ok(Eval::expect_pathlike_rc(globals, &args[0])?.into()),
     )]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

@@ -19,6 +19,20 @@ impl RcPath {
 
         ptr(&self.0) == ptr(&other.0)
     }
+
+    pub fn try_unwrap(rcstr: Self) -> Result<PathBuf, RcPath> {
+        match Rc::try_unwrap(rcstr.0) {
+            Ok(s) => Ok(s),
+            Err(rc) => Err(RcPath(rc)),
+        }
+    }
+
+    pub fn unwrap_or_clone(rcstr: Self) -> PathBuf {
+        match Self::try_unwrap(rcstr) {
+            Ok(s) => s,
+            Err(rcstr) => (*rcstr.0).clone(),
+        }
+    }
 }
 
 impl ops::Deref for RcPath {

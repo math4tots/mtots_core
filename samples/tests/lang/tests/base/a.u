@@ -65,3 +65,7 @@ def __test_numbers_with_underscores() {
     assert_eq(0xA_B, 16 * 10 + 11)
     assert_eq(0xA_B_, 16 * 10 + 11)
 }
+
+def __test_path_join() {
+    assert_eq(__file.parent().join('a', 'b'), __file.parent().join('a').join('b'))
+}

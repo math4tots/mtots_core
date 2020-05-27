@@ -33,6 +33,8 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::rc::Rc;
+use std::path::PathBuf;
+use std::path::Path;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -238,7 +240,7 @@ impl Eval {
             globals.set_kind_error(ValueKind::String, value.kind())
         }
     }
-    pub fn move_string_or_clone(globals: &mut Globals, value: Value) -> EvalResult<String> {
+    pub fn move_or_clone_string(globals: &mut Globals, value: Value) -> EvalResult<String> {
         if let Value::String(rc) = value {
             Ok(RcStr::unwrap_or_clone(rc))
         } else {
@@ -261,12 +263,25 @@ impl Eval {
             globals.set_kind_error(ValueKind::Path, value.kind())
         }
     }
-
-    pub fn expect_pathlike(globals: &mut Globals, value: &Value) -> EvalResult<RcPath> {
+    pub fn move_or_clone_path(globals: &mut Globals, value: Value) -> EvalResult<PathBuf> {
+        if let Value::Path(rc) = value {
+            Ok(RcPath::unwrap_or_clone(rc))
+        } else {
+            globals.set_kind_error(ValueKind::Table, value.kind())
+        }
+    }
+    pub fn expect_pathlike<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a Path> {
         if let Some(pathlike) = value.pathlike() {
             Ok(pathlike)
         } else {
             globals.set_kind_error(ValueKind::Path, value.kind())
+        }
+    }
+    pub fn expect_pathlike_rc(globals: &mut Globals, value: &Value) -> EvalResult<RcPath> {
+        if let Value::Path(rc) = value {
+            Ok(rc.clone())
+        } else {
+            Ok(Self::expect_pathlike(globals, value)?.into())
         }
     }
 
@@ -305,7 +320,7 @@ impl Eval {
             globals.set_kind_error(ValueKind::Table, value.kind())
         }
     }
-    pub fn move_table_or_clone(globals: &mut Globals, value: Value) -> EvalResult<Table> {
+    pub fn move_or_clone_table(globals: &mut Globals, value: Value) -> EvalResult<Table> {
         if let Value::Table(rc) = value {
             match Rc::try_unwrap(rc) {
                 Ok(table) => Ok(table),

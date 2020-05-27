@@ -163,10 +163,10 @@ impl Value {
         }
     }
 
-    pub fn pathlike(&self) -> Option<RcPath> {
+    pub fn pathlike(&self) -> Option<&Path> {
         match self {
-            Value::String(x) => Some(Path::new(&**x).into()),
-            Value::Path(x) => Some(x.clone()),
+            Value::String(x) => Some(Path::new(&**x)),
+            Value::Path(x) => Some(x),
             _ => None,
         }
     }
