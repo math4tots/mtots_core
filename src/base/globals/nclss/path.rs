@@ -8,6 +8,7 @@ use crate::Value;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::fs;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
@@ -59,6 +60,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+
         // ## Methods that touch the file system ##
         NativeFunction::simple0(sr, "is_file", &["self"], |globals, args, _kwargs| {
             let path = Eval::expect_path(globals, &args[0])?;
@@ -85,6 +87,19 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 children.push(Value::Path(entry.path().into()));
             }
             Ok(Value::List(children.into()))
+        }),
+        NativeFunction::simple0(sr, "rename", &["from", "to"], |globals, args, _kwargs| {
+            // renames a file (e.g. mv)
+            let from = Eval::expect_path(globals, &args[0])?;
+            let to = Eval::expect_pathlike(globals, &args[1])?;
+            Eval::try_(globals, fs::rename(from, to))?;
+            Ok(Value::Nil)
+        }),
+        NativeFunction::simple0(sr, "read", &["self"], |globals, args, _kwargs| {
+            // read the entire contents of a file to a string
+            let path = Eval::expect_path(globals, &args[0])?;
+            let string = Eval::try_(globals, fs::read_to_string(path))?;
+            Ok(string.into())
         }),
     ]
     .into_iter()

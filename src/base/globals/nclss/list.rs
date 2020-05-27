@@ -44,6 +44,16 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         NativeFunction::simple0(sr, "iter", &["self"], |globals, args, _kwargs| {
             Eval::iter(globals, &args[0])
         }),
+        NativeFunction::simple0(sr, "has", &["self", "x"], |globals, args, _kwargs| {
+            let list = Eval::expect_list(globals, &args[0])?;
+            let x = &args[1];
+            for y in list.iter() {
+                if Eval::eq(globals, x, y)? {
+                    return Ok(true.into());
+                }
+            }
+            Ok(false.into())
+        }),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

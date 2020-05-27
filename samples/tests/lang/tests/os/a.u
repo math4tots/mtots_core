@@ -1,0 +1,38 @@
+
+
+def __test_dir_list() {
+    assert(__file.is_file())
+
+    "Check that this script is in this directory"
+    dir = __file.parent()
+    assert(dir.is_dir())
+    assert(dir.list().has(__file))
+
+    "Check that the 'os/' directory exists in the grandparent directory"
+    dir = dir.parent()
+    assert(dir.is_dir())
+    assert(dir.list().map(def(d) = d.basename()).has('os'))
+}
+
+def __test_rename() {
+    old = __file.parent().join("for.rename.txt")
+    new = __file.parent().join("for.rename2.txt")
+    assert(old.is_file())
+    assert(!new.is_file())
+
+    old.rename(new)
+    assert(!old.is_file())
+    assert(new.is_file())
+
+    new.rename(old)
+    assert(old.is_file())
+    assert(!new.is_file())
+}
+
+def __test_read() {
+    path = __file.parent().join('for.read.txt')
+    data = path.read()
+    assert_eq(data, r"""Hello, this is the contents of for.read.txt
+This is the second line
+""")
+}

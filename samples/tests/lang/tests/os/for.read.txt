@@ -1,0 +1,2 @@
+Hello, this is the contents of for.read.txt
+This is the second line
