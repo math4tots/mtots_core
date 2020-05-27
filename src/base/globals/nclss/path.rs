@@ -178,7 +178,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
 
     let static_methods = vec![NativeFunction::simple0(
         sr,
-        "new",
+        "__call",
         &["x"],
         |globals, args, _kwargs| Ok(Eval::expect_pathlike(globals, &args[0])?.into()),
     )]

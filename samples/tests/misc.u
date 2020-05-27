@@ -64,7 +64,7 @@ def __test_misc() {
     }
 
     print(Path)
-    print(repr(Path::new(".")))
+    print(repr(Path(".")))
     List::new(os::walk("./src"))
 
     """

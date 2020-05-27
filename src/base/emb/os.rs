@@ -16,7 +16,7 @@ Main OS path separator (basically '\\' for windows and '/' for everyone else)
 sep = _os::sep
 
 def* walk(root) {
-    root = Path::new(root)
+    root = Path(root)
 
     if !root.is_dir() {
         """Maybe throw an exception"""
