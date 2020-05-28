@@ -32,6 +32,10 @@ impl CompileError {
 pub enum CompileErrorKind {
     InvalidAssignmentTarget(ExpressionKind),
     ExpectedConstantExpression(ExpressionKind),
+    InvalidRelativeImportError {
+        module_name: String,
+        import_path: String,
+    },
 }
 
 impl fmt::Display for CompileErrorKind {
@@ -43,6 +47,7 @@ impl fmt::Display for CompileErrorKind {
             CompileErrorKind::ExpectedConstantExpression(kind) => {
                 write!(f, "Expected a constant expression but got {:?}", kind)?;
             }
+            CompileErrorKind::InvalidRelativeImportError
         }
         Ok(())
     }
@@ -519,7 +524,24 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             }
         }
         ExpressionData::Import(name) => {
-            builder.import_(name);
+            if name.starts_with('.') {
+                let mut module_name = builder.module_name().str().to_owned();
+                let up_cnt = name.matches('.').count() - 1;
+                for i in 0..up_cnt {
+                    if let Some(i) = module_name.rfind('.') {
+                        module_name.truncate(i);
+                    } else {
+
+                    }
+                }
+                builder.import_(&format!(
+                    "{}{}",
+                    builder.module_name(),
+                    name,
+                ).into())
+            } else {
+                builder.import_(name);
+            }
         }
         ExpressionData::Yield(expr) => {
             rec(builder, expr, true)?;
