@@ -1202,19 +1202,21 @@ impl Eval {
             Normal,
             Escape,
         }
-        fn next<'a>(globals: &mut Globals, args: &'a Vec<Value>, i: &mut usize) -> EvalResult<&'a Value> {
+        fn next<'a>(
+            globals: &mut Globals,
+            args: &'a Vec<Value>,
+            i: &mut usize,
+        ) -> EvalResult<&'a Value> {
             match args.get(*i) {
                 Some(arg) => {
                     *i += 1;
                     Ok(arg)
                 }
-                None => {
-                    globals.set_exc_str(&format!(
-                        "Expected at least {} args, but got only {}",
-                        *i + 1,
-                        args.len(),
-                    ))
-                }
+                None => globals.set_exc_str(&format!(
+                    "Expected at least {} args, but got only {}",
+                    *i + 1,
+                    args.len(),
+                )),
             }
         }
         let mut state = State::Normal;
@@ -1222,44 +1224,35 @@ impl Eval {
         let mut i = 0;
         for c in fmt.chars() {
             match state {
-                State::Normal => {
-                    match c {
-                        '%' => state = State::Escape,
-                        c => s.push(c),
+                State::Normal => match c {
+                    '%' => state = State::Escape,
+                    c => s.push(c),
+                },
+                State::Escape => match c {
+                    '%' => {
+                        s.push('%');
+                        state = State::Normal;
                     }
-                }
-                State::Escape => {
-                    match c {
-                        '%' => {
-                            s.push('%');
-                            state = State::Normal;
-                        }
-                        's' => {
-                            let arg = next(globals, args, &mut i)?;
-                            let argstr = Eval::str(globals, arg)?;
-                            s.push_str(argstr.str());
-                            state = State::Normal;
-                        }
-                        'r' => {
-                            let arg = next(globals, args, &mut i)?;
-                            let argstr = Eval::repr(globals, arg)?;
-                            s.push_str(argstr.str());
-                            state = State::Normal;
-                        }
-                        c => {
-                            return globals.set_exc_str(&format!(
-                                "Invalid escape char {:?}",
-                                c,
-                            ));
-                        }
+                    's' => {
+                        let arg = next(globals, args, &mut i)?;
+                        let argstr = Eval::str(globals, arg)?;
+                        s.push_str(argstr.str());
+                        state = State::Normal;
                     }
-                }
+                    'r' => {
+                        let arg = next(globals, args, &mut i)?;
+                        let argstr = Eval::repr(globals, arg)?;
+                        s.push_str(argstr.str());
+                        state = State::Normal;
+                    }
+                    c => {
+                        return globals.set_exc_str(&format!("Invalid escape char {:?}", c,));
+                    }
+                },
             }
         }
         if let State::Escape = state {
-            return globals.set_exc_str(&format!(
-                "Unterminated escape in format string"
-            ));
+            return globals.set_exc_str(&format!("Unterminated escape in format string"));
         }
         if i < args.len() {
             return globals.set_exc_str(&format!(

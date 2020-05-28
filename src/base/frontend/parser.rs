@@ -884,8 +884,12 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
         (&["import"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
             state.gettok();
+            let mut name = String::new();
+            while state.consume(TokenKind::Punctuator(Punctuator::Dot)) {
+                name.push('.');
+            }
             let mut last_part = state.expect_name()?;
-            let mut name: String = last_part.into();
+            name.push_str(last_part);
             while state.consume(TokenKind::Punctuator(Punctuator::Dot)) {
                 name.push('.');
                 last_part = state.expect_name()?;

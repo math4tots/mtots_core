@@ -10,24 +10,31 @@ import os::Process
 
 def main() {
     root = __file.parent().canon()
-    for [dirpath, _subdirs, filepaths] in os::walk(root.join("lang")) {
+    for module_name in _get_module_names(root, "lang") {
+        print(module_name)
+        module = __import(module_name)
+        keys = module.keys().filter(def(k) = str(k).starts_with('__test_')).to(List)
+        if keys {
+            for attr in keys {
+                attr_str = str(attr)
+                print('  ' + attr_str)
+                module.get(attr)()
+            }
+        } else {
+            print('  no tests')
+        }
+    }
+}
+
+def* _get_module_names(root, package_name) {
+    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name)) {
+        if filepaths.map(def(fp) = fp.basename()).has('__init.u') {
+            yield str(dirpath.relpath(root)).replace(os::sep, '.')
+        }
         for filepath in sorted(filepaths) {
-            if filepath.basename().ends_with('.u') {
-                name = str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
-                print(name)
-                module = __import(name)
-                keys = module.keys()
-                if keys {
-                    for attr in keys {
-                        attr_str = str(attr)
-                        if attr_str.starts_with('__test_') {
-                            print('  ' + attr_str)
-                            module.get(attr)()
-                        }
-                    }
-                } else {
-                    print('  no tests')
-                }
+            basename = filepath.basename()
+            if basename.ends_with('.u') and basename != '__init.u' {
+                yield str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
             }
         }
     }

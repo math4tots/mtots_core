@@ -32,9 +32,9 @@ impl CompileError {
 pub enum CompileErrorKind {
     InvalidAssignmentTarget(ExpressionKind),
     ExpectedConstantExpression(ExpressionKind),
-    InvalidRelativeImportError {
-        module_name: String,
-        import_path: String,
+    ImportError {
+        start_module_name: RcStr,
+        import_path: RcStr,
     },
 }
 
@@ -47,7 +47,16 @@ impl fmt::Display for CompileErrorKind {
             CompileErrorKind::ExpectedConstantExpression(kind) => {
                 write!(f, "Expected a constant expression but got {:?}", kind)?;
             }
-            CompileErrorKind::InvalidRelativeImportError
+            CompileErrorKind::ImportError {
+                start_module_name,
+                import_path,
+            } => {
+                write!(
+                    f,
+                    "import {} could not be resolved from {}",
+                    import_path, start_module_name
+                )?;
+            }
         }
         Ok(())
     }
@@ -525,20 +534,42 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
         }
         ExpressionData::Import(name) => {
             if name.starts_with('.') {
+                // resolve relative imports into absolute ones
+                // Relative imports are relative to the name of the current module
+                //
+                // So if your script is in:
+                //   * foo/bar/__init.u,
+                //       your module name is foo.bar, and
+                //       import .baz
+                //       will translate to
+                //       import foo.bar.baz
+                //
+                //       import ..baz
+                //       will translate to
+                //       import foo.baz
+                // and so on
+                //
+                // The behavior is identical between foo/bar/__init.u
+                // and foo/bar.u since, both files would have the same
+                // module names
+                //
                 let mut module_name = builder.module_name().str().to_owned();
-                let up_cnt = name.matches('.').count() - 1;
-                for i in 0..up_cnt {
+                for _ in 0..name.chars().take_while(|c| *c == '.').count() - 1 {
                     if let Some(i) = module_name.rfind('.') {
                         module_name.truncate(i);
                     } else {
-
+                        return Err(Error {
+                            lineno: expr.lineno(),
+                            kind: CompileErrorKind::ImportError {
+                                start_module_name: builder.module_name().clone(),
+                                import_path: name.clone(),
+                            },
+                        });
                     }
                 }
-                builder.import_(&format!(
-                    "{}{}",
-                    builder.module_name(),
-                    name,
-                ).into())
+                builder.import_(
+                    &format!("{}.{}", module_name, name.str().trim_start_matches('.')).into(),
+                );
             } else {
                 builder.import_(name);
             }
