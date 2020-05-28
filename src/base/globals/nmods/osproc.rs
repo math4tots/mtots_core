@@ -30,8 +30,8 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     None,
                 ),
                 |globals, args, _kwargs| {
-                    let cmd = Eval::expect_string(globals, &args[0])?;
-                    let mut cmd = std::process::Command::new(cmd.str());
+                    let cmd = Eval::expect_pathlike(globals, &args[0])?;
+                    let mut cmd = std::process::Command::new(cmd);
                     if let Value::Nil = &args[1] {
                         // nil args mean no args
                     } else {
