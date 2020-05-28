@@ -12,10 +12,15 @@ getcwd = _os::getcwd
 env = _os::env
 
 def home() = {
-    if name == 'windows' {
+    homestr = if name == 'windows' {
         env('UserProfile')
     } else {
         env('HOME')
+    }
+    if homestr is nil {
+        nil
+    } else {
+        Path(homestr)
     }
 }
 
