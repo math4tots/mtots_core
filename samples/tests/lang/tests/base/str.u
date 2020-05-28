@@ -93,3 +93,9 @@ def __test_rust_style_string_literal() {
         """,
     )
 }
+
+def __test_fmt_str() {
+    assert_eq('hello %s' % ['bob'], 'hello bob')
+    assert_raises(RuntimeError, def = 'hello %s' % [])
+    assert_raises(RuntimeError, def = 'hello %s' % ['a', 'b'])
+}

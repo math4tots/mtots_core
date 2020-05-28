@@ -862,6 +862,7 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a % b),
+            (Value::String(s), Value::List(args)) => Eval::fmtstr(globals, s.str(), &args)?.into(),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "%", vec![&a, &b]),
         })
     }
@@ -1194,6 +1195,80 @@ impl Eval {
             ));
         }
         Ok(ret)
+    }
+
+    pub fn fmtstr(globals: &mut Globals, fmt: &str, args: &Vec<Value>) -> EvalResult<String> {
+        enum State {
+            Normal,
+            Escape,
+        }
+        fn next<'a>(globals: &mut Globals, args: &'a Vec<Value>, i: &mut usize) -> EvalResult<&'a Value> {
+            match args.get(*i) {
+                Some(arg) => {
+                    *i += 1;
+                    Ok(arg)
+                }
+                None => {
+                    globals.set_exc_str(&format!(
+                        "Expected at least {} args, but got only {}",
+                        *i + 1,
+                        args.len(),
+                    ))
+                }
+            }
+        }
+        let mut state = State::Normal;
+        let mut s = String::new();
+        let mut i = 0;
+        for c in fmt.chars() {
+            match state {
+                State::Normal => {
+                    match c {
+                        '%' => state = State::Escape,
+                        c => s.push(c),
+                    }
+                }
+                State::Escape => {
+                    match c {
+                        '%' => {
+                            s.push('%');
+                            state = State::Normal;
+                        }
+                        's' => {
+                            let arg = next(globals, args, &mut i)?;
+                            let argstr = Eval::str(globals, arg)?;
+                            s.push_str(argstr.str());
+                            state = State::Normal;
+                        }
+                        'r' => {
+                            let arg = next(globals, args, &mut i)?;
+                            let argstr = Eval::repr(globals, arg)?;
+                            s.push_str(argstr.str());
+                            state = State::Normal;
+                        }
+                        c => {
+                            return globals.set_exc_str(&format!(
+                                "Invalid escape char {:?}",
+                                c,
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        if let State::Escape = state {
+            return globals.set_exc_str(&format!(
+                "Unterminated escape in format string"
+            ));
+        }
+        if i < args.len() {
+            return globals.set_exc_str(&format!(
+                "Too many arguments provided ({} given, {} used)",
+                args.len(),
+                i,
+            ));
+        }
+        Ok(s)
     }
 }
 
