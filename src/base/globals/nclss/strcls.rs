@@ -78,6 +78,15 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
         NativeFunction::simple0(
             sr,
+            "trim",
+            &["self"],
+            |globals, args, _kwargs| {
+                let s = Eval::expect_string(globals, &args[0])?;
+                Ok(s.trim().into())
+            }
+        ),
+        NativeFunction::simple0(
+            sr,
             "replace",
             &["self", "old", "new"],
             |globals, args, _kwargs| {
