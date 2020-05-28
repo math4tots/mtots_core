@@ -5,10 +5,10 @@ use crate::NativeFunction;
 use crate::SymbolRegistryHandle;
 use crate::Value;
 
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::fs;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
@@ -64,7 +64,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-
         // ## Methods that touch the file system ##
         NativeFunction::simple0(sr, "is_file", &["self"], |globals, args, _kwargs| {
             let path = Eval::expect_path(globals, &args[0])?;

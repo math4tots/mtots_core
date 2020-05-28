@@ -109,7 +109,10 @@ fn get_file_path_for_module(root: &Path, name: &str) -> Result<RcPath, SourceFin
     let short_path = get_file_short_path_for_module(root, name);
 
     if folder_path.is_file() && short_path.is_file() {
-        Err(SourceFinderError::ConflictingModulePaths(vec![folder_path, short_path]))
+        Err(SourceFinderError::ConflictingModulePaths(vec![
+            folder_path,
+            short_path,
+        ]))
     } else if folder_path.is_file() {
         Ok(folder_path)
     } else {

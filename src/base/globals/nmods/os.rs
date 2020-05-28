@@ -7,6 +7,7 @@ use crate::RcStr;
 use crate::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::env;
 use std::rc::Rc;
 
 pub const NAME: &str = "_os";
@@ -25,15 +26,22 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
     map.insert("sep".into(), std::path::MAIN_SEPARATOR.to_string().into());
 
     map.extend(
-        vec![NativeFunction::simple0(
-            sr,
-            "getcwd",
-            &[],
-            |globals, _, _| {
+        vec![
+            NativeFunction::simple0(sr, "getcwd", &[], |globals, _, _| {
                 let cwd = Eval::try_(globals, std::env::current_dir())?;
                 Ok(cwd.into())
-            },
-        )]
+            }),
+            NativeFunction::simple0(sr, "env", &["name"], |globals, args, _kwargs| {
+                let name = Eval::expect_osstr(globals, &args[0])?;
+                match env::var(name) {
+                    Ok(value) => Ok(value.into()),
+                    Err(env::VarError::NotPresent) => Ok(Value::Nil),
+                    Err(env::VarError::NotUnicode(s)) => {
+                        globals.set_exc_str(&format!("Not unicode: {:?}", s))
+                    }
+                }
+            }),
+        ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
     );

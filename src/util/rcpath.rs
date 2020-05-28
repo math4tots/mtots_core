@@ -20,6 +20,10 @@ impl RcPath {
         ptr(&self.0) == ptr(&other.0)
     }
 
+    pub fn path(&self) -> &Path {
+        &self.0
+    }
+
     pub fn try_unwrap(rcstr: Self) -> Result<PathBuf, RcPath> {
         match Rc::try_unwrap(rcstr.0) {
             Ok(s) => Ok(s),

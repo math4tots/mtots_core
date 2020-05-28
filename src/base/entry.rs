@@ -56,9 +56,7 @@ fn run(globals: &mut Globals, extra_sources: &[&str], target: RunTarget) {
             add_source(globals, path, Some("__main"));
             "__main"
         }
-        RunTarget::Module(module_name) => {
-            module_name
-        }
+        RunTarget::Module(module_name) => module_name,
     };
     if let Err(_) = globals.load_main(module_name) {
         let error = globals.exc_move();

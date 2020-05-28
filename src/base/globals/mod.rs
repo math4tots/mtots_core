@@ -227,7 +227,7 @@ impl Globals {
     pub fn set_exc_legacy<T>(&mut self, error: EvalError) -> Result<T, ErrorIndicator> {
         match error {
             EvalError::IOError(error) => self.set_io_error(error),
-            _ => self.set_exc_other(format!("{}", error).into())
+            _ => self.set_exc_other(format!("{}", error).into()),
         }
     }
 
@@ -383,7 +383,8 @@ impl Globals {
                     return self.set_exc_str(&format!("Module {:?} not found", name.str()));
                 }
                 Err(SourceFinderError::ConflictingModulePaths(paths)) => {
-                    return self.set_exc_str(&format!("Conflicting paths for module ({:?})", paths));
+                    return self
+                        .set_exc_str(&format!("Conflicting paths for module ({:?})", paths));
                 }
                 Ok(SourceItem::Native { body }) => {
                     let map = body(self)?;

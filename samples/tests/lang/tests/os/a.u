@@ -96,3 +96,7 @@ def __test_process_with_working_dir() {
         assert(!paths.has(str(__file.parent().basename())))
     }
 }
+
+def __test_env() {
+    assert(os::home() is not nil)
+}

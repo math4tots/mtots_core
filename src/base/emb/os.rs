@@ -9,6 +9,15 @@ arch = _os::arch
 triple = [name, family, arch]
 
 getcwd = _os::getcwd
+env = _os::env
+
+def home() = {
+    if name == 'windows' {
+        env('UserProfile')
+    } else {
+        env('HOME')
+    }
+}
 
 """
 Main OS path separator (basically '\\' for windows and '/' for everyone else)

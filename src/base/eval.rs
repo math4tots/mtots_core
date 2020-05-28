@@ -32,9 +32,9 @@ use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::rc::Rc;
-use std::path::PathBuf;
 use std::path::Path;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -282,6 +282,17 @@ impl Eval {
             Ok(rc.clone())
         } else {
             Ok(Self::expect_pathlike(globals, value)?.into())
+        }
+    }
+
+    pub fn expect_osstr<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a std::ffi::OsStr> {
+        match value {
+            Value::String(s) => Ok(s.str().as_ref()),
+            Value::Path(p) => Ok(p.path().as_ref()),
+            _ => globals.set_kind_error(ValueKind::String, value.kind()),
         }
     }
 
