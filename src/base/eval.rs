@@ -290,6 +290,7 @@ impl Eval {
         value: &'a Value,
     ) -> EvalResult<&'a std::ffi::OsStr> {
         match value {
+            Value::Symbol(s) => Ok(s.str().as_ref()),
             Value::String(s) => Ok(s.str().as_ref()),
             Value::Path(p) => Ok(p.path().as_ref()),
             _ => globals.set_kind_error(ValueKind::String, value.kind()),

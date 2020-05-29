@@ -24,7 +24,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 sr,
                 "spawn",
                 (
-                    &["cmd", "args", "stdin", "stdout", "stderr", "dir"],
+                    &["cmd", "args", "stdin", "stdout", "stderr", "dir", "clear_envs", "envs"],
                     &[],
                     None,
                     None,
@@ -58,6 +58,21 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     } else {
                         let dir = Eval::expect_pathlike(globals, &args[5])?;
                         cmd.current_dir(dir);
+                    }
+
+                    if Eval::truthy(globals, &args[6])? {
+                        cmd.env_clear();
+                    }
+
+                    if let Value::Nil = &args[7] {
+                        // If nil, don't add any extra environment variables
+                    } else {
+                        let map = Eval::expect_map(globals, &args[7])?;
+                        for (key, val) in map {
+                            let key = Eval::expect_osstr(globals, key)?;
+                            let val = Eval::expect_osstr(globals, val)?;
+                            cmd.env(key, val);
+                        }
                     }
 
                     let child: Child = match cmd.spawn() {

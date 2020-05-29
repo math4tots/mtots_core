@@ -75,15 +75,21 @@ class Process {
             stdin=nil,
             stdout=nil,
             stderr=nil,
-            encoding=nil,
             dir=nil,
+            clear_envs=false,
+            envs=nil,
+            encoding=nil,
             check=true) = {
         stdin = stdin or INHERIT
         stdout = stdout or INHERIT
         stderr = stderr or INHERIT
         __malloc(
             Process,
-            [osproc::spawn(cmd, args, stdin, stdout, stderr, dir), encoding, check],
+            [
+                osproc::spawn(cmd, args, stdin, stdout, stderr, dir, clear_envs, envs),
+                encoding,
+                check,
+            ],
         )
     }
 

@@ -94,6 +94,20 @@ def __test_process_with_working_dir() {
                     .list()
         )
         assert(!paths.has(str(__file.parent().basename())))
+
+        "Check that clearing the env works"
+        env = os::run("env", stdout=:pipe, encoding=:utf8)[1].trim()
+        assert(env)
+        env = os::run("env", stdout=:pipe, encoding=:utf8, clear_envs=true)[1].trim()
+        assert_eq(env, '')
+        env = os::run(
+            "env",
+            stdout=:pipe,
+            encoding=:utf8,
+            clear_envs=true,
+            envs=[:foo : :hi],
+        )[1].trim()
+        assert_eq(env, 'foo=hi')
     }
 }
 
