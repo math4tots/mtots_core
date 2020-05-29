@@ -72,3 +72,12 @@ def __test_instantiation() {
     no_explicit_fields = NoExplicitFields()
     assert_eq(type(no_explicit_fields), NoExplicitFields)
 }
+
+def __test_str() {
+    """
+    Make sure that classes display their full names when being printed.
+    Full names of builtin classes are actually same as their short names
+    """
+    assert_eq(str(Baz), '<class lang.tests.cls.a::Baz>')
+    assert_eq(str(String), '<class String>')
+}

@@ -960,7 +960,7 @@ pub struct Class {
 }
 impl fmt::Debug for Class {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<class {}>", self.short_name)
+        write!(f, "<class {}>", self.full_name)
     }
 }
 impl Class {
