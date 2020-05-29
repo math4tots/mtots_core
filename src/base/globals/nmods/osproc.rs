@@ -24,7 +24,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 sr,
                 "spawn",
                 (
-                    &["cmd", "args", "stdin", "stdout", "stderr", "dir", "clear_envs", "envs"],
+                    &[
+                        "cmd",
+                        "args",
+                        "stdin",
+                        "stdout",
+                        "stderr",
+                        "dir",
+                        "clear_envs",
+                        "envs",
+                    ],
                     &[],
                     None,
                     None,

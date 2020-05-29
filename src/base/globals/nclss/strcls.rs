@@ -105,6 +105,57 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             Ok(split_by_str(globals, string, "\n".into()))
         }),
+        NativeFunction::simple0(sr, "has", &["self", "pattern"], |globals, args, _kwargs| {
+            let string = Eval::expect_string(globals, &args[0])?;
+            let pattern = Eval::expect_string(globals, &args[1])?;
+            Ok(string.contains(pattern.str()).into())
+        }),
+        NativeFunction::snew(
+            sr,
+            "slice",
+            (&["self", "start"], &[("end", Value::Nil)], None, None),
+            |globals, args, _kwargs| {
+                let (s, _start, _end) =
+                    Eval::expect_str_slice(globals, &args[0], &args[1], &args[2])?;
+                Ok(s.into())
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "find",
+            (
+                &["self", "pattern"],
+                &[("start", Value::Nil), ("end", Value::Nil)],
+                None,
+                None,
+            ),
+            |globals, args, _kwargs| {
+                let pattern = Eval::expect_string(globals, &args[1])?;
+                let (s, start, _end) =
+                    Eval::expect_str_slice(globals, &args[0], &args[2], &args[3])?;
+                Ok(s.find(pattern.str())
+                    .map(|i| Value::Int((start + i) as i64))
+                    .unwrap_or(Value::Nil))
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "rfind",
+            (
+                &["self", "pattern"],
+                &[("start", Value::Nil), ("end", Value::Nil)],
+                None,
+                None,
+            ),
+            |globals, args, _kwargs| {
+                let pattern = Eval::expect_string(globals, &args[1])?;
+                let (s, start, _end) =
+                    Eval::expect_str_slice(globals, &args[0], &args[2], &args[3])?;
+                Ok(s.rfind(pattern.str())
+                    .map(|i| Value::Int((start + i) as i64))
+                    .unwrap_or(Value::Nil))
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

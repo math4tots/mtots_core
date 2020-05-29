@@ -189,13 +189,67 @@ impl Eval {
         }
     }
 
+    /// Like expect_index, but if the index is too small, it returns 0,
+    /// and if the index is too big, will just return len
+    pub fn expect_index_permissive(
+        globals: &mut Globals,
+        value: &Value,
+        len: usize,
+    ) -> EvalResult<usize> {
+        let mut i = Self::expect_int(globals, value)?;
+        if i < 0 {
+            i += len as i64;
+        }
+        if i < 0 {
+            Ok(0)
+        } else if i > len as i64 {
+            Ok(len)
+        } else {
+            Ok(i as usize)
+        }
+    }
+
+    pub fn expect_range_indices(
+        globals: &mut Globals,
+        start: &Value,
+        end: &Value,
+        len: usize,
+    ) -> EvalResult<(usize, usize)> {
+        let start = if let Value::Nil = start {
+            0
+        } else {
+            Eval::expect_index_permissive(globals, start, len)?
+        };
+        let end = if let Value::Nil = end {
+            len
+        } else {
+            Eval::expect_index_permissive(globals, end, len)?
+        };
+        Ok((start, end))
+    }
+
+    pub fn expect_str_slice<'a>(
+        globals: &mut Globals,
+        string: &'a Value,
+        start: &Value,
+        end: &Value,
+    ) -> EvalResult<(&'a str, usize, usize)> {
+        let string = Eval::expect_string(globals, string)?;
+        let len = string.len();
+        let (start, end) = Eval::expect_range_indices(globals, start, end, len)?;
+        match string.get(start..end) {
+            Some(slice) => Ok((slice, start, end)),
+            None => globals.set_exc_str("Invalid string slice indices"),
+        }
+    }
+
     pub fn expect_index(globals: &mut Globals, value: &Value, len: usize) -> EvalResult<usize> {
         let mut i = Self::expect_int(globals, value)?;
         if i < 0 {
             i += len as i64;
         }
         if i < 0 || i >= (len as i64) {
-            globals.set_assert_error(&"Index out of bounds".into())
+            globals.set_exc_str("Index out of bounds")
         } else {
             Ok(i as usize)
         }

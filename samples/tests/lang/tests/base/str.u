@@ -99,3 +99,41 @@ def __test_fmt_str() {
     assert_raises(RuntimeError, def = 'hello %s' % [])
     assert_raises(RuntimeError, def = 'hello %s' % ['a', 'b'])
 }
+
+def __test_slice() {
+    assert_eq('hello'.slice(1), 'ello')
+    assert_eq('hello'.slice(0, -1), 'hell')
+    assert_eq('hello'.slice(1, -1), 'ell')
+    assert_eq('hello'.slice('hello'.len(), 'hello'.len()), '')
+    assert_eq('hello'.slice('hello'.len(), 'hello'.len() + 2), '')
+    assert_eq('hello'.slice(20, 20), '')
+}
+
+def __test_find() {
+    s = 'a ab abc abcd abcde abcdef'
+    pat = 'abc'
+    assert_eq(s.find('xyz'), nil)
+    assert_eq(s.find('aaa'), nil)
+    assert_eq(s.find('a'), 0)
+    assert_eq(s.slice(s.find(pat), s.find(pat) + pat.len()), pat)
+
+    new_start = s.find(pat) + pat.len()
+    new_end = s.rfind(pat)
+    assert_eq(
+        s.slice(
+            s.find(pat, new_start),
+            new_end,
+        ),
+        'abcd abcde ',
+    )
+    assert_eq(
+        s.slice(
+            s.find(pat, new_start),
+            s.rfind(pat, new_start, new_end),
+        ),
+        'abcd ',
+    )
+
+    print('############')
+    print(s.slice(s.find('abc')))
+}
