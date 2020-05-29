@@ -10,7 +10,7 @@ pub fn main(globals: &mut Globals) {
         }
     }
     let all_args: Vec<_> = std::env::args().collect();
-    let (interpreter_args, _program_args) = {
+    let (interpreter_args, program_args) = {
         let mut interpreter_args: Vec<&str> = Vec::new();
         let mut program_args: Vec<&str> = Vec::new();
         let mut args_iter = all_args.iter().peekable();
@@ -20,11 +20,16 @@ pub fn main(globals: &mut Globals) {
             }
             interpreter_args.push(args_iter.next().unwrap());
         }
+        if let Some("--") = args_iter.peek().map(|s| s.as_ref()) {
+            args_iter.next().unwrap();
+        }
         while let Some(s) = args_iter.next() {
             program_args.push(s);
         }
         (interpreter_args, program_args)
     };
+
+    globals.set_cli_args(program_args.into_iter().map(|s| s.into()).collect());
 
     match interpreter_args.as_slice() {
         &[_, path] => {

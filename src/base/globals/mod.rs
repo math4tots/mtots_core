@@ -60,6 +60,7 @@ pub struct Globals {
     lexer: Lexer,
     parser: Parser,
     cli_args: Vec<RcStr>,
+    main_module_name: Option<RcStr>,
 
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
@@ -87,6 +88,7 @@ impl Globals {
             lexer: Lexer::new(),
             parser: Parser::new(symbol_registry.clone()),
             cli_args: Vec::new(),
+            main_module_name: None,
             exception_registry,
             builtin_exceptions,
             symbol_registry,
@@ -364,6 +366,10 @@ impl Globals {
         self.cli_args = args;
     }
 
+    pub fn cli_args(&self) -> &Vec<RcStr> {
+        &self.cli_args
+    }
+
     pub fn load_by_symbol(&mut self, symbol: Symbol) -> EvalResult<Rc<Module>> {
         let name = self.symbol_rcstr(symbol);
         self.load(&name)
@@ -415,9 +421,14 @@ impl Globals {
     }
 
     pub fn load_main(&mut self, main_module_name: &str) -> EvalResult<()> {
+        self.main_module_name = Some(main_module_name.into());
         self.load_prelude()?;
         self.load_by_str(main_module_name)?;
         Ok(())
+    }
+
+    pub fn main_module_name(&self) -> &Option<RcStr> {
+        &self.main_module_name
     }
 
     fn exec_module_with_ast(

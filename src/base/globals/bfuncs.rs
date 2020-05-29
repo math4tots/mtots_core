@@ -17,6 +17,8 @@ pub struct NativeFunctions {
     assert_raises: Rc<NativeFunction>,
     dunder_import: Rc<NativeFunction>,
     dunder_malloc: Rc<NativeFunction>,
+    dunder_args: Rc<NativeFunction>,
+    dunder_main: Rc<NativeFunction>,
     dunder_raise: Rc<NativeFunction>,
     dunder_try: Rc<NativeFunction>,
     dunder_iter: Rc<NativeFunction>,
@@ -35,6 +37,8 @@ impl NativeFunctions {
             &self.assert_raises,
             &self.dunder_import,
             &self.dunder_malloc,
+            &self.dunder_args,
+            &self.dunder_main,
             &self.dunder_raise,
             &self.dunder_try,
             &self.dunder_iter,
@@ -140,6 +144,23 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     )
     .into();
 
+    let dunder_args = NativeFunction::simple0(sr, "__args", &[], |globals, _args, _kwargs| {
+        let mut ret: Vec<Value> = Vec::new();
+        for arg in globals.cli_args() {
+            ret.push(arg.clone().into());
+        }
+        Ok(ret.into())
+    })
+    .into();
+
+    let dunder_main = NativeFunction::simple0(sr, "__main", &[], |globals, _args, _kwargs| {
+        match globals.main_module_name() {
+            Some(main_module_name) => Ok(main_module_name.clone().into()),
+            None => Ok(Value::Nil),
+        }
+    })
+    .into();
+
     let dunder_raise =
         NativeFunction::simple0(sr, "__raise", &["exc"], |globals, args, _kwargs| {
             let exc = Eval::move_exc(globals, args.into_iter().next().unwrap())?;
@@ -234,6 +255,8 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         assert_raises,
         dunder_import,
         dunder_malloc,
+        dunder_args,
+        dunder_main,
         dunder_raise,
         dunder_try,
         dunder_iter,
