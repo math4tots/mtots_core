@@ -45,8 +45,8 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         // nil args mean no args
                     } else {
                         for arg in Eval::expect_list(globals, &args[1])? {
-                            let argstr = Eval::expect_string(globals, arg)?;
-                            cmd.arg(argstr.str());
+                            let argstr = Eval::expect_osstr(globals, arg)?;
+                            cmd.arg(argstr);
                         }
                     }
 
