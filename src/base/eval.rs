@@ -1151,8 +1151,8 @@ impl Eval {
             let iterator = Self::iter(globals, pairs)?;
             let mut map = VMap::new();
             while let Some(pair) = Self::next(globals, &iterator)? {
-                let pair = Self::unpack(globals, &pair, 2)?;
-                map.s_insert(globals, pair[0].clone(), pair[1].clone())?;
+                let (key, val) = Self::unpack_pair(globals, &pair)?;
+                map.s_insert(globals, key, val)?;
             }
             Ok(map.into())
         }
@@ -1231,8 +1231,8 @@ impl Eval {
         let iterator = Self::iter(globals, pairs)?;
         let mut map = VMap::new();
         while let Some(pair) = Self::next(globals, &iterator)? {
-            let pair = Self::unpack(globals, &pair, 2)?;
-            map.s_insert(globals, pair[0].clone(), pair[1].clone())?;
+            let (key, val) = Self::unpack_pair(globals, &pair)?;
+            map.s_insert(globals, key, val)?;
         }
         Ok(map)
     }
@@ -1250,6 +1250,24 @@ impl Eval {
             ));
         }
         Ok(ret)
+    }
+
+    pub fn unpack_pair(globals: &mut Globals, iterable: &Value) -> EvalResult<(Value, Value)> {
+        let mut pair = Self::unpack(globals, iterable, 2)?.into_iter();
+        let first = pair.next().unwrap();
+        let second = pair.next().unwrap();
+        Ok((first, second))
+    }
+
+    pub fn unpack_triple(
+        globals: &mut Globals,
+        iterable: &Value,
+    ) -> EvalResult<(Value, Value, Value)> {
+        let mut triple = Self::unpack(globals, iterable, 2)?.into_iter();
+        let first = triple.next().unwrap();
+        let second = triple.next().unwrap();
+        let third = triple.next().unwrap();
+        Ok((first, second, third))
     }
 
     pub fn fmtstr(globals: &mut Globals, fmt: &str, args: &Vec<Value>) -> EvalResult<String> {
