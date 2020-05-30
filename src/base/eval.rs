@@ -1263,7 +1263,7 @@ impl Eval {
         globals: &mut Globals,
         iterable: &Value,
     ) -> EvalResult<(Value, Value, Value)> {
-        let mut triple = Self::unpack(globals, iterable, 2)?.into_iter();
+        let mut triple = Self::unpack(globals, iterable, 3)?.into_iter();
         let first = triple.next().unwrap();
         let second = triple.next().unwrap();
         let third = triple.next().unwrap();
