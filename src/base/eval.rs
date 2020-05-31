@@ -778,6 +778,9 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
+            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) + b),
+            (Value::Float(a), Value::Int(b)) => Value::Float(a + (b as f64)),
             (Value::String(a), Value::String(b)) => {
                 let mut ab = RcStr::unwrap_or_clone(a);
                 ab.push_str(b.str());
@@ -816,6 +819,9 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a - b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a - b),
+            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) - b),
+            (Value::Float(a), Value::Int(b)) => Value::Float(a - (b as f64)),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "-", vec![&a, &b]),
         })
     }
@@ -832,6 +838,9 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
+            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) * b),
+            (Value::Float(a), Value::Int(b)) => Value::Float(a * (b as f64)),
             (Value::String(s), Value::Int(n)) => {
                 // TODO: consider throwing instead if n is < 0
                 let n = std::cmp::max(0, n) as usize;
@@ -853,6 +862,9 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Float((a as f64) / (b as f64)),
+            (Value::Float(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
+            (Value::Float(a), Value::Int(b)) => Value::Float((a as f64) / (b as f64)),
+            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "/", vec![&a, &b]),
         })
     }
@@ -901,6 +913,9 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
+            (Value::Float(a), Value::Float(b)) => Value::Int((a / b).trunc() as i64),
+            (Value::Int(a), Value::Float(b)) => Value::Int(((a as f64) / b).trunc() as i64),
+            (Value::Float(a), Value::Int(b)) => Value::Int((a / (b as f64)).trunc() as i64),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "//", vec![&a, &b]),
         })
     }
@@ -917,6 +932,7 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a % b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a % b),
             (Value::String(s), Value::List(args)) => Eval::fmtstr(globals, s.str(), &args)?.into(),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "%", vec![&a, &b]),
         })

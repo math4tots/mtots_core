@@ -41,3 +41,24 @@ def __test_div_consistency() {
         assert_eq(a.divmod(b), [a.fdiv(b), a.mod(b)])
     }
 }
+
+def __test_int_float_mixed_arithmetic() {
+    assert(1.0 + 1.0 is 2.0)
+    assert(1.0 + 1 is 2.0)
+    assert(1 + 1.0 is 2.0)
+
+    assert(4.0 - 1.0 is 3.0)
+    assert(4.0 - 1 is 3.0)
+    assert(4 - 1.0 is 3.0)
+
+    assert(4.0 * 2.0 is 8.0)
+    assert(4.0 * 2 is 8.0)
+    assert(4 * 2.0 is 8.0)
+
+    assert(5.0 / 2.0 is 2.5)
+    assert(5 / 2.0 is 2.5)
+    assert(5.0 / 2 is 2.5)
+
+    assert(5.0 // 2 is 2)
+    assert(5.0 // 2.1 is 2)
+}
