@@ -69,3 +69,24 @@ def __test_numbers_with_underscores() {
 def __test_path_join() {
     assert_eq(__file.parent().join('a', 'b'), __file.parent().join('a').join('b'))
 }
+
+def __test_min_max() {
+    assert_eq(min(1, 2, 3), 1)
+    assert_eq(min([1, 2, 3]), 1)
+    assert_eq(min(3, 2, 1), 1)
+    assert_eq(min([3, 2, 1]), 1)
+
+    assert_eq(max(1, 2, 3), 3)
+    assert_eq(max([1, 2, 3]), 3)
+    assert_eq(max(3, 2, 1), 3)
+    assert_eq(max([3, 2, 1]), 3)
+
+    assert_eq(max('a', 'b', 'c'), 'c')
+    assert_eq(min('a', 'b', 'c'), 'a')
+
+    assert_eq(max('aa', 'a', 'b', 'bb'), 'bb')
+    assert_eq(min('aa', 'a', 'b', 'bb'), 'a')
+
+    assert_raises(RuntimeError, def = min([]))
+    assert_raises(RuntimeError, def = max([]))
+}

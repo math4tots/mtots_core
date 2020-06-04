@@ -12,6 +12,8 @@ pub struct NativeFunctions {
     repr: Rc<NativeFunction>,
     type_: Rc<NativeFunction>,
     sorted: Rc<NativeFunction>,
+    min: Rc<NativeFunction>,
+    max: Rc<NativeFunction>,
     assert: Rc<NativeFunction>,
     assert_eq: Rc<NativeFunction>,
     assert_raises: Rc<NativeFunction>,
@@ -32,6 +34,8 @@ impl NativeFunctions {
             &self.repr,
             &self.type_,
             &self.sorted,
+            &self.min,
+            &self.max,
             &self.assert,
             &self.assert_eq,
             &self.assert_raises,
@@ -73,6 +77,44 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         let mut vec = Eval::iterable_to_vec(globals, &args[0])?;
         Eval::sort(globals, &mut vec)?;
         Ok(vec.into())
+    })
+    .into();
+
+    let min = NativeFunction::snew(sr, "min", (&["xs"], &[], Some("varargs"), None), |globals, args, _kwargs| {
+        let iterator = if args.len() == 1 {
+            Eval::iter(globals, &args[0])?
+        } else {
+            Eval::iter(globals, &args.into())?
+        };
+        let mut best = match Eval::next(globals, &iterator)? {
+            Some(first) => first,
+            None => return globals.set_exc_str("Empty iterable passed to min"),
+        };
+        while let Some(x) = Eval::next(globals, &iterator)? {
+            if Eval::lt(globals, &x, &best)? {
+                best = x;
+            }
+        }
+        Ok(best)
+    })
+    .into();
+
+    let max = NativeFunction::snew(sr, "max", (&["xs"], &[], Some("varargs"), None), |globals, args, _kwargs| {
+        let iterator = if args.len() == 1 {
+            Eval::iter(globals, &args[0])?
+        } else {
+            Eval::iter(globals, &args.into())?
+        };
+        let mut best = match Eval::next(globals, &iterator)? {
+            Some(first) => first,
+            None => return globals.set_exc_str("Empty iterable passed to max"),
+        };
+        while let Some(x) = Eval::next(globals, &iterator)? {
+            if Eval::lt(globals, &best, &x)? {
+                best = x;
+            }
+        }
+        Ok(best)
     })
     .into();
 
@@ -250,6 +292,8 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         repr,
         type_,
         sorted,
+        min,
+        max,
         assert,
         assert_eq,
         assert_raises,
