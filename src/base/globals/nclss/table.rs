@@ -16,6 +16,27 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         }),
         NativeFunction::snew(
             sr,
+            "keys",
+            (&["self"], &[], None, None),
+            |globals, args, _kwargs| {
+                // returns a sorted list of all keys of the table
+                // We don't allow iterating over a table, because for Table
+                // objects I want to keep using the HashMap in the standard library
+                // and those come with a non-static lifetime parameter that's
+                // annoying to translate to script-land. If an iterator is really
+                // needed, the Map type is available.
+                let table = Eval::expect_table(globals, &args[0])?;
+                let mut keys = Vec::new();
+                for (key, _) in table.iter() {
+                    keys.push(*key);
+                }
+                keys.sort_by(|a, b| a.str().cmp(b.str()));
+                let keys: Vec<_> = keys.into_iter().map(Value::Symbol).collect();
+                Ok(keys.into())
+            },
+        ),
+        NativeFunction::snew(
+            sr,
             "add",
             (&["self"], &[], None, Some("kwargs")),
             |globals, args, kwargs| {

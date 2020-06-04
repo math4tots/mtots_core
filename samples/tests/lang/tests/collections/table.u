@@ -37,3 +37,8 @@ def __test_add_merge() {
     assert_eq(Table().merge(a, b, c), a + b + c)
     assert_eq(Table().merge(*[a, b, c]), a + b + c)
 }
+
+def __test_keys() {
+    t = Table(zzz="zzz", aaa=123, a='a', ccc=['a', 'b', 'c'])
+    assert_eq(t.keys(), [:a, :aaa, :ccc, :zzz])
+}

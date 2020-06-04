@@ -133,7 +133,4 @@ def __test_find() {
         ),
         'abcd ',
     )
-
-    print('############')
-    print(s.slice(s.find('abc')))
 }
