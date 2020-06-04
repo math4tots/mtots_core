@@ -540,7 +540,7 @@ impl Eval {
     pub fn expect_cell<'a>(
         globals: &mut Globals,
         value: &'a Value,
-    ) -> EvalResult<&'a RefCell<Value>> {
+    ) -> EvalResult<&'a Rc<RefCell<Value>>> {
         if let Value::Cell(cell) = value {
             Ok(cell)
         } else {
