@@ -17,14 +17,19 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Eval::call(globals, &args[2], vec![args[1].clone()])
             }
         }),
-        NativeFunction::simple0(sr, "vmap", &["self", "x", "y"], |_globals, args, _kwargs| {
-            // Returns nil if x is nil, otherwise y
-            if let Value::Nil = &args[1] {
-                Ok(Value::Nil)
-            } else {
-                Ok(args[2].clone())
-            }
-        }),
+        NativeFunction::simple0(
+            sr,
+            "vmap",
+            &["self", "x", "y"],
+            |_globals, args, _kwargs| {
+                // Returns nil if x is nil, otherwise y
+                if let Value::Nil = &args[1] {
+                    Ok(Value::Nil)
+                } else {
+                    Ok(args[2].clone())
+                }
+            },
+        ),
         NativeFunction::simple0(sr, "get", &["self", "x", "y"], |_globals, args, _kwargs| {
             // Returns x if x is not nil, and y if x is nil
             if let Value::Nil = &args[1] {

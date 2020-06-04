@@ -90,6 +90,7 @@ impl BuiltinClasses {
             &self.MutableString,
             &self.MutableList,
             &self.MutableMap,
+            &self.Cell,
         ]
     }
 }

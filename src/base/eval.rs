@@ -537,6 +537,17 @@ impl Eval {
         }
     }
 
+    pub fn expect_cell<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a RefCell<Value>> {
+        if let Value::Cell(cell) = value {
+            Ok(cell)
+        } else {
+            globals.set_kind_error(ValueKind::Cell, value.kind())
+        }
+    }
+
     pub fn try_<T, E: Into<EvalError>>(
         globals: &mut Globals,
         result: Result<T, E>,
