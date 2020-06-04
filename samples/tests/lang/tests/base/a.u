@@ -90,3 +90,17 @@ def __test_min_max() {
     assert_raises(RuntimeError, def = min([]))
     assert_raises(RuntimeError, def = max([]))
 }
+
+def __test_nil_methods() {
+    assert_eq(nil.map(123, def(x) = x + 1), 124)
+    assert_eq(nil.map(nil, def(x) = x + 1), nil)
+
+    assert_eq(nil.vmap(123, 456), 456)
+    assert_eq(nil.vmap(nil, 456), nil)
+
+    assert_eq(nil.get('a', 'b'), 'a')
+    assert_eq(nil.get(nil, 'b'), 'b')
+
+    assert_eq(nil.fget('a', def = 'b'), 'a')
+    assert_eq(nil.fget(nil, def = 'b'), 'b')
+}

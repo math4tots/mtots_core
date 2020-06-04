@@ -80,42 +80,52 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     })
     .into();
 
-    let min = NativeFunction::snew(sr, "min", (&["xs"], &[], Some("varargs"), None), |globals, args, _kwargs| {
-        let iterator = if args.len() == 1 {
-            Eval::iter(globals, &args[0])?
-        } else {
-            Eval::iter(globals, &args.into())?
-        };
-        let mut best = match Eval::next(globals, &iterator)? {
-            Some(first) => first,
-            None => return globals.set_exc_str("Empty iterable passed to min"),
-        };
-        while let Some(x) = Eval::next(globals, &iterator)? {
-            if Eval::lt(globals, &x, &best)? {
-                best = x;
+    let min = NativeFunction::snew(
+        sr,
+        "min",
+        (&["xs"], &[], Some("varargs"), None),
+        |globals, args, _kwargs| {
+            let iterator = if args.len() == 1 {
+                Eval::iter(globals, &args[0])?
+            } else {
+                Eval::iter(globals, &args.into())?
+            };
+            let mut best = match Eval::next(globals, &iterator)? {
+                Some(first) => first,
+                None => return globals.set_exc_str("Empty iterable passed to min"),
+            };
+            while let Some(x) = Eval::next(globals, &iterator)? {
+                if Eval::lt(globals, &x, &best)? {
+                    best = x;
+                }
             }
-        }
-        Ok(best)
-    })
+            Ok(best)
+        },
+    )
     .into();
 
-    let max = NativeFunction::snew(sr, "max", (&["xs"], &[], Some("varargs"), None), |globals, args, _kwargs| {
-        let iterator = if args.len() == 1 {
-            Eval::iter(globals, &args[0])?
-        } else {
-            Eval::iter(globals, &args.into())?
-        };
-        let mut best = match Eval::next(globals, &iterator)? {
-            Some(first) => first,
-            None => return globals.set_exc_str("Empty iterable passed to max"),
-        };
-        while let Some(x) = Eval::next(globals, &iterator)? {
-            if Eval::lt(globals, &best, &x)? {
-                best = x;
+    let max = NativeFunction::snew(
+        sr,
+        "max",
+        (&["xs"], &[], Some("varargs"), None),
+        |globals, args, _kwargs| {
+            let iterator = if args.len() == 1 {
+                Eval::iter(globals, &args[0])?
+            } else {
+                Eval::iter(globals, &args.into())?
+            };
+            let mut best = match Eval::next(globals, &iterator)? {
+                Some(first) => first,
+                None => return globals.set_exc_str("Empty iterable passed to max"),
+            };
+            while let Some(x) = Eval::next(globals, &iterator)? {
+                if Eval::lt(globals, &best, &x)? {
+                    best = x;
+                }
             }
-        }
-        Ok(best)
-    })
+            Ok(best)
+        },
+    )
     .into();
 
     let assert = NativeFunction::simple0(sr, "assert", &["x"], |globals, args, _kwargs| {
