@@ -38,7 +38,12 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         NativeFunction::snew(
             sr,
             "get",
-            (&["self", "key"], &[("default", Value::Uninitialized)], None, None),
+            (
+                &["self", "key"],
+                &[("default", Value::Uninitialized)],
+                None,
+                None,
+            ),
             |globals, args, _kwargs| {
                 // Look up the entry in a Table by symbol determined at runtime
                 let table = Eval::expect_table(globals, &args[0])?;
@@ -47,10 +52,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                     Some(value) => Ok(value.clone()),
                     None => {
                         if let Value::Uninitialized = &args[2] {
-                            globals.set_exc_str(&format!(
-                                "Key {:?} not found in this Table",
-                                key,
-                            ))
+                            globals.set_exc_str(&format!("Key {:?} not found in this Table", key,))
                         } else {
                             Ok(args[2].clone())
                         }
@@ -91,12 +93,20 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
-    let static_methods = vec![NativeFunction::snew(
-        sr,
-        "__call",
-        (&[], &[], None, Some("kwargs")),
-        |_globals, _args, kwargs| Ok(Value::Table(Table::new(kwargs.unwrap()).into())),
-    )]
+    let static_methods = vec![
+        NativeFunction::snew(
+            sr,
+            "__call",
+            (&[], &[], None, Some("kwargs")),
+            |_globals, _args, kwargs| Ok(Value::Table(Table::new(kwargs.unwrap()).into())),
+        ),
+        NativeFunction::snew(
+            sr,
+            "from_iterable",
+            (&["iterable"], &[], None, None),
+            |globals, args, _kwargs| Eval::table_from_iterable(globals, &args[0]),
+        ),
+    ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();

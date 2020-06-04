@@ -40,3 +40,8 @@ def __test_mutable_map() {
 
     assert_raises(KeyError, def = d[333])
 }
+
+def __test_from_iterable() {
+    map = [[1, 2], [3, 4]].iter().to(Map)
+    assert_eq(map, [1: 2, 3: 4])
+}

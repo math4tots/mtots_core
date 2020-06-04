@@ -1179,6 +1179,17 @@ impl Eval {
         }
     }
 
+    pub fn table_from_iterable(globals: &mut Globals, pairs: &Value) -> EvalResult<Value> {
+        let iterator = Self::iter(globals, pairs)?;
+        let mut map = HashMap::new();
+        while let Some(pair) = Self::next(globals, &iterator)? {
+            let (key, val) = Self::unpack_pair(globals, &pair)?;
+            let key = Self::expect_symbol(globals, &key)?;
+            map.insert(key, val);
+        }
+        Ok(Value::Table(Table::new(map).into()))
+    }
+
     pub fn map_from_iterable(globals: &mut Globals, pairs: &Value) -> EvalResult<Value> {
         if let Value::Map(_) = pairs {
             Ok(pairs.clone())

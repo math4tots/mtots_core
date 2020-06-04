@@ -41,12 +41,17 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
 
-    let static_methods = vec![NativeFunction::simple0(
-        sr,
-        "__call",
-        &["pairs"],
-        |globals, args, _kwargs| Eval::map_from_iterable(globals, &args[0]),
-    )]
+    let static_methods = vec![
+        NativeFunction::simple0(sr, "__call", &["pairs"], |globals, args, _kwargs| {
+            Eval::map_from_iterable(globals, &args[0])
+        }),
+        NativeFunction::simple0(
+            sr,
+            "from_iterable",
+            &["iterable"],
+            |globals, args, _kwargs| Eval::map_from_iterable(globals, &args[0]),
+        ),
+    ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();

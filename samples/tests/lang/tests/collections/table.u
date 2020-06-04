@@ -45,3 +45,8 @@ def __test_keys() {
     vals = t.keys().map(def(key) = t.get(key))
     assert_eq(vals, ['a', 123, ['a', 'b', 'c'], 'zzz'])
 }
+
+def __test_from_iterable() {
+    t = [[:a, 1], [:b, 2.0], [:c, '3']].to(Table)
+    assert_eq(t, Table(a=1, b=2.0, c='3'))
+}
