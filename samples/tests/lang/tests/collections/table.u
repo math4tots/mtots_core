@@ -41,4 +41,7 @@ def __test_add_merge() {
 def __test_keys() {
     t = Table(zzz="zzz", aaa=123, a='a', ccc=['a', 'b', 'c'])
     assert_eq(t.keys(), [:a, :aaa, :ccc, :zzz])
+
+    vals = t.keys().map(def(key) = t.get(key))
+    assert_eq(vals, ['a', 123, ['a', 'b', 'c'], 'zzz'])
 }

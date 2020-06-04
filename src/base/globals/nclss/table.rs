@@ -37,6 +37,29 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
         NativeFunction::snew(
             sr,
+            "get",
+            (&["self", "key"], &[("default", Value::Uninitialized)], None, None),
+            |globals, args, _kwargs| {
+                // Look up the entry in a Table by symbol determined at runtime
+                let table = Eval::expect_table(globals, &args[0])?;
+                let key = Eval::expect_symbol(globals, &args[1])?;
+                match table.get(key) {
+                    Some(value) => Ok(value.clone()),
+                    None => {
+                        if let Value::Uninitialized = &args[2] {
+                            globals.set_exc_str(&format!(
+                                "Key {:?} not found in this Table",
+                                key,
+                            ))
+                        } else {
+                            Ok(args[2].clone())
+                        }
+                    }
+                }
+            },
+        ),
+        NativeFunction::snew(
+            sr,
             "add",
             (&["self"], &[], None, Some("kwargs")),
             |globals, args, kwargs| {
