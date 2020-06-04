@@ -463,6 +463,11 @@ impl Eval {
         }
     }
 
+    pub fn clone_opaque<T: 'static + Clone>(globals: &mut Globals, value: &Value) -> EvalResult<T> {
+        let t: Ref<T> = Self::expect_opaque(globals, value)?;
+        Ok(t.clone())
+    }
+
     pub fn move_opaque<'a, T: 'static>(globals: &mut Globals, value: &'a Value) -> EvalResult<T> {
         if let Value::Opaque(opq) = value {
             if let Some(value) = opq.move_() {
@@ -707,6 +712,9 @@ impl Eval {
     ) -> EvalResult<bool> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => a < b,
+            (Value::Float(a), Value::Float(b)) => a < b,
+            (Value::Int(a), Value::Float(b)) => (*a as f64) < *b,
+            (Value::Float(a), Value::Int(b)) => *a < (*b as f64),
             (Value::Symbol(a), Value::Symbol(b)) => a < b,
             (Value::String(a), Value::String(b)) => a < b,
             (Value::Path(a), Value::Path(b)) => a < b,
