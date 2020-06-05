@@ -14,6 +14,7 @@ use crate::RcStr;
 use crate::Symbol;
 use crate::SymbolRegistryHandle;
 use crate::VMap;
+use crate::VSet;
 use std::any::Any;
 use std::cell::Ref;
 use std::cell::RefCell;
@@ -37,6 +38,7 @@ pub enum Value {
     Path(RcPath),
     List(Rc<Vec<Value>>),       // [x, ..]
     Table(Rc<Table>),           // Table(k=v, ..)
+    Set(Rc<VSet>),              // Set([x, ..])
     Map(Rc<VMap>),              // [k:v, ..]
     UserObject(Rc<UserObject>), // [k:v, ..]
     Exception(Rc<Exception>),
@@ -56,6 +58,7 @@ pub enum Value {
     // mutable values
     MutableString(Rc<RefCell<String>>),   // @".."
     MutableList(Rc<RefCell<Vec<Value>>>), // @[x, ..]
+    MutableSet(Rc<RefCell<VSet>>),        // MutableSet([x, ..])
     MutableMap(Rc<RefCell<VMap>>),        // @[k:v, ..]
 
     // 'internal' values
@@ -79,6 +82,7 @@ impl Value {
             (Value::Bytes(a), Value::Bytes(b)) => ptr(a) == ptr(b),
             (Value::Path(a), Value::Path(b)) => a.is_ptr_eq(b),
             (Value::List(a), Value::List(b)) => ptr(a) == ptr(b),
+            (Value::Set(a), Value::Set(b)) => ptr(a) == ptr(b),
             (Value::Table(a), Value::Table(b)) => ptr(a) == ptr(b),
             (Value::Map(a), Value::Map(b)) => ptr(a) == ptr(b),
             (Value::UserObject(a), Value::UserObject(b)) => ptr(a) == ptr(b),
@@ -94,6 +98,7 @@ impl Value {
             (Value::Opaque(a), Value::Opaque(b)) => ptr(a) == ptr(b),
             (Value::MutableString(a), Value::MutableString(b)) => ptr(a) == ptr(b),
             (Value::MutableList(a), Value::MutableList(b)) => ptr(a) == ptr(b),
+            (Value::MutableSet(a), Value::MutableSet(b)) => ptr(a) == ptr(b),
             (Value::MutableMap(a), Value::MutableMap(b)) => ptr(a) == ptr(b),
             (Value::Cell(a), Value::Cell(b)) => ptr(a) == ptr(b),
             _ => false,
@@ -187,6 +192,14 @@ impl Value {
         }
     }
 
+    pub fn set(&self) -> Option<&Rc<VSet>> {
+        if let Value::Set(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
     pub fn map(&self) -> Option<&Rc<VMap>> {
         if let Value::Map(x) = self {
             Some(x)
@@ -213,6 +226,14 @@ impl Value {
 
     pub fn mutable_list(&self) -> Option<&Rc<RefCell<Vec<Value>>>> {
         if let Value::MutableList(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    pub fn mutable_set(&self) -> Option<&Rc<RefCell<VSet>>> {
+        if let Value::MutableSet(x) = self {
             Some(x)
         } else {
             None
@@ -248,6 +269,7 @@ impl Value {
             Value::Path(..) => ValueKind::Path,
             Value::List(..) => ValueKind::List,
             Value::Table(..) => ValueKind::Table,
+            Value::Set(..) => ValueKind::Set,
             Value::Map(..) => ValueKind::Map,
             Value::UserObject(..) => ValueKind::UserObject,
             Value::Exception(..) => ValueKind::Exception,
@@ -263,6 +285,7 @@ impl Value {
             Value::GeneratorObject(..) => ValueKind::GeneratorObject,
             Value::MutableString(..) => ValueKind::MutableString,
             Value::MutableList(..) => ValueKind::MutableList,
+            Value::MutableSet(..) => ValueKind::MutableSet,
             Value::MutableMap(..) => ValueKind::MutableMap,
             Value::Cell(..) => ValueKind::Cell,
         }
@@ -319,6 +342,7 @@ pub enum ValueKind {
     Path,
     List,
     Table,
+    Set,
     Map,
     UserObject,
     Exception,
@@ -334,6 +358,7 @@ pub enum ValueKind {
     Opaque,
     MutableString,
     MutableList,
+    MutableSet,
     MutableMap,
     Cell,
 }
@@ -442,6 +467,18 @@ impl From<Vec<Value>> for Value {
 impl From<Rc<Vec<Value>>> for Value {
     fn from(list: Rc<Vec<Value>>) -> Value {
         Value::List(list)
+    }
+}
+
+impl From<VSet> for Value {
+    fn from(set: VSet) -> Value {
+        Value::Set(set.into())
+    }
+}
+
+impl From<Rc<VSet>> for Value {
+    fn from(set: Rc<VSet>) -> Value {
+        Value::Set(set)
     }
 }
 

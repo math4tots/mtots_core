@@ -58,6 +58,7 @@ pub use base::ParameterKind;
 pub use base::ParseError;
 pub use base::Table;
 pub use base::VMap;
+pub use base::VSet;
 pub use base::Value;
 pub use base::ValueKind;
 pub use base::SOURCE_FILE_EXTENSION;

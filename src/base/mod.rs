@@ -30,6 +30,7 @@ pub use eval::Eval;
 pub use eval::EvalError;
 pub use eval::EvalResult;
 pub use eval::VMap;
+pub use eval::VSet;
 pub use frontend::LexError;
 pub use frontend::LexErrorKind;
 pub use frontend::Lexer;

@@ -24,6 +24,7 @@ mod m;
 mod map;
 mod mlist;
 mod mmap;
+mod mset;
 mod mstr;
 mod nc;
 mod ni;
@@ -31,6 +32,7 @@ mod nil;
 mod obj;
 mod opq;
 mod path;
+mod set;
 mod strcls;
 mod sym;
 mod table;
@@ -58,6 +60,7 @@ pub struct BuiltinClasses {
     pub Path: Rc<Class>,
     pub List: Rc<Class>,
     pub Table: Rc<Class>,
+    pub Set: Rc<Class>,
     pub Map: Rc<Class>,
     pub Exception: Rc<Class>,
     pub NativeFunction: Rc<Class>,
@@ -72,6 +75,7 @@ pub struct BuiltinClasses {
     pub Opaque: Rc<Class>,
     pub MutableString: Rc<Class>,
     pub MutableList: Rc<Class>,
+    pub MutableSet: Rc<Class>,
     pub MutableMap: Rc<Class>,
     pub Cell: Rc<Class>,
 }
@@ -84,11 +88,13 @@ impl BuiltinClasses {
             &self.Path,
             &self.List,
             &self.Table,
+            &self.Set,
             &self.Map,
             &self.Class,
             &self.Module,
             &self.MutableString,
             &self.MutableList,
+            &self.MutableSet,
             &self.MutableMap,
             &self.Cell,
         ]
@@ -111,6 +117,7 @@ impl Globals {
         let Path = path::mkcls(symbol_registry, Object.clone());
         let List = list::mkcls(symbol_registry, Iterable.clone());
         let Table = table::mkcls(symbol_registry, Object.clone());
+        let Set = set::mkcls(symbol_registry, Iterable.clone());
         let Map = map::mkcls(symbol_registry, Iterable.clone());
         let Exception = exc::mkcls(symbol_registry, Iterable.clone());
         let NativeFunction = bf::mkcls(symbol_registry, Object.clone());
@@ -125,6 +132,7 @@ impl Globals {
         let Opaque = opq::mkcls(symbol_registry, Object.clone());
         let MutableString = mstr::mkcls(symbol_registry, Object.clone());
         let MutableList = mlist::mkcls(symbol_registry, Object.clone());
+        let MutableSet = mset::mkcls(symbol_registry, Object.clone());
         let MutableMap = mmap::mkcls(symbol_registry, Object.clone());
         let Cell = cell::mkcls(symbol_registry, Object.clone());
         BuiltinClasses {
@@ -141,6 +149,7 @@ impl Globals {
             Path,
             List,
             Table,
+            Set,
             Map,
             Exception,
             NativeFunction,
@@ -155,6 +164,7 @@ impl Globals {
             Opaque,
             MutableString,
             MutableList,
+            MutableSet,
             MutableMap,
             Cell,
         }

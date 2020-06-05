@@ -161,6 +161,7 @@ impl Eval {
             Value::Path(_) => &globals.builtin_classes().Path,
             Value::List(_) => &globals.builtin_classes().List,
             Value::Table(_) => &globals.builtin_classes().Table,
+            Value::Set(_) => &globals.builtin_classes().Set,
             Value::Map(_) => &globals.builtin_classes().Map,
             Value::UserObject(obj) => obj.get_class(),
             Value::Exception(_) => &globals.builtin_classes().Exception,
@@ -176,6 +177,7 @@ impl Eval {
             Value::Opaque(_) => &globals.builtin_classes().Opaque,
             Value::MutableString(_) => &globals.builtin_classes().MutableString,
             Value::MutableList(_) => &globals.builtin_classes().MutableList,
+            Value::MutableSet(_) => &globals.builtin_classes().MutableSet,
             Value::MutableMap(_) => &globals.builtin_classes().MutableMap,
             Value::Cell(_) => &globals.builtin_classes().Cell,
         })
@@ -413,6 +415,14 @@ impl Eval {
         }
     }
 
+    pub fn expect_set<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a VSet> {
+        if let Some(set) = value.set() {
+            Ok(set)
+        } else {
+            globals.set_kind_error(ValueKind::Set, value.kind())
+        }
+    }
+
     pub fn expect_map<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a VMap> {
         if let Some(map) = value.map() {
             Ok(map)
@@ -507,6 +517,17 @@ impl Eval {
         }
     }
 
+    pub fn expect_mutable_set<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a Rc<RefCell<VSet>>> {
+        if let Value::MutableSet(set) = &value {
+            Ok(set)
+        } else {
+            globals.set_kind_error(ValueKind::MutableSet, value.kind())
+        }
+    }
+
     pub fn expect_mutable_map<'a>(
         globals: &mut Globals,
         value: &'a Value,
@@ -594,6 +615,7 @@ impl Eval {
             Value::Path(_) => true,
             Value::List(x) => !x.is_empty(),
             Value::Table(x) => !x.is_empty(),
+            Value::Set(x) => !x.is_empty(),
             Value::Map(x) => !x.is_empty(),
             Value::UserObject(_) => true,
             Value::Exception(_) => true,
@@ -609,6 +631,7 @@ impl Eval {
             Value::Opaque(_) => true,
             Value::MutableString(x) => !x.borrow().is_empty(),
             Value::MutableList(x) => !x.borrow().is_empty(),
+            Value::MutableSet(x) => !x.borrow().is_empty(),
             Value::MutableMap(x) => !x.borrow().is_empty(),
             Value::Cell(_) => true,
         })
@@ -655,10 +678,14 @@ impl Eval {
                     true
                 }
             }
+            (Value::Set(a), Value::Set(b)) => eq_set(globals, a, b, debuginfo)?,
             (Value::Map(a), Value::Map(b)) => eq_map(globals, a, b, debuginfo)?,
             (Value::MutableString(a), Value::MutableString(b)) => a == b,
             (Value::MutableList(a), Value::MutableList(b)) => {
                 eq_list(globals, &a.borrow(), &b.borrow(), debuginfo)?
+            }
+            (Value::MutableSet(a), Value::MutableSet(b)) => {
+                eq_set(globals, &a.borrow(), &b.borrow(), debuginfo)?
             }
             (Value::MutableMap(a), Value::MutableMap(b)) => {
                 eq_map(globals, &a.borrow(), &b.borrow(), debuginfo)?
@@ -1057,6 +1084,7 @@ impl Eval {
             Value::Path(x) => format!("Path::new({:?})", x).into(),
             Value::List(x) => list2str(globals, &*x)?.into(),
             Value::Table(x) => table2str(globals, x.map())?.into(),
+            Value::Set(x) => set2str(globals, "Set", &*x)?.into(),
             Value::Map(x) => map2str(globals, &*x)?.into(),
             Value::UserObject(x) => format!("{:?}", x).into(),
             Value::Exception(x) => format!("{:?}", x).into(),
@@ -1072,6 +1100,7 @@ impl Eval {
             Value::Opaque(opq) => format!("{:?}", opq).into(),
             Value::MutableString(x) => format!("@{}", reprstr(&x.borrow())).into(),
             Value::MutableList(x) => format!("@{}", list2str(globals, &x.borrow())?).into(),
+            Value::MutableSet(x) => set2str(globals, "MutableSet", &x.borrow())?.into(),
             Value::MutableMap(x) => format!("@{}", map2str(globals, &x.borrow())?).into(),
             Value::Cell(x) => format!("<cell {}>", Self::repr(globals, &x.borrow())?).into(),
         })
@@ -1127,6 +1156,7 @@ impl Eval {
     pub fn iter(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
         match iterable {
             Value::List(list) => Ok(iterlist(globals, list.clone()).into()),
+            Value::Set(set) => Ok(iterset(globals, set.clone()).into()),
             Value::NativeIterator(_) => Ok(iterable.clone()),
             Value::GeneratorObject(_) => Ok(iterable.clone()),
             _ => {
@@ -1190,17 +1220,19 @@ impl Eval {
         Ok(Value::Table(Table::new(map).into()))
     }
 
+    pub fn set_from_iterable(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
+        if let Value::Set(_) = iterable {
+            Ok(iterable.clone())
+        } else {
+            Ok(Self::iterable_to_vset(globals, iterable)?.into())
+        }
+    }
+
     pub fn map_from_iterable(globals: &mut Globals, pairs: &Value) -> EvalResult<Value> {
         if let Value::Map(_) = pairs {
             Ok(pairs.clone())
         } else {
-            let iterator = Self::iter(globals, pairs)?;
-            let mut map = VMap::new();
-            while let Some(pair) = Self::next(globals, &iterator)? {
-                let (key, val) = Self::unpack_pair(globals, &pair)?;
-                map.s_insert(globals, key, val)?;
-            }
-            Ok(map.into())
+            Ok(Self::iterable_to_vmap(globals, pairs)?.into())
         }
     }
 
@@ -1211,6 +1243,11 @@ impl Eval {
         Ok(Value::MutableList(
             RefCell::new(Self::iterable_to_vec(globals, iterable)?.into()).into(),
         ))
+    }
+
+    pub fn mutable_set_from_iterable(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
+        let vset = Self::iterable_to_vset(globals, iterable)?;
+        Ok(Value::MutableSet(RefCell::new(vset).into()))
     }
 
     pub fn mutable_map_from_iterable(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
@@ -1271,6 +1308,15 @@ impl Eval {
             ret.push(next);
         }
         Ok(ret)
+    }
+
+    pub fn iterable_to_vset(globals: &mut Globals, iterable: &Value) -> EvalResult<VSet> {
+        let iterator = Self::iter(globals, iterable)?;
+        let mut set = VSet::new();
+        while let Some(key) = Self::next(globals, &iterator)? {
+            set.s_insert(globals, key, ())?;
+        }
+        Ok(set)
     }
 
     pub fn iterable_to_vmap(globals: &mut Globals, pairs: &Value) -> EvalResult<VMap> {
@@ -1407,6 +1453,24 @@ fn eq_list(
     })
 }
 
+fn eq_set(
+    globals: &mut Globals,
+    a: &VSet,
+    b: &VSet,
+    _debuginfo: Option<(&Code, usize)>,
+) -> EvalResult<bool> {
+    Ok(a.len() == b.len() && {
+        for (key, ()) in a.iter() {
+            if let Some(()) = b.s_get(globals, key)? {
+                // key in a found in b
+            } else {
+                return Ok(false);
+            }
+        }
+        true
+    })
+}
+
 fn eq_map(
     globals: &mut Globals,
     a: &VMap,
@@ -1456,6 +1520,26 @@ fn list2str(globals: &mut Globals, vec: &Vec<Value>) -> EvalResult<String> {
         first = false;
     }
     ret.push(']');
+    Ok(ret)
+}
+
+fn set2str(globals: &mut Globals, prefix: &str, set: &VSet) -> EvalResult<String> {
+    let mut ret = String::new();
+    ret.push_str(prefix);
+    ret.push_str("([");
+    if set.is_empty() {
+        ret.push(':');
+    } else {
+        let mut first = true;
+        for (key, ()) in set.iter() {
+            if !first {
+                ret.push_str(", ");
+            }
+            ret.push_str(&*Eval::repr(globals, key)?);
+            first = false;
+        }
+    }
+    ret.push_str("])");
     Ok(ret)
 }
 
@@ -1514,6 +1598,20 @@ fn iterlist(_: &mut Globals, list: Rc<Vec<Value>>) -> NativeIterator {
     })
 }
 
+fn iterset(_: &mut Globals, set: Rc<VSet>) -> NativeIterator {
+    let mut i = 0;
+    let len = set.reserved_entries_count();
+    NativeIterator::new(move |_, _| {
+        while i < len {
+            i += 1;
+            if let Some((key, ())) = set.get_pair_at_index(i - 1) {
+                return GeneratorResult::Yield(key.clone());
+            }
+        }
+        GeneratorResult::Done(Value::Nil)
+    })
+}
+
 fn compute_hash<T: Hash>(t: T) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
@@ -1545,3 +1643,4 @@ impl FailableEq<Globals, Value, ErrorIndicator> for Eval {
 }
 
 pub type VMap = GMap<Globals, Value, Value, Eval, Eval, ErrorIndicator>;
+pub type VSet = GMap<Globals, Value, (), Eval, Eval, ErrorIndicator>;
