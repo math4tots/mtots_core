@@ -36,6 +36,47 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
+        NativeFunction::simple0(
+            sr,
+            "__getitem",
+            &["self", "key"],
+            |globals, args, _kwargs| {
+                let map = Eval::expect_map(globals, &args[0])?;
+                let val = map.s_get(globals, &args[1])?.cloned();
+                if let Some(val) = val {
+                    Ok(val)
+                } else {
+                    let keystr = Eval::repr(globals, &args[1])?;
+                    globals.set_key_error(
+                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                    )
+                }
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "get",
+            (&["self", "key"], &[("default", Value::Uninitialized)], None, None),
+            |globals, args, _kwargs| {
+                let map = Eval::expect_map(globals, &args[0])?;
+                let val = map.s_get(globals, &args[1])?.cloned();
+                if let Some(val) = val {
+                    Ok(val)
+                } else if let Value::Uninitialized = &args[2] {
+                    let keystr = Eval::repr(globals, &args[1])?;
+                    globals.set_key_error(
+                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                    )
+                } else {
+                    Ok(args[2].clone())
+                }
+            },
+        ),
+        NativeFunction::simple0(sr, "has_key", &["self", "key"], |globals, args, _kwargs| {
+            let map = Eval::expect_map(globals, &args[0])?;
+            let has_key = map.s_get(globals, &args[1])?.is_some();
+            Ok(has_key.into())
+        }),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

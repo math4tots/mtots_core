@@ -784,6 +784,13 @@ impl Eval {
                 }
                 hasher.finish()
             }
+            Value::Set(x) => {
+                let mut hasher = UnorderedHasher::new(x.len() as u64);
+                for (key, ()) in x.iter() {
+                    hasher.add(Eval::hash(globals, key)?);
+                }
+                hasher.finish()
+            }
             Value::Map(x) => {
                 let mut hasher = UnorderedHasher::new(x.len() as u64);
                 for (key, val) in x.iter() {

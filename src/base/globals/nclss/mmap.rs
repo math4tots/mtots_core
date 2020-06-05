@@ -35,6 +35,25 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+        NativeFunction::snew(
+            sr,
+            "get",
+            (&["self", "key"], &[("default", Value::Uninitialized)], None, None),
+            |globals, args, _kwargs| {
+                let map = Eval::expect_mutable_map(globals, &args[0])?;
+                let val = map.borrow().s_get(globals, &args[1])?.cloned();
+                if let Some(val) = val {
+                    Ok(val)
+                } else if let Value::Uninitialized = &args[2] {
+                    let keystr = Eval::repr(globals, &args[1])?;
+                    globals.set_key_error(
+                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                    )
+                } else {
+                    Ok(args[2].clone())
+                }
+            },
+        ),
         NativeFunction::simple0(
             sr,
             "__setitem",

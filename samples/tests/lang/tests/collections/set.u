@@ -31,3 +31,12 @@ def __test_mutable_set() {
 
     assert_eq(ms.move(), Set([5, 6, 7, 8, 9]))
 }
+
+def __test_sets_as_keys() {
+    d = @[:]
+    d[Set([1, 2, 3])] = 123
+    assert_eq(d[Set([1, 2, 3])], 123)
+    assert_eq(d[Set([3, 1, 2])], 123)
+    assert_eq(d[Set([3, 2, 1])], 123)
+    assert_eq(d.len(), 1)
+}
