@@ -38,7 +38,12 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         NativeFunction::snew(
             sr,
             "get",
-            (&["self", "key"], &[("default", Value::Uninitialized)], None, None),
+            (
+                &["self", "key"],
+                &[("default", Value::Uninitialized)],
+                None,
+                None,
+            ),
             |globals, args, _kwargs| {
                 let map = Eval::expect_mutable_map(globals, &args[0])?;
                 let val = map.borrow().s_get(globals, &args[1])?.cloned();
