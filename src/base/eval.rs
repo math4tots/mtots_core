@@ -1157,6 +1157,7 @@ impl Eval {
         match iterable {
             Value::List(list) => Ok(iterlist(globals, list.clone()).into()),
             Value::Set(set) => Ok(iterset(globals, set.clone()).into()),
+            Value::Map(map) => Ok(itermap(globals, map.clone()).into()),
             Value::NativeIterator(_) => Ok(iterable.clone()),
             Value::GeneratorObject(_) => Ok(iterable.clone()),
             _ => {
@@ -1606,6 +1607,20 @@ fn iterset(_: &mut Globals, set: Rc<VSet>) -> NativeIterator {
             i += 1;
             if let Some((key, ())) = set.get_pair_at_index(i - 1) {
                 return GeneratorResult::Yield(key.clone());
+            }
+        }
+        GeneratorResult::Done(Value::Nil)
+    })
+}
+
+fn itermap(_: &mut Globals, set: Rc<VMap>) -> NativeIterator {
+    let mut i = 0;
+    let len = set.reserved_entries_count();
+    NativeIterator::new(move |_, _| {
+        while i < len {
+            i += 1;
+            if let Some((key, val)) = set.get_pair_at_index(i - 1) {
+                return GeneratorResult::Yield(vec![key.clone(), val.clone()].into());
             }
         }
         GeneratorResult::Done(Value::Nil)

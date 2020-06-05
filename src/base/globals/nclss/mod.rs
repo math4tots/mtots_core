@@ -84,12 +84,20 @@ impl BuiltinClasses {
     pub fn list(&self) -> Vec<&Rc<Class>> {
         vec![
             &self.Object,
+            &self.Iterator,
+            &self.Iterable,
+            &self.Bool,
+            &self.Int,
+            &self.Float,
+            &self.Symbol,
             &self.String,
+            &self.Bytes,
             &self.Path,
             &self.List,
             &self.Table,
             &self.Set,
             &self.Map,
+            &self.Exception,
             &self.Class,
             &self.Module,
             &self.MutableString,
@@ -119,7 +127,7 @@ impl Globals {
         let Table = table::mkcls(symbol_registry, Object.clone());
         let Set = set::mkcls(symbol_registry, Iterable.clone());
         let Map = map::mkcls(symbol_registry, Iterable.clone());
-        let Exception = exc::mkcls(symbol_registry, Iterable.clone());
+        let Exception = exc::mkcls(symbol_registry, Object.clone());
         let NativeFunction = bf::mkcls(symbol_registry, Object.clone());
         let NativeClosure = nc::mkcls(symbol_registry, Object.clone());
         let Code = code::mkcls(symbol_registry, Object.clone());

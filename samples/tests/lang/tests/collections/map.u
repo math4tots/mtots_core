@@ -45,3 +45,11 @@ def __test_from_iterable() {
     map = [[1, 2], [3, 4]].iter().to(Map)
     assert_eq(map, [1: 2, 3: 4])
 }
+
+def __test_as_iterable() {
+    list = @[]
+    for [k, v] in [1: 2, 3: 4] {
+        list.push([k, v])
+    }
+    assert_eq(list.move(), [[1, 2], [3, 4]])
+}
