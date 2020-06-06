@@ -134,3 +134,16 @@ def __test_find() {
         'abcd ',
     )
 }
+
+
+def __test_join() {
+    assert_eq(''.join([]), '')
+    assert_eq('x'.join([]), '')
+    assert_eq(''.join(['a', 'bb', 'ccc']), 'abbccc')
+    assert_eq('x'.join(['a', 'bb', 'ccc']), 'axbbxccc')
+    assert_eq(''.join(['hi']), 'hi')
+    assert_eq('x'.join(['hi']), 'hi')
+    assert_eq('x'.join(['', 'a']), 'xa')
+    assert_eq('x'.join(['a', '']), 'ax')
+    assert_eq('x'.join(['', '']), 'x')
+}

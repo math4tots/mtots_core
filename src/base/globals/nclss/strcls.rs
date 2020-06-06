@@ -110,6 +110,19 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let pattern = Eval::expect_string(globals, &args[1])?;
             Ok(string.contains(pattern.str()).into())
         }),
+        NativeFunction::simple0(sr, "join", &["self", "parts"], |globals, args, _kwargs| {
+            let mut ret = String::new();
+            let sep = Eval::expect_string(globals, &args[0])?;
+            let mut first = true;
+            for part in Eval::iterable_to_vec(globals, &args[1])? {
+                if !first {
+                    ret.push_str(sep);
+                }
+                ret.push_str(Eval::expect_string(globals, &part)?);
+                first = false;
+            }
+            Ok(ret.into())
+        }),
         NativeFunction::snew(
             sr,
             "slice",
