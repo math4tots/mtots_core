@@ -335,7 +335,7 @@ impl<'a> ParserState<'a> {
         self.prec(self.peek().kind())
     }
 
-    fn block_ex(&mut self, nil_appended: bool) -> Result<Expression, ParseError> {
+    fn block_ex(&mut self, nil_appended: bool) -> Result<(Option<RcStr>, Expression), ParseError> {
         let (offset, lineno) = self.pos();
         self.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
         let mut exprs = Vec::new();
@@ -344,21 +344,29 @@ impl<'a> ParserState<'a> {
             exprs.push(self.stmt()?);
             self.expect_delim()?;
         }
+        let docstr = if let Some(ExpressionData::String(s)) = exprs.get(0).map(|e| e.data()) {
+            Some(s.clone())
+        } else {
+            None
+        };
         if nil_appended {
             exprs.push(Expression::new(offset, lineno, ExpressionData::Nil));
         }
-        Ok(Expression::new(
-            offset,
-            lineno,
-            ExpressionData::Block(exprs),
+        Ok((
+            docstr,
+            Expression::new(offset, lineno, ExpressionData::Block(exprs)),
         ))
     }
 
     fn block(&mut self) -> Result<Expression, ParseError> {
+        Ok(self.block_ex(false)?.1)
+    }
+
+    fn block_with_doc(&mut self) -> Result<(Option<RcStr>, Expression), ParseError> {
         self.block_ex(false)
     }
 
-    fn nil_appended_block(&mut self) -> Result<Expression, ParseError> {
+    fn nil_appended_block_with_doc(&mut self) -> Result<(Option<RcStr>, Expression), ParseError> {
         self.block_ex(true)
     }
 
@@ -807,15 +815,28 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 } else {
                     (vec![], vec![], None, None)
                 };
-            let body = if state.consume(TokenKind::Punctuator(Punctuator::Eq)) {
-                state.expr(0)?
+            let (doc, body) = if state.consume(TokenKind::Punctuator(Punctuator::Eq)) {
+                if state.peek() == Token::Punctuator(Punctuator::LBrace) {
+                    state.block_with_doc()?
+                } else {
+                    (None, state.expr(0)?)
+                }
             } else {
-                state.nil_appended_block()?
+                state.nil_appended_block_with_doc()?
             };
             Ok(Expression::new(
                 offset,
                 lineno,
-                ExpressionData::FunctionDisplay(is_generator, name, req, opt, var, kw, body.into()),
+                ExpressionData::FunctionDisplay(
+                    is_generator,
+                    name,
+                    req,
+                    opt,
+                    var,
+                    kw,
+                    doc,
+                    body.into(),
+                ),
             ))
         }),
         (&["except"], |state: &mut ParserState| {

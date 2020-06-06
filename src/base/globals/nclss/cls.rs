@@ -16,7 +16,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             |globals, args, _kwargs| {
                 let cls = Eval::expect_class(globals, &args[0])?;
                 Ok(cls.is_trait().into())
-            }
+            },
         ),
         NativeFunction::snew(
             sr,

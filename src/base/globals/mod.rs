@@ -395,7 +395,7 @@ impl Globals {
                 Ok(SourceItem::Native { body }) => {
                     let map = body(self)?;
                     let map = self.symbol_registry.translate_hmap(map);
-                    let module = Module::new(name.clone(), map);
+                    let module = Module::new(name.clone(), None, map);
                     self.module_registry.insert(name.clone(), module);
                 }
                 Ok(SourceItem::File { path, data }) => {

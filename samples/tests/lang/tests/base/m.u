@@ -1,0 +1,7 @@
+# For testing modules
+import ..mwd
+
+
+def __test_module_doc() {
+    assert_eq(mwd.doc(), 'Module with doc\nfor testing\n')
+}

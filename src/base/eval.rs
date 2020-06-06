@@ -10,6 +10,8 @@ use crate::Exception;
 use crate::ExceptionKind;
 use crate::FailableEq;
 use crate::FailableHash;
+use crate::Function;
+use crate::NativeFunction;
 use crate::GMap;
 use crate::GeneratorResult;
 use crate::Globals;
@@ -17,6 +19,7 @@ use crate::LexErrorKind;
 use crate::Module;
 use crate::NativeIterator;
 use crate::Operation;
+use crate::ParameterInfo;
 use crate::ParseErrorKind;
 use crate::RcPath;
 use crate::RcStr;
@@ -544,6 +547,28 @@ impl Eval {
             Ok(cls)
         } else {
             globals.set_kind_error(ValueKind::Class, value.kind())
+        }
+    }
+
+    pub fn expect_native_func<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a Rc<NativeFunction>> {
+        if let Value::NativeFunction(func) = value {
+            Ok(func)
+        } else {
+            globals.set_kind_error(ValueKind::NativeFunction, value.kind())
+        }
+    }
+
+    pub fn expect_func<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a Rc<Function>> {
+        if let Value::Function(func) = value {
+            Ok(func)
+        } else {
+            globals.set_kind_error(ValueKind::Function, value.kind())
         }
     }
 
@@ -1435,6 +1460,18 @@ impl Eval {
             ));
         }
         Ok(s)
+    }
+
+    pub fn parameter_info_to_value(_: &mut Globals, pi: &ParameterInfo) -> EvalResult<Value> {
+        let req: Vec<Value> = pi.required().iter().map(|s| Value::from(*s)).collect();
+        let opt: Vec<Value> = pi
+            .optional()
+            .iter()
+            .map(|(s, v)| Value::from(vec![Value::from(*s), v.clone()]))
+            .collect();
+        let var: Value = pi.variadic().clone().map(Value::from).unwrap_or(Value::Nil);
+        let kw: Value = pi.keywords().clone().map(Value::from).unwrap_or(Value::Nil);
+        Ok(vec![Value::from(req), Value::from(opt), var, kw].into())
     }
 }
 

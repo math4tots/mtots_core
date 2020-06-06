@@ -66,7 +66,13 @@ impl Lexer {
             if newlines > 0 {
                 lineno += newlines;
                 if let None | Some((Punctuator::LBrace, _, _)) = gstack.last() {
-                    add(&mut tokens, &mut pos_info, Token::Newline(newlines), pos, lineno);
+                    add(
+                        &mut tokens,
+                        &mut pos_info,
+                        Token::Newline(newlines),
+                        pos,
+                        lineno,
+                    );
                 }
             }
             incr(&mut s, &mut pos, dp);
@@ -411,7 +417,10 @@ mod tests {
     fn one_of_each() {
         let lexer = Lexer::new();
 
-        assert_eq!(lex(&lexer, "\n").unwrap(), vec![Token::Newline(1), Token::EOF],);
+        assert_eq!(
+            lex(&lexer, "\n").unwrap(),
+            vec![Token::Newline(1), Token::EOF],
+        );
 
         assert_eq!(
             lex(&lexer, "\n\n").unwrap(),

@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token<'a> {
-    Newline(usize),  // number of newlines in this newline
+    Newline(usize), // number of newlines in this newline
     NormalString(&'a str),
     RawString(&'a str),
     LineString(&'a str),

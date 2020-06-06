@@ -83,7 +83,16 @@ pub fn compile(
     name: RcStr,
     expr: &Expression,
 ) -> Result<Code, CompileError> {
-    let mut builder = CodeBuilder::for_module(symbol_registry, name.clone());
+    let doc = if let ExpressionData::Block(exprs) = expr.data() {
+        if let Some(ExpressionData::String(s)) = exprs.get(0).map(|e| e.data()) {
+            Some(s.clone())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    let mut builder = CodeBuilder::for_module(symbol_registry, name.clone(), doc);
     let result = (|| -> Result<Code, Error> {
         rec(&mut builder, expr, true)?;
         Ok(builder.build()?)
@@ -405,7 +414,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 builder.pop();
             }
         }
-        ExpressionData::FunctionDisplay(is_generator, short_name, req, opt, var, kw, body) => {
+        ExpressionData::FunctionDisplay(is_generator, short_name, req, opt, var, kw, doc, body) => {
             let sr = builder.symbol_registry().clone();
             let short_name = match short_name {
                 Some(short_name) => short_name.clone(),
@@ -431,6 +440,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                     builder.module_name().clone(),
                     full_func_name.into(),
                     lineno,
+                    doc.clone(),
                 )
             } else {
                 CodeBuilder::for_func(
@@ -439,6 +449,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                     builder.module_name().clone(),
                     full_func_name.into(),
                     lineno,
+                    doc.clone(),
                 )
             };
             rec(&mut func_builder, body, true)?;

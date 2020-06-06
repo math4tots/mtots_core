@@ -101,7 +101,7 @@ mod tests {
 
         let mut globals = Globals::new();
         let mut builder =
-            CodeBuilder::for_module(globals.symbol_registry().clone(), "<test>".into());
+            CodeBuilder::for_module(globals.symbol_registry().clone(), "<test>".into(), None);
         let message: RcStr = "hello world!".into();
 
         builder.load_const(message.clone());

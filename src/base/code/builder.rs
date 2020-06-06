@@ -81,6 +81,7 @@ pub struct CodeBuilder {
     constmap: HashMap<ConstValue, usize>,
     label_count: usize,
     current_lineno: usize,
+    doc: Option<RcStr>,
 }
 
 pub type CodeBuilderResult<T> = Result<T, CodeBuilderError>;
@@ -94,6 +95,7 @@ impl CodeBuilder {
         module_name: RcStr,
         full_name: RcStr,
         lineno: usize,
+        doc: Option<RcStr>,
     ) -> CodeBuilder {
         let mut cb = CodeBuilder {
             symbol_registry,
@@ -110,6 +112,7 @@ impl CodeBuilder {
             constmap: HashMap::new(),
             label_count: 0,
             current_lineno: lineno,
+            doc,
         };
         // If the outermost expression is not a block,
         // there might not be an explicit lineno marker
@@ -136,7 +139,11 @@ impl CodeBuilder {
         &self.full_name
     }
 
-    pub fn for_module(symbol_registry: SymbolRegistryHandle, name: RcStr) -> CodeBuilder {
+    pub fn for_module(
+        symbol_registry: SymbolRegistryHandle,
+        name: RcStr,
+        doc: Option<RcStr>,
+    ) -> CodeBuilder {
         Self::new(
             symbol_registry,
             CodeKind::Module,
@@ -144,6 +151,7 @@ impl CodeBuilder {
             name.clone(),
             name,
             1,
+            doc,
         )
     }
 
@@ -153,6 +161,7 @@ impl CodeBuilder {
         module_name: RcStr,
         full_name: RcStr,
         lineno: usize,
+        doc: Option<RcStr>,
     ) -> CodeBuilder {
         Self::new(
             symbol_registry,
@@ -161,6 +170,7 @@ impl CodeBuilder {
             module_name,
             full_name,
             lineno,
+            doc,
         )
     }
 
@@ -170,6 +180,7 @@ impl CodeBuilder {
         module_name: RcStr,
         full_name: RcStr,
         lineno: usize,
+        doc: Option<RcStr>,
     ) -> CodeBuilder {
         Self::new(
             symbol_registry,
@@ -178,6 +189,7 @@ impl CodeBuilder {
             module_name,
             full_name,
             lineno,
+            doc,
         )
     }
 
@@ -796,6 +808,7 @@ impl CodeBuilder {
             short_name: short_name,
             lineno: self.lineno,
             lnotab,
+            doc: self.doc,
         })
     }
 }

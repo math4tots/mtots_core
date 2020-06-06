@@ -67,6 +67,8 @@ pub struct Code {
     module_name: RcStr,          // name of the module this code object is from
     lineno: usize,               // line in the file that this code object starts
     lnotab: Vec<(usize, usize)>, // line number table containing (opcode-offset, lineno) pairs
+
+    doc: Option<RcStr>,
 }
 
 impl fmt::Debug for Code {
@@ -176,6 +178,10 @@ impl Code {
         }
     }
 
+    pub fn parameter_info(&self) -> &ParameterInfo {
+        &self.parameter_info
+    }
+
     pub fn assign_args(
         &self,
         frame: &mut Frame,
@@ -235,6 +241,10 @@ impl Code {
         }
         assert_eq!(frame.stack.len(), 1);
         GeneratorResult::Done(frame.stack.pop().unwrap())
+    }
+
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
 
     pub fn debugstr(&self) -> String {
@@ -418,7 +428,7 @@ impl Frame {
         }
 
         let frame = Self::new(code.locals.len(), cellvars);
-        let module = Module::new(code.full_name.clone(), module_map);
+        let module = Module::new(code.full_name.clone(), code.doc().clone(), module_map);
         Ok((frame, module))
     }
 }

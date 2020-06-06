@@ -69,10 +69,12 @@ impl Expression {
             ExpressionData::MethodCall(owner, _, arglist) => {
                 join_mut_refs(vec![vec![&mut *owner], arglist.children_mut()])
             }
-            ExpressionData::FunctionDisplay(_, _, _, defparams, _, _, body) => join_mut_refs(vec![
-                defparams.iter_mut().map(|(_, e)| e).collect(),
-                vec![&mut *body],
-            ]),
+            ExpressionData::FunctionDisplay(_, _, _, defparams, _, _, _, body) => {
+                join_mut_refs(vec![
+                    defparams.iter_mut().map(|(_, e)| e).collect(),
+                    vec![&mut *body],
+                ])
+            }
             ExpressionData::ClassDisplay(_, _, bases, _, _, methods, static_methods) => {
                 join_mut_refs(vec![
                     exprs2mutrefs(bases),
@@ -306,6 +308,7 @@ pub enum ExpressionData {
         Vec<(RcStr, Expression)>, // optional params
         Option<RcStr>,            // variadic param
         Option<RcStr>,            // keywords param
+        Option<RcStr>,            // doc
         Box<Expression>,          // body
     ),
     ClassDisplay(

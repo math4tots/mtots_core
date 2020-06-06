@@ -809,6 +809,7 @@ pub type NativeFunctionBody =
 pub struct NativeFunction {
     name: RcStr,
     parameter_info: ParameterInfo,
+    doc: Option<RcStr>,
     body: NativeFunctionBody,
 }
 impl From<NativeFunction> for Value {
@@ -825,11 +826,13 @@ impl NativeFunction {
     pub fn new(
         name: RcStr,
         parameter_info: ParameterInfo,
+        doc: Option<RcStr>,
         body: NativeFunctionBody,
     ) -> NativeFunction {
         NativeFunction {
             name,
             parameter_info,
+            doc,
             body,
         }
     }
@@ -848,6 +851,7 @@ impl NativeFunction {
                 parameter_info.2,
                 parameter_info.3,
             ),
+            None,
             body,
         )
     }
@@ -864,11 +868,18 @@ impl NativeFunction {
         Self::new(
             name.into(),
             ParameterInfo::new(params, vec![], None, None),
+            None,
             body,
         )
     }
     pub fn name(&self) -> &RcStr {
         &self.name
+    }
+    pub fn parameter_info(&self) -> &ParameterInfo {
+        &self.parameter_info
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn apply_with_kwargs(
         &self,
@@ -953,6 +964,12 @@ impl Function {
     }
     pub fn name(&self) -> &RcStr {
         self.code.short_name()
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        self.code.doc()
+    }
+    pub fn parameter_info(&self) -> &ParameterInfo {
+        self.code.parameter_info()
     }
     pub fn apply_with_kwargs(
         &self,
@@ -1262,15 +1279,24 @@ impl GeneratorObject {
 
 pub struct Module {
     name: RcStr,
+    doc: Option<RcStr>,
     map: HMap<Symbol, Rc<RefCell<Value>>>,
 }
 impl Module {
-    pub fn new(name: RcStr, map: HMap<Symbol, Rc<RefCell<Value>>>) -> Rc<Module> {
-        Module { name, map }.into()
+    pub fn new(
+        name: RcStr,
+        doc: Option<RcStr>,
+        map: HMap<Symbol, Rc<RefCell<Value>>>,
+    ) -> Rc<Module> {
+        Module { name, doc, map }.into()
     }
 
     pub fn name(&self) -> &RcStr {
         &self.name
+    }
+
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
 
     pub fn map(&mut self) -> &HMap<Symbol, Rc<RefCell<Value>>> {
