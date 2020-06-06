@@ -1,6 +1,5 @@
 /// Opcodes inspired by https://docs.python.org/3/library/dis.html
 use super::VariableLocation;
-use crate::Binop;
 use crate::Class;
 use crate::ClassKind;
 use crate::Code;
@@ -11,7 +10,6 @@ use crate::ExceptionKind;
 use crate::Frame;
 use crate::Function;
 use crate::Globals;
-use crate::Operation;
 use crate::RcStr;
 use crate::Table;
 use crate::VMap;
@@ -243,24 +241,6 @@ impl OpcodeInfo {
     pub fn branches_func(&self) -> fn(&[usize], usize) -> Vec<(usize, usize, usize)> {
         self.branches
     }
-}
-
-macro_rules! defbinop {
-    (
-        $lineno:ident, $globals:ident, $code:ident, $frame:ident, $op:ident, $( $pat:pat => $val:expr , )*
-    ) => {
-        let rhs = $frame.stack.pop().unwrap();
-        let lhs = $frame.stack.pop().unwrap();
-        $frame.stack.push(match (&lhs, &rhs) {
-            $( $pat => $val , )*
-            _ => {
-                $globals.trace_push($code.module_name.clone(), $lineno);
-                return $globals.set_exc_legacy(EvalError::OperationNotSupportedForKinds(
-                    Operation::Binop(Binop::$op),
-                    vec![lhs.kind(), rhs.kind()]))?;
-            }
-        });
-    };
 }
 
 define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC = ARGC, ;
@@ -572,15 +552,9 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
     }
 
     BINARY_POWER(lineno: LineNumber) [+ 2 1] {
-        defbinop! { lineno, globals, code, frame, Pow,
-            (Value::Int(a), Value::Int(b)) => {
-                if *b >= 0 && *b <= (std::u32::MAX as i64) {
-                    Value::Int(a.pow(*b as u32))
-                } else {
-                    Value::Float((*a as f64).powf(*b as f64))
-                }
-            },
-        }
+        let rhs = frame.stack.pop().unwrap();
+        let lhs = frame.stack.pop().unwrap();
+        frame.stack.push(Eval::pow0(globals, lhs, rhs, Some((code, lineno)))?);
     }
     BINARY_ADD(lineno: LineNumber) [+ 2 1] {
         let rhs = frame.stack.pop().unwrap();

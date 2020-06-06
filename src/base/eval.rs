@@ -841,6 +841,31 @@ impl Eval {
         })
     }
 
+    pub fn pow(globals: &mut Globals, a: Value, b: Value) -> EvalResult<Value> {
+        Self::pow0(globals, a, b, None)
+    }
+    #[inline(always)]
+    pub fn pow0(
+        globals: &mut Globals,
+        a: Value,
+        b: Value,
+        debuginfo: Option<(&Code, usize)>,
+    ) -> EvalResult<Value> {
+        Ok(match (a, b) {
+            (Value::Int(a), Value::Int(b)) => {
+                if b >= 0 && b <= (std::u32::MAX as i64) {
+                    Value::Int(a.pow(b as u32))
+                } else {
+                    Value::Float((a as f64).powf(b as f64))
+                }
+            },
+            (Value::Float(a), Value::Float(b)) => Value::Float(a.powf(b)),
+            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64).powf(b)),
+            (Value::Float(a), Value::Int(b)) => Value::Float(a.powf(b as f64)),
+            (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "**", vec![&a, &b]),
+        })
+    }
+
     // 'add' accepts values rather than references because adding various
     // kinds of values (e.g. String, List, Table) can potentially be optimized
     // if the given value holds the sole reference

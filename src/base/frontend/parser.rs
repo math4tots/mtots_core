@@ -1112,7 +1112,7 @@ fn geninfix() -> (
         &[(&["="], |state, lhs, prec| {
             let (offset, lineno) = state.pos();
             state.gettok();
-            let rhs = state.expr(prec)?;
+            let rhs = state.expr(prec - 1)?;
             Ok(Expression::new(
                 offset,
                 lineno,
@@ -1183,7 +1183,7 @@ fn geninfix() -> (
             }),
         ],
         &[(&["**"], |state, lhs, prec| {
-            mkbinop(state, lhs, prec, Binop::Pow)
+            mkbinop(state, lhs, prec - 1, Binop::Pow)
         })],
         &[
             (&["["], |state, lhs, _prec| {
