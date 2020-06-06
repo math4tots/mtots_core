@@ -2,3 +2,8 @@
 # for testing
 
 # Not included in module doc
+
+
+var = 'hi'
+# Some variable in the module
+

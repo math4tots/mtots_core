@@ -5,3 +5,7 @@ import ..mwd
 def __test_module_doc() {
     assert_eq(mwd.doc(), 'Module with doc\nfor testing\n')
 }
+
+def __test_module_vars() {
+    assert_eq(mwd::var, 'hi')
+}
