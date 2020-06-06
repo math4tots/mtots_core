@@ -183,6 +183,10 @@ impl<'a> ParserState<'a> {
         Ok(self.expect(TokenKind::Name)?.name().unwrap())
     }
 
+    fn expect_symbol(&mut self) -> Result<&'a str, ParseError> {
+        Ok(self.expect(TokenKind::Symbol)?.symbol().unwrap())
+    }
+
     fn consume_docstring(&mut self) -> Option<RcStr> {
         if self.at_string() {
             Some(self.expect_string().unwrap())
@@ -195,7 +199,7 @@ impl<'a> ParserState<'a> {
         if self.consume(TokenKind::Punctuator(Punctuator::LBracket)) {
             let mut fields = Vec::new();
             while !self.consume(TokenKind::Punctuator(Punctuator::RBracket)) {
-                fields.push(self.expect_symbol()?);
+                fields.push(self.expect_name_as_symbol()?);
                 if !self.consume(TokenKind::Punctuator(Punctuator::Comma)) {
                     self.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
                     break;
@@ -208,8 +212,13 @@ impl<'a> ParserState<'a> {
         }
     }
 
-    fn expect_symbol(&mut self) -> Result<Symbol, ParseError> {
+    fn expect_name_as_symbol(&mut self) -> Result<Symbol, ParseError> {
         let rcstr: RcStr = self.expect_name()?.into();
+        Ok(self.symbol_registry.intern_rcstr(&rcstr))
+    }
+
+    fn expect_symbol_as_symbol(&mut self) -> Result<Symbol, ParseError> {
+        let rcstr: RcStr = self.expect_symbol()?.into();
         Ok(self.symbol_registry.intern_rcstr(&rcstr))
     }
 
@@ -627,10 +636,9 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
             let value = state.peek().float().unwrap();
             mk1tokexpr(state, ExpressionData::Float(value))
         }),
-        (&[":"], |state: &mut ParserState| {
+        (&["Symbol"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
-            state.gettok();
-            let symbol = state.expect_symbol()?;
+            let symbol = state.expect_symbol_as_symbol()?;
             Ok(Expression::new(
                 offset,
                 lineno,

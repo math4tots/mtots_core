@@ -1,2 +1,3 @@
 print(__name)
 print(__file)
+print(:한글)

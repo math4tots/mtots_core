@@ -9,6 +9,7 @@ pub enum Token<'a> {
     Float(f64),
     Int(i64),
     Name(&'a str),
+    Symbol(&'a str),
     Punctuator(Punctuator),
     EOF,
 }
@@ -23,6 +24,7 @@ impl<'a> Token<'a> {
             Token::Float(_) => TokenKind::Float,
             Token::Int(_) => TokenKind::Int,
             Token::Name(_) => TokenKind::Name,
+            Token::Symbol(_) => TokenKind::Symbol,
             Token::Punctuator(punctuator) => TokenKind::Punctuator(*punctuator),
             Token::EOF => TokenKind::EOF,
         }
@@ -76,6 +78,14 @@ impl<'a> Token<'a> {
         }
     }
 
+    pub fn symbol(&self) -> Option<&'a str> {
+        if let Token::Symbol(symbol) = self {
+            Some(symbol)
+        } else {
+            None
+        }
+    }
+
     pub fn punctuator(&self) -> Option<Punctuator> {
         if let Token::Punctuator(punctuator) = self {
             Some(*punctuator)
@@ -94,12 +104,13 @@ pub enum TokenKind {
     Float,
     Int,
     Name,
+    Symbol,
     EOF,
     Punctuator(Punctuator),
 }
 
 impl TokenKind {
-    pub const LEN: usize = 8 + Punctuator::LIST.len();
+    pub const LEN: usize = 9 + Punctuator::LIST.len();
 
     pub fn id(&self) -> usize {
         match self {
@@ -110,8 +121,9 @@ impl TokenKind {
             TokenKind::Float => 4,
             TokenKind::Int => 5,
             TokenKind::Name => 6,
-            TokenKind::EOF => 7,
-            TokenKind::Punctuator(punctuator) => 8 + (*punctuator as usize),
+            TokenKind::Symbol => 7,
+            TokenKind::EOF => 8,
+            TokenKind::Punctuator(punctuator) => 9 + (*punctuator as usize),
         }
     }
 
@@ -124,6 +136,7 @@ impl TokenKind {
             TokenKind::Float => "Float",
             TokenKind::Int => "Int",
             TokenKind::Name => "Name",
+            TokenKind::Symbol => "Symbol",
             TokenKind::EOF => "EOF",
             TokenKind::Punctuator(punctuator) => punctuator.str(),
         }
@@ -138,6 +151,7 @@ impl TokenKind {
             "Float" => TokenKind::Float,
             "Int" => TokenKind::Int,
             "Name" => TokenKind::Name,
+            "Symbol" => TokenKind::Symbol,
             "EOF" => TokenKind::EOF,
             _ => TokenKind::Punctuator(Punctuator::from_str(s)?),
         })
