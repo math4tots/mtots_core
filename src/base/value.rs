@@ -997,7 +997,11 @@ pub struct Class {
 }
 impl fmt::Debug for Class {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<class {}>", self.full_name)
+        let kind = match self.kind {
+            ClassKind::Trait => "trait",
+            ClassKind::NativeClass | ClassKind::UserDefinedClass => "class",
+        };
+        write!(f, "<{} {}>", kind, self.full_name)
     }
 }
 impl Class {
