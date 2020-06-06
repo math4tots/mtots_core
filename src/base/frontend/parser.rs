@@ -1109,16 +1109,37 @@ fn geninfix() -> (
         &[&str],
         fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>,
     )]] = &[
-        &[(&["="], |state, lhs, prec| {
-            let (offset, lineno) = state.pos();
-            state.gettok();
-            let rhs = state.expr(prec - 1)?;
-            Ok(Expression::new(
-                offset,
-                lineno,
-                ExpressionData::Assign(lhs.into(), rhs.into()),
-            ))
-        })],
+        &[
+            (&["="], |state, lhs, prec| {
+                let (offset, lineno) = state.pos();
+                state.gettok();
+                let rhs = state.expr(prec - 1)?;
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::Assign(lhs.into(), rhs.into()),
+                ))
+            }),
+            (&["+=", "-=", "*=", "/=", "//=", "%=", "**="], |state, lhs, prec| {
+                let (offset, lineno) = state.pos();
+                let op = match state.gettok() {
+                    Token::Punctuator(Punctuator::PlusEq) => Binop::Add,
+                    Token::Punctuator(Punctuator::MinusEq) => Binop::Sub,
+                    Token::Punctuator(Punctuator::StarEq) => Binop::Mul,
+                    Token::Punctuator(Punctuator::SlashEq) => Binop::Div,
+                    Token::Punctuator(Punctuator::DoubleSlashEq) => Binop::TruncDiv,
+                    Token::Punctuator(Punctuator::RemEq) => Binop::Rem,
+                    Token::Punctuator(Punctuator::Star2Eq) => Binop::Pow,
+                    tok => panic!("Unhandled augassign binop {:?}", tok),
+                };
+                let rhs = state.expr(prec - 1)?;
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::AugAssign(lhs.into(), op, rhs.into()),
+                ))
+            }),
+        ],
         &[(&["or"], |state, lhs, prec| {
             mkbinop(state, lhs, prec, Binop::Or)
         })],

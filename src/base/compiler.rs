@@ -32,6 +32,7 @@ impl CompileError {
 #[derive(Debug)]
 pub enum CompileErrorKind {
     InvalidAssignmentTarget(ExpressionKind),
+    InvalidAugmentedAssignmentTarget(ExpressionKind),
     ExpectedConstantExpression(ExpressionKind),
     ImportError {
         start_module_name: RcStr,
@@ -44,6 +45,9 @@ impl fmt::Display for CompileErrorKind {
         match self {
             CompileErrorKind::InvalidAssignmentTarget(target_kind) => {
                 write!(f, "{:?} is not assignable", target_kind)?;
+            }
+            CompileErrorKind::InvalidAugmentedAssignmentTarget(target_kind) => {
+                write!(f, "{:?} is not augmented-assignable", target_kind)?;
             }
             CompileErrorKind::ExpectedConstantExpression(kind) => {
                 write!(f, "Expected a constant expression but got {:?}", kind)?;
@@ -236,6 +240,13 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 builder.dup_top();
             }
             assign(builder, target)?;
+        }
+        ExpressionData::AugAssign(target, op, expr) => {
+            // You'll notice that the RHS gets evaluated first
+            // even though the LHS appears first in the source text.
+            // But Python also behaves this way, so I'm gonna say this is OK.
+            rec(builder, expr, true)?;
+            augassign(builder, target, *op, used)?;
         }
         ExpressionData::AssignWithDoc(assign, name, doc) => {
             if let CodeKind::Module = builder.kind() {
@@ -676,6 +687,33 @@ fn assign(builder: &mut CodeBuilder, target: &Expression) -> Result<(), Error> {
             return Err(Error::new(
                 target.lineno(),
                 CompileErrorKind::InvalidAssignmentTarget(target.kind()),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn augassign(builder: &mut CodeBuilder, target: &Expression, op: Binop, used: bool) -> Result<(), Error> {
+    // NOTES:
+    //   * TODO: aug-assign for subscript,
+    //   * aug-assign for attributes are not implemented on purpose because
+    //     it'd be difficult to test, because currently, there are no types
+    //     that permit mutable fields. In this vein, I probably should remove
+    //     the logic for normal-assign of attributes.
+    match target.data() {
+        ExpressionData::Name(name) => {
+            builder.load_var(name.clone());
+            builder.rot_two();
+            builder.binop(op);
+            if used {
+                builder.dup_top();
+            }
+            builder.store_var(name.clone());
+        }
+        _ => {
+            return Err(Error::new(
+                target.lineno(),
+                CompileErrorKind::InvalidAugmentedAssignmentTarget(target.kind()),
             ));
         }
     }
