@@ -15,18 +15,48 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let keys: Vec<_> = m.keys().map(|s| Value::from(*s)).collect();
             Ok(keys.into())
         }),
-        NativeFunction::simple0(sr, "get", &["self", "key"], |globals, args, _kwargs| {
-            let key = Eval::expect_symbollike(globals, &args[1])?;
-            Eval::get_static_attr_or_err(globals, &args[0], key)
-        }),
-        NativeFunction::simple0(sr, "doc", &["self"], |globals, args, _kwargs| {
-            let m = Eval::expect_module(globals, &args[0])?;
-            let doc = m.doc();
-            match doc {
-                Some(doc) => Ok(doc.clone().into()),
-                None => Ok(Value::Nil),
-            }
-        }),
+        NativeFunction::snew(
+            sr,
+            "get",
+            (
+                &["self", "key"],
+                &[("default", Value::Uninitialized)],
+                None,
+                None,
+            ),
+            |globals, args, _kwargs| {
+                let key = Eval::expect_symbollike(globals, &args[1])?;
+                if let Value::Uninitialized = &args[2] {
+                    Eval::get_static_attr_or_err(globals, &args[0], key)
+                } else {
+                    match Eval::get_static_attr(globals, &args[0], key) {
+                        Some(value) => Ok(value),
+                        None => Ok(args[2].clone()),
+                    }
+                }
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "doc",
+            (&["self"], &[("key", Value::Uninitialized)], None, None),
+            |globals, args, _kwargs| {
+                let m = Eval::expect_module(globals, &args[0])?;
+                if let Value::Uninitialized = &args[1] {
+                    let doc = m.doc();
+                    match doc {
+                        Some(doc) => Ok(doc.clone().into()),
+                        None => Ok(Value::Nil),
+                    }
+                } else {
+                    let key = Eval::expect_symbol(globals, &args[1])?;
+                    match m.member_doc(globals, key)? {
+                        Some(doc) => Ok(doc.clone().into()),
+                        None => Ok(Value::Nil),
+                    }
+                }
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

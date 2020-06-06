@@ -21,6 +21,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let pi = func.parameter_info();
             Eval::parameter_info_to_value(globals, pi)
         }),
+        NativeFunction::simple0(sr, "__asm_str", &["self"], |globals, args, _kwargs| {
+            let func = Eval::expect_func(globals, &args[0])?;
+            Ok(func.disasm_str().into())
+        }),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

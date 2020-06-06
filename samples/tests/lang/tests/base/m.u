@@ -4,8 +4,29 @@ import ..mwd
 
 def __test_module_doc() {
     assert_eq(mwd.doc(), 'Module with doc\nfor testing\n')
+
+    # Variable docs are available for
+    assert_eq(mwd.doc(:var), 'Some variable in the module\n')
+    assert_eq(mwd::__doc_var, mwd.doc(:var))
+
+    assert_eq(mwd.doc(:func_with_doc), 'Some docs\n')
+    assert_raises(RuntimeError, def = mwd.get(:__doc_func_with_doc))
+    assert_eq(mwd.get(:__doc_func_with_doc, nil), nil)
+
+    # Of course in the assembly of func_with_var_doc, the variable 'foo'
+    # should be mentioned
+    assert(func_with_var_doc.__asm_str().find('foo') is not nil)
+
+    # But the doc variable should never actually be assigned
+    # (doc variables should only appear at the module level)
+    assert_eq(func_with_var_doc.__asm_str().find('__doc_foo'), nil)
 }
 
 def __test_module_vars() {
     assert_eq(mwd::var, 'hi')
+}
+
+def func_with_var_doc(x) {
+    foo = x + 1
+        # This is some doc for foo
 }

@@ -46,6 +46,7 @@ impl Expression {
             ExpressionData::MutableListDisplay(ref mut exprs) => exprs2mutrefs(exprs),
             ExpressionData::MutableMapDisplay(ref mut pairs) => pairs2mutrefs(pairs),
             ExpressionData::Assign(target, expr) => vec![&mut *target, &mut *expr],
+            ExpressionData::AssignWithDoc(assign, _, _) => vec![&mut *assign],
             ExpressionData::If(pairs, other) => join_mut_refs(vec![
                 pairs
                     .iter_mut()
@@ -117,6 +118,7 @@ impl Expression {
             ExpressionData::MutableListDisplay(..) => ExpressionKind::MutableListDisplay,
             ExpressionData::MutableMapDisplay(..) => ExpressionKind::MutableMapDisplay,
             ExpressionData::Assign(..) => ExpressionKind::Assign,
+            ExpressionData::AssignWithDoc(..) => ExpressionKind::AssignWithDoc,
             ExpressionData::If(..) => ExpressionKind::If,
             ExpressionData::For(..) => ExpressionKind::For,
             ExpressionData::While(..) => ExpressionKind::While,
@@ -281,6 +283,11 @@ pub enum ExpressionData {
     MutableListDisplay(Vec<Expression>),
     MutableMapDisplay(Vec<(Expression, Expression)>),
     Assign(Box<Expression>, Box<Expression>),
+    AssignWithDoc(
+        Box<Expression>, // Assign expression
+        RcStr,           // variable name
+        RcStr,           // doc
+    ),
     If(
         Vec<(
             Expression, // condition
@@ -354,6 +361,7 @@ pub enum ExpressionKind {
     MutableListDisplay,
     MutableMapDisplay,
     Assign,
+    AssignWithDoc,
     If,
     For,
     While,

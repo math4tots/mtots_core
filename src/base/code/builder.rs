@@ -123,6 +123,10 @@ impl CodeBuilder {
         cb
     }
 
+    pub fn kind(&self) -> CodeKind {
+        self.kind
+    }
+
     pub fn symbol_registry(&self) -> &SymbolRegistryHandle {
         &self.symbol_registry
     }

@@ -25,6 +25,7 @@ use std::rc::Rc;
 pub use builder::CodeBuilder;
 pub use builder::CodeBuilderError;
 
+#[derive(Clone, Copy)]
 pub enum CodeKind {
     Module,
     Function,

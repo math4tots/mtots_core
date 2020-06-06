@@ -979,6 +979,9 @@ impl Function {
     pub fn doc(&self) -> &Option<RcStr> {
         self.code.doc()
     }
+    pub fn disasm_str(&self) -> String {
+        self.code.debugstr0()
+    }
     pub fn parameter_info(&self) -> &ParameterInfo {
         self.code.parameter_info()
     }
@@ -1308,6 +1311,24 @@ impl Module {
 
     pub fn doc(&self) -> &Option<RcStr> {
         &self.doc
+    }
+
+    /// Looks up the documentation associated with a specific Module member.
+    /// If the __doc_XX field is available, that will be returned,
+    /// otherwise, if the value itself is a function or class, the documentation
+    /// associated with the function or class with be returned
+    pub fn member_doc(&self, globals: &mut Globals, name: Symbol) -> EvalResult<Option<RcStr>> {
+        let doc_name = globals.intern_str(&format!("__doc_{}", name));
+        if let Some(doc) = self.get(&doc_name) {
+            let doc = crate::Eval::expect_string(globals, &doc)?.clone();
+            Ok(Some(doc))
+        } else {
+            match self.get(&name) {
+                Some(Value::Function(f)) => Ok(f.doc().clone()),
+                Some(Value::Class(cls)) => Ok(cls.doc().clone()),
+                _ => Ok(None),
+            }
+        }
     }
 
     pub fn map(&mut self) -> &HMap<Symbol, Rc<RefCell<Value>>> {

@@ -7,3 +7,8 @@
 var = 'hi'
     # Some variable in the module
 
+
+def func_with_doc(x) {
+    # Some docs
+    10 * x
+}

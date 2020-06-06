@@ -384,12 +384,50 @@ impl<'a> ParserState<'a> {
     /// will automatically be assigned to a variable of the same name
     fn stmt(&mut self) -> Result<Expression, ParseError> {
         let expr = self.expr(0)?;
+
+        // If we see an assignment followed by a '#' string on the next line,
+        // we assume that the string is meant to be a doc for the assignment
+        if let Some(name) = Self::get_assign_name(&expr) {
+            if let Some(doc) = self.followup_doc()? {
+                let offset = expr.offset();
+                let lineno = expr.lineno();
+                return Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::AssignWithDoc(expr.into(), name, doc),
+                ));
+            }
+        }
+
         Ok(match expr.data() {
             ExpressionData::FunctionDisplay(_, Some(name), ..) => assign_name(name.clone(), expr),
             ExpressionData::ClassDisplay(_, name, ..) => assign_name(name.clone(), expr),
             ExpressionData::ExceptionKindDisplay(name, ..) => assign_name(name.clone(), expr),
             _ => expr,
         })
+    }
+
+    fn get_assign_name(expr: &Expression) -> Option<RcStr> {
+        if let ExpressionData::Assign(target, _) = expr.data() {
+            if let ExpressionData::Name(name) = target.data() {
+                return Some(name.clone());
+            }
+        }
+        None
+    }
+
+    fn followup_doc(&mut self) -> Result<Option<RcStr>, ParseError> {
+        if self.peek() == Token::Newline(1)
+            && self
+                .peek1()
+                .map(|t| t.line_string().is_some())
+                .unwrap_or(false)
+        {
+            self.expect(TokenKind::Newline)?;
+            Ok(Some(self.expect_string()?))
+        } else {
+            Ok(None)
+        }
     }
 
     fn prefix(&mut self) -> Result<Expression, ParseError> {

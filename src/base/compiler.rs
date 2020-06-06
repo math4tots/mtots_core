@@ -3,6 +3,7 @@ use crate::Binop;
 use crate::Code;
 use crate::CodeBuilder;
 use crate::CodeBuilderError;
+use crate::CodeKind;
 use crate::ConstValue;
 use crate::Expression;
 use crate::ExpressionData;
@@ -235,6 +236,14 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 builder.dup_top();
             }
             assign(builder, target)?;
+        }
+        ExpressionData::AssignWithDoc(assign, name, doc) => {
+            if let CodeKind::Module = builder.kind() {
+                let doc_name: RcStr = format!("__doc_{}", name).into();
+                builder.load_const(doc.clone());
+                builder.store_var(doc_name.clone());
+            }
+            rec(builder, assign, used)?;
         }
         ExpressionData::If(pairs, other) => {
             let end = builder.new_label();
