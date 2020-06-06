@@ -11,6 +11,15 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::snew(
             sr,
+            "is_trait",
+            (&["self"], &[], None, None),
+            |globals, args, _kwargs| {
+                let cls = Eval::expect_class(globals, &args[0])?;
+                Ok(cls.is_trait().into())
+            }
+        ),
+        NativeFunction::snew(
+            sr,
             "get_method",
             (
                 &["self", "name"],

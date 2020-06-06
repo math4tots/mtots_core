@@ -37,3 +37,11 @@ def __test_str() {
     class AnotherClass {}
     assert_eq(str(AnotherClass), '<class lang.tests.cls.b::AnotherClass>')
 }
+
+
+def __test_is_trait() {
+    assert(Object.is_trait())
+    assert(!String.is_trait())
+    assert(SomeTrait.is_trait())
+    assert(!SomeClass.is_trait())
+}
