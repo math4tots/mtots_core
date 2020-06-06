@@ -78,6 +78,28 @@ impl Lexer {
             let c = chars.next().unwrap();
             let c2 = chars.next();
 
+            // line/comment-style raw string literals
+            if c == '#' {
+                // Skip the '#'
+                incr(&mut s, &mut pos, 1);
+
+                // Allow the string to start with a ' ' to
+                // make it look nicer
+                if c2 == Some(' ') {
+                    incr(&mut s, &mut pos, 1);
+                }
+                let len = s.find('\n').unwrap_or(s.len());
+                add(
+                    &mut tokens,
+                    &mut pos_info,
+                    Token::LineString(&s[..len]),
+                    pos,
+                    lineno,
+                );
+                incr(&mut s, &mut pos, len);
+                continue;
+            }
+
             // rust-style raw string literals
             if c == 'r' && c2 == Some('#') {
                 // match the 'r##..#' part

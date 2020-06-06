@@ -35,6 +35,9 @@ pub enum ParseErrorKind {
     ExpectedDelimiter {
         but_got: TokenKind,
     },
+    ExpectedString {
+        but_got: TokenKind,
+    },
     InvalidParameterOrder {
         parameter_kind: ParameterKind,
         cannot_come_after: ParameterKind,
@@ -177,11 +180,8 @@ impl<'a> ParserState<'a> {
     }
 
     fn consume_docstring(&mut self) -> Option<RcStr> {
-        if self.peek().kind() == TokenKind::RawString {
-            match self.gettok() {
-                Token::RawString(s) => Some(s.into()),
-                _ => panic!("Checked for RawString (consume_docstring)"),
-            }
+        if self.at_string() {
+            Some(self.expect_string().unwrap())
         } else {
             None
         }
@@ -240,6 +240,65 @@ impl<'a> ParserState<'a> {
     fn skip_delim(&mut self) {
         while let Token::Newline | Token::Punctuator(Punctuator::Semicolon) = self.peek() {
             self.gettok();
+        }
+    }
+
+    fn at_string(&self) -> bool {
+        if let Token::NormalString(_) | Token::RawString(_) | Token::LineString(_) = self.peek() {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn expect_string(&mut self) -> Result<RcStr, ParseError> {
+        match self.peek() {
+            Token::NormalString(s) => {
+                self.gettok();
+                let raw_string = s;
+                match interpret_string(raw_string) {
+                    Ok(value) => Ok(value.into()),
+                    Err(error) => {
+                        let InterpretationError { offset, kind } = error;
+                        let (start_offset, start_lineno) = self.pos();
+                        Err(ParseError {
+                            offset: start_offset + offset,
+                            lineno: start_lineno,
+                            kind: match kind {
+                                InterpretationErrorKind::EscapeAtEndOfString => {
+                                    ParseErrorKind::EscapeAtEndOfString
+                                }
+                                InterpretationErrorKind::InvalidEscape(s) => {
+                                    ParseErrorKind::InvalidEscape(s)
+                                }
+                            },
+                        })
+                    }
+                }
+            }
+            Token::RawString(s) => {
+                self.gettok();
+                Ok(s.into())
+            }
+            Token::LineString(_) => {
+                let mut ret = String::new();
+                while let Token::LineString(s) = self.peek() {
+                    ret.push_str(s);
+                    ret.push('\n');
+                    self.gettok();
+                }
+                Ok(ret.into())
+            }
+            _ => {
+                let (offset, lineno) = self.pos();
+                Err(ParseError {
+                    offset,
+                    lineno,
+                    kind: ParseErrorKind::ExpectedString {
+                        but_got: self.peek().kind(),
+                    },
+                })
+            }
         }
     }
 
@@ -517,31 +576,10 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 ExpressionData::Symbol(symbol),
             ))
         }),
-        (&["RawString"], |state: &mut ParserState| {
-            let value = state.peek().raw_string().unwrap();
-            mk1tokexpr(state, ExpressionData::String(value.into()))
-        }),
-        (&["NormalString"], |state: &mut ParserState| {
-            let raw_string = state.peek().normal_string().unwrap();
-            match interpret_string(raw_string) {
-                Ok(value) => mk1tokexpr(state, ExpressionData::String(value.into())),
-                Err(error) => {
-                    let InterpretationError { offset, kind } = error;
-                    let (start_offset, start_lineno) = state.pos();
-                    Err(ParseError {
-                        offset: start_offset + offset,
-                        lineno: start_lineno,
-                        kind: match kind {
-                            InterpretationErrorKind::EscapeAtEndOfString => {
-                                ParseErrorKind::EscapeAtEndOfString
-                            }
-                            InterpretationErrorKind::InvalidEscape(s) => {
-                                ParseErrorKind::InvalidEscape(s)
-                            }
-                        },
-                    })
-                }
-            }
+        (&["NormalString", "RawString", "LineString"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            let s = state.expect_string()?;
+            Ok(Expression::new(offset, lineno, ExpressionData::String(s.into())))
         }),
         (&["Name"], |state: &mut ParserState| {
             let name = state.peek().name().unwrap();

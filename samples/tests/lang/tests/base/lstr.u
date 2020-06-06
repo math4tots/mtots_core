@@ -1,0 +1,17 @@
+# Line strings
+# These are strings that look like Python/bash comments,
+# but actually result in string values
+
+def __test_basic() {
+    single = # single line string
+
+    assert_eq(single, 'single line string\n')
+
+    multi = (
+        # multi-line
+        # string
+        # third line
+    )
+
+    assert_eq(multi, 'multi-line\nstring\nthird line\n')
+}

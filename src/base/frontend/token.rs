@@ -5,6 +5,7 @@ pub enum Token<'a> {
     Newline,
     NormalString(&'a str),
     RawString(&'a str),
+    LineString(&'a str),
     Float(f64),
     Int(i64),
     Name(&'a str),
@@ -18,6 +19,7 @@ impl<'a> Token<'a> {
             Token::Newline => TokenKind::Newline,
             Token::NormalString(_) => TokenKind::NormalString,
             Token::RawString(_) => TokenKind::RawString,
+            Token::LineString(_) => TokenKind::LineString,
             Token::Float(_) => TokenKind::Float,
             Token::Int(_) => TokenKind::Int,
             Token::Name(_) => TokenKind::Name,
@@ -80,6 +82,7 @@ pub enum TokenKind {
     Newline,
     NormalString,
     RawString,
+    LineString,
     Float,
     Int,
     Name,
@@ -88,18 +91,19 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    pub const LEN: usize = 7 + Punctuator::LIST.len();
+    pub const LEN: usize = 8 + Punctuator::LIST.len();
 
     pub fn id(&self) -> usize {
         match self {
             TokenKind::Newline => 0,
             TokenKind::NormalString => 1,
             TokenKind::RawString => 2,
-            TokenKind::Float => 3,
-            TokenKind::Int => 4,
-            TokenKind::Name => 5,
-            TokenKind::EOF => 6,
-            TokenKind::Punctuator(punctuator) => 7 + (*punctuator as usize),
+            TokenKind::LineString => 3,
+            TokenKind::Float => 4,
+            TokenKind::Int => 5,
+            TokenKind::Name => 6,
+            TokenKind::EOF => 7,
+            TokenKind::Punctuator(punctuator) => 8 + (*punctuator as usize),
         }
     }
 
@@ -108,6 +112,7 @@ impl TokenKind {
             TokenKind::Newline => "Newline",
             TokenKind::NormalString => "NormalString",
             TokenKind::RawString => "RawString",
+            TokenKind::LineString => "LineString",
             TokenKind::Float => "Float",
             TokenKind::Int => "Int",
             TokenKind::Name => "Name",
@@ -121,6 +126,7 @@ impl TokenKind {
             "Newline" => TokenKind::Newline,
             "NormalString" => TokenKind::NormalString,
             "RawString" => TokenKind::RawString,
+            "LineString" => TokenKind::LineString,
             "Float" => TokenKind::Float,
             "Int" => TokenKind::Int,
             "Name" => TokenKind::Name,

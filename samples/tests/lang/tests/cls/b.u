@@ -35,5 +35,5 @@ def __test_str() {
     There's also an analogous version of this issue for functions
     """
     class AnotherClass {}
-    assert_eq(str(AnotherClass), '<')
+    assert_eq(str(AnotherClass), '<class lang.tests.cls.b::AnotherClass>')
 }
