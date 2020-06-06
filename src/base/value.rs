@@ -823,6 +823,8 @@ impl fmt::Debug for NativeFunction {
     }
 }
 impl NativeFunction {
+    /// The most direct way to create a new NativeFunction
+    /// All other constructors are convenience wrappers around this one
     pub fn new(
         name: RcStr,
         parameter_info: ParameterInfo,
@@ -842,6 +844,15 @@ impl NativeFunction {
         parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
         body: NativeFunctionBody,
     ) -> NativeFunction {
+        Self::sdnew(sr, name, parameter_info, None, body)
+    }
+    pub fn sdnew(
+        sr: &SymbolRegistryHandle,
+        name: &str,
+        parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
+        doc: Option<&str>,
+        body: NativeFunctionBody,
+    ) -> NativeFunction {
         Self::new(
             name.into(),
             ParameterInfo::snew(
@@ -851,7 +862,7 @@ impl NativeFunction {
                 parameter_info.2,
                 parameter_info.3,
             ),
-            None,
+            doc.map(|s| s.into()),
             body,
         )
     }

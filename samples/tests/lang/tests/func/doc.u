@@ -42,3 +42,8 @@ def __test_args_native() {
     assert_eq(String.get_method(:len).params(), [[:self], [], nil, nil])
     assert_eq(max.params(), [[:xs], [], :varargs, nil])
 }
+
+def __test_doc_native() {
+    assert(max.doc() is not nil)
+    assert(min.doc() is not nil)
+}

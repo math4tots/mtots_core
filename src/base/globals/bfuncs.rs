@@ -80,10 +80,18 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     })
     .into();
 
-    let min = NativeFunction::snew(
+    let min = NativeFunction::sdnew(
         sr,
         "min",
         (&["xs"], &[], Some("varargs"), None),
+        Some(concat!(
+            "Gets the minimum of an iterable\n",
+            "If exactly one argument is provided, it is assumed to be an iterable, ",
+            "and this function returns the minimum element in that iterable.\n",
+            "This function with throw if the iterable is empty.\n",
+            "If more than one argument is provided, the list of all arguments is ",
+            "taken as the iterable, and the minimum element is returned.\n",
+        )),
         |globals, args, _kwargs| {
             let iterator = if args.len() == 1 {
                 Eval::iter(globals, &args[0])?
@@ -104,10 +112,18 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     )
     .into();
 
-    let max = NativeFunction::snew(
+    let max = NativeFunction::sdnew(
         sr,
         "max",
         (&["xs"], &[], Some("varargs"), None),
+        Some(concat!(
+            "Gets the maximum of an iterable\n",
+            "If exactly one argument is provided, it is assumed to be an iterable, ",
+            "and this function returns the maximum element in that iterable.\n",
+            "This function with throw if the iterable is empty.\n",
+            "If more than one argument is provided, the list of all arguments is ",
+            "taken as the iterable, and the maximum element is returned.\n",
+        )),
         |globals, args, _kwargs| {
             let iterator = if args.len() == 1 {
                 Eval::iter(globals, &args[0])?
