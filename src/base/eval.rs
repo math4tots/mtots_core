@@ -194,6 +194,18 @@ impl Eval {
         }
     }
 
+    pub fn expect_usize(globals: &mut Globals, value: &Value) -> EvalResult<usize> {
+        if let Value::Int(i) = value {
+            if *i < 0 {
+                globals.set_exc_str(&format!("Expected non-negative int, but got {}", i))
+            } else {
+                Ok(*i as usize)
+            }
+        } else {
+            globals.set_kind_error(ValueKind::Int, value.kind())
+        }
+    }
+
     /// Like expect_index, but if the index is too small, it returns 0,
     /// and if the index is too big, will just return len
     pub fn expect_index_permissive(
@@ -948,6 +960,14 @@ impl Eval {
                 // TODO: consider throwing instead if n is < 0
                 let n = std::cmp::max(0, n) as usize;
                 s.repeat(n).into()
+            }
+            (Value::List(list), Value::Int(n)) => {
+                let n = Self::expect_usize(globals, &Value::Int(n))?;
+                let mut ret = Vec::new();
+                for _ in 0..n {
+                    ret.extend(list.iter().map(|v| v.clone()));
+                }
+                ret.into()
             }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "*", vec![&a, &b]),
         })
