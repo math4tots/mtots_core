@@ -460,7 +460,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             is_trait,
             short_name,
             bases,
-            _docstring,
+            docstring,
             fields,
             methods,
             static_methods,
@@ -469,6 +469,12 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 rec(builder, base, true)?;
             }
             builder.make_list(bases.len());
+
+            if let Some(docstring) = docstring {
+                builder.load_const(docstring.clone());
+            } else {
+                builder.load_const(());
+            }
 
             let fields = if *is_trait {
                 assert!(fields.is_none());

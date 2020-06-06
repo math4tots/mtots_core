@@ -31,6 +31,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ClassKind::Trait,
         "Iterable".into(),
         vec![base],
+        None,
         methods,
         static_methods,
     )

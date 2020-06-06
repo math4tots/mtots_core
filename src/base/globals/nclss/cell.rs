@@ -42,6 +42,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ClassKind::NativeClass,
         "Cell".into(),
         vec![base],
+        None,
         methods,
         static_methods,
     )

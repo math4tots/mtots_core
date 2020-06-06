@@ -8,34 +8,48 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
-    let methods = vec![NativeFunction::snew(
-        sr,
-        "get_method",
-        (
-            &["self", "name"],
-            &[("default", Value::Uninitialized)],
-            None,
-            None,
-        ),
-        |globals, args, _kwargs| {
-            let cls = Eval::expect_class(globals, &args[0])?;
-            let method_name = Eval::expect_symbollike(globals, &args[1])?;
-            match cls.get_from_instance_map(&method_name) {
-                Some(method) => Ok(method.clone()),
-                None => {
-                    if let Value::Uninitialized = &args[2] {
-                        globals.set_exc_str(&format!(
-                            "Method {} not found for class {}",
-                            method_name,
-                            cls.full_name(),
-                        ))
-                    } else {
-                        Ok(args[2].clone())
+    let methods = vec![
+        NativeFunction::snew(
+            sr,
+            "get_method",
+            (
+                &["self", "name"],
+                &[("default", Value::Uninitialized)],
+                None,
+                None,
+            ),
+            |globals, args, _kwargs| {
+                let cls = Eval::expect_class(globals, &args[0])?;
+                let method_name = Eval::expect_symbollike(globals, &args[1])?;
+                match cls.get_from_instance_map(&method_name) {
+                    Some(method) => Ok(method.clone()),
+                    None => {
+                        if let Value::Uninitialized = &args[2] {
+                            globals.set_exc_str(&format!(
+                                "Method {} not found for class {}",
+                                method_name,
+                                cls.full_name(),
+                            ))
+                        } else {
+                            Ok(args[2].clone())
+                        }
                     }
                 }
-            }
-        },
-    )]
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "doc",
+            (&["self"], &[], None, None),
+            |globals, args, _kwargs| {
+                let cls = Eval::expect_class(globals, &args[0])?;
+                match cls.doc() {
+                    Some(doc) => Ok(doc.clone().into()),
+                    None => Ok(Value::Nil),
+                }
+            },
+        ),
+    ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
@@ -44,6 +58,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ClassKind::NativeClass,
         "Class".into(),
         vec![base],
+        Some(concat!(
+            "Instances of Class represent classes and traits in a running\n",
+            "interpreter application\n",
+        )),
         methods,
         HashMap::new(),
     )

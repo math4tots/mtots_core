@@ -10,6 +10,7 @@ pub(super) fn mkcls(_symbol_registry: &SymbolRegistryHandle, base: Rc<Class>) ->
         ClassKind::NativeClass,
         "Code".into(),
         vec![base],
+        None,
         HashMap::new(),
         HashMap::new(),
     )

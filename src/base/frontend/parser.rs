@@ -140,6 +140,10 @@ impl<'a> ParserState<'a> {
         self.tokens[self.i]
     }
 
+    fn peek1(&self) -> Option<Token<'a>> {
+        self.tokens.get(self.i + 1).cloned()
+    }
+
     fn pos(&self) -> (usize, usize) {
         self.posinfo[self.i]
     }
@@ -226,7 +230,7 @@ impl<'a> ParserState<'a> {
     }
 
     fn at_delim(&self) -> bool {
-        if let Token::Newline
+        if let Token::Newline(_)
         | Token::Punctuator(Punctuator::Semicolon)
         | Token::Punctuator(Punctuator::RBrace)
         | Token::EOF = self.peek()
@@ -238,7 +242,7 @@ impl<'a> ParserState<'a> {
     }
 
     fn skip_delim(&mut self) {
-        while let Token::Newline | Token::Punctuator(Punctuator::Semicolon) = self.peek() {
+        while let Token::Newline(_) | Token::Punctuator(Punctuator::Semicolon) = self.peek() {
             self.gettok();
         }
     }
@@ -286,6 +290,17 @@ impl<'a> ParserState<'a> {
                     ret.push_str(s);
                     ret.push('\n');
                     self.gettok();
+
+                    // If the next line-string is separated by a single newline,
+                    // allow merging with the next one
+                    if self.peek() == Token::Newline(1)
+                        && self
+                            .peek1()
+                            .map(|t| t.line_string().is_some())
+                            .unwrap_or(false)
+                    {
+                        self.consume(TokenKind::Newline);
+                    }
                 }
                 Ok(ret.into())
             }
@@ -576,11 +591,18 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 ExpressionData::Symbol(symbol),
             ))
         }),
-        (&["NormalString", "RawString", "LineString"], |state: &mut ParserState| {
-            let (offset, lineno) = state.pos();
-            let s = state.expect_string()?;
-            Ok(Expression::new(offset, lineno, ExpressionData::String(s.into())))
-        }),
+        (
+            &["NormalString", "RawString", "LineString"],
+            |state: &mut ParserState| {
+                let (offset, lineno) = state.pos();
+                let s = state.expect_string()?;
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::String(s.into()),
+                ))
+            },
+        ),
         (&["Name"], |state: &mut ParserState| {
             let name = state.peek().name().unwrap();
             mk1tokexpr(state, ExpressionData::Name(name.into()))

@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token<'a> {
-    Newline,
+    Newline(usize),  // number of newlines in this newline
     NormalString(&'a str),
     RawString(&'a str),
     LineString(&'a str),
@@ -16,7 +16,7 @@ pub enum Token<'a> {
 impl<'a> Token<'a> {
     pub fn kind(&self) -> TokenKind {
         match self {
-            Token::Newline => TokenKind::Newline,
+            Token::Newline(_) => TokenKind::Newline,
             Token::NormalString(_) => TokenKind::NormalString,
             Token::RawString(_) => TokenKind::RawString,
             Token::LineString(_) => TokenKind::LineString,
@@ -38,6 +38,14 @@ impl<'a> Token<'a> {
 
     pub fn raw_string(&self) -> Option<&'a str> {
         if let Token::RawString(name) = self {
+            Some(name)
+        } else {
+            None
+        }
+    }
+
+    pub fn line_string(&self) -> Option<&'a str> {
+        if let Token::LineString(name) = self {
             Some(name)
         } else {
             None

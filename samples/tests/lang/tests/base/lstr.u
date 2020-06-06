@@ -15,3 +15,16 @@ def __test_basic() {
 
     assert_eq(multi, 'multi-line\nstring\nthird line\n')
 }
+
+def __test_separated_by_multiple_newlines() {
+    # If line-strings are separated by multiple newlines,
+    # they shouldn't be merged
+
+    s = {
+        # first one
+
+        # second one
+    }
+
+    assert_eq(s, 'second one\n')
+}

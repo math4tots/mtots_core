@@ -13,6 +13,7 @@ pub(super) fn mkcls(_: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ClassKind::NativeClass,
         "Opaque".into(),
         vec![base],
+        None,
         methods,
         static_methods,
     )

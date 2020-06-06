@@ -989,6 +989,7 @@ pub struct Class {
     kind: ClassKind,
     full_name: RcStr,
     short_name: RcStr,
+    doc: Option<RcStr>,
     fields: Vec<Symbol>,
     map: HashMap<Symbol, Value>,
     static_map: HashMap<Symbol, Value>,
@@ -1005,34 +1006,54 @@ impl fmt::Debug for Class {
     }
 }
 impl Class {
+    /// The main way to create a new class.
+    /// If bases is empty, the Object class is automatically added
     pub fn new(
         globals: &mut Globals,
         kind: ClassKind,
         full_name: RcStr,
-        bases: Vec<Rc<Class>>,
+        mut bases: Vec<Rc<Class>>,
+        doc: Option<RcStr>,
         fields: Option<Vec<Symbol>>,
         map: HashMap<Symbol, Value>,
         static_map: HashMap<Symbol, Value>,
     ) -> EvalResult<Rc<Class>> {
-        match Self::new00(kind, full_name, bases, fields, map, static_map) {
+        if bases.is_empty() {
+            bases.push(globals.builtin_classes().Object.clone());
+        }
+        match Self::new00(kind, full_name, bases, doc, fields, map, static_map) {
             Ok(cls) => Ok(cls),
             Err(error) => globals.set_exc_other(error.into()),
         }
     }
+
     /// version of new for creating builtin classes
+    /// Users of this method should ensure that the created Class inherits
+    /// from Object either directly or indirectly
     pub(crate) fn new0(
         kind: ClassKind,
         full_name: RcStr,
         bases: Vec<Rc<Class>>,
+        doc: Option<&str>,
         map: HashMap<Symbol, Value>,
         static_map: HashMap<Symbol, Value>,
     ) -> Rc<Class> {
-        Self::new00(kind, full_name, bases, None, map, static_map).unwrap()
+        Self::new00(
+            kind,
+            full_name,
+            bases,
+            doc.map(|s| s.into()),
+            None,
+            map,
+            static_map,
+        )
+        .unwrap()
     }
     fn new00(
         kind: ClassKind,
         full_name: RcStr,
         bases: Vec<Rc<Class>>,
+        doc: Option<RcStr>,
         fields: Option<Vec<Symbol>>,
         mut map: HashMap<Symbol, Value>,
         static_map: HashMap<Symbol, Value>,
@@ -1076,6 +1097,7 @@ impl Class {
             kind,
             full_name,
             short_name,
+            doc,
             fields: fields.clone(),
             map,
             static_map,
@@ -1102,6 +1124,10 @@ impl Class {
 
     pub fn short_name(&self) -> &RcStr {
         &self.short_name
+    }
+
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
 
     pub fn get_from_instance_map<K>(&self, name: &K) -> Option<&Value>

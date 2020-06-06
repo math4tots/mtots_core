@@ -494,17 +494,18 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         frame.stack.push(Value::Function(Function::new(cells, func_code).into()));
     }
 
-    MAKE_CLASS(full_name: Name, is_trait: Int) [+ 4 1] {
+    MAKE_CLASS(full_name: Name, is_trait: Int) [+ 5 1] {
         // Expects:
         //   TOS : static member Table
         //   TOS1: instance method Table
         //   TOS2: List of field names (as symbols)
-        //   TOS3: List of traits
+        //   TOS3: docstr (or nil if not present)
+        //   TOS4: List of traits
         let kind = if is_trait != 0 { ClassKind::Trait } else { ClassKind::UserDefinedClass };
         let full_name = globals.symbol_rcstr(code.names[full_name]).clone();
         let len = frame.stack.len();
-        let cls = new_class(globals, kind, full_name, &frame.stack[len - 4..])?;
-        frame.stack.truncate(len - 4);
+        let cls = new_class(globals, kind, full_name, &frame.stack[len - 5..])?;
+        frame.stack.truncate(len - 5);
         frame.stack.push(cls.into());
     }
 
@@ -729,9 +730,14 @@ fn new_class(
         }
         bases
     };
+    let docstr = if let Value::Nil = &args[1] {
+        None
+    } else {
+        Some(Eval::expect_string(globals, &args[1])?.clone())
+    };
     let fields = {
         let mut fields = Vec::new();
-        for field in Eval::expect_list(globals, &args[1])?.iter() {
+        for field in Eval::expect_list(globals, &args[2])?.iter() {
             let field = Eval::expect_symbol(globals, field)?;
             fields.push(field);
         }
@@ -747,9 +753,11 @@ fn new_class(
             ClassKind::UserDefinedClass => Some(fields),
         }
     };
-    let map = Eval::expect_table(globals, &args[2])?.map().clone();
-    let static_map = Eval::expect_table(globals, &args[3])?.map().clone();
-    let cls = Class::new(globals, kind, full_name, bases, fields, map, static_map)?;
+    let map = Eval::expect_table(globals, &args[3])?.map().clone();
+    let static_map = Eval::expect_table(globals, &args[4])?.map().clone();
+    let cls = Class::new(
+        globals, kind, full_name, bases, docstr, fields, map, static_map,
+    )?;
     Ok(cls)
 }
 
