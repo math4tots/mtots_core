@@ -68,6 +68,14 @@ pub struct Globals {
     symbol_registry: SymbolRegistryHandle,
     symbol_dunder_str: Symbol,
     symbol_dunder_repr: Symbol,
+    symbol_dunder_add: Symbol,
+    symbol_dunder_sub: Symbol,
+    symbol_dunder_mul: Symbol,
+    symbol_dunder_div: Symbol,
+    symbol_dunder_truncdiv: Symbol,
+    symbol_dunder_rem: Symbol,
+    symbol_dunder_eq: Symbol,
+    symbol_dunder_lt: Symbol,
 }
 
 impl Globals {
@@ -76,8 +84,16 @@ impl Globals {
         let (exception_registry, builtin_exceptions) = exc::new(&symbol_registry);
         let builtin_classes = Self::new_builtin_classes(&symbol_registry);
         let builtin_functions = bfuncs::new(&symbol_registry);
-        let symbol_dunder_repr = symbol_registry.intern_str("__repr");
         let symbol_dunder_str = symbol_registry.intern_str("__str");
+        let symbol_dunder_repr = symbol_registry.intern_str("__repr");
+        let symbol_dunder_add = symbol_registry.intern_str("__add");
+        let symbol_dunder_sub = symbol_registry.intern_str("__sub");
+        let symbol_dunder_mul = symbol_registry.intern_str("__mul");
+        let symbol_dunder_div = symbol_registry.intern_str("__div");
+        let symbol_dunder_truncdiv = symbol_registry.intern_str("__truncdiv");
+        let symbol_dunder_rem = symbol_registry.intern_str("__rem");
+        let symbol_dunder_eq = symbol_registry.intern_str("__eq");
+        let symbol_dunder_lt = symbol_registry.intern_str("__lt");
         let mut globals = Globals {
             trace: Vec::new(),
             line_cache: HashMap::new(),
@@ -98,18 +114,58 @@ impl Globals {
             symbol_registry,
             symbol_dunder_repr,
             symbol_dunder_str,
+            symbol_dunder_add,
+            symbol_dunder_sub,
+            symbol_dunder_mul,
+            symbol_dunder_div,
+            symbol_dunder_truncdiv,
+            symbol_dunder_rem,
+            symbol_dunder_eq,
+            symbol_dunder_lt,
         };
         globals.add_builtin_native_modules();
         super::emb::install_embedded_sources(&mut globals);
         globals
     }
 
+    pub fn symbol_dunder_str(&self) -> Symbol {
+        self.symbol_dunder_str
+    }
+
     pub fn symbol_dunder_repr(&self) -> Symbol {
         self.symbol_dunder_repr
     }
 
-    pub fn symbol_dunder_str(&self) -> Symbol {
-        self.symbol_dunder_str
+    pub fn symbol_dunder_add(&self) -> Symbol {
+        self.symbol_dunder_add
+    }
+
+    pub fn symbol_dunder_sub(&self) -> Symbol {
+        self.symbol_dunder_sub
+    }
+
+    pub fn symbol_dunder_mul(&self) -> Symbol {
+        self.symbol_dunder_mul
+    }
+
+    pub fn symbol_dunder_div(&self) -> Symbol {
+        self.symbol_dunder_div
+    }
+
+    pub fn symbol_dunder_truncdiv(&self) -> Symbol {
+        self.symbol_dunder_truncdiv
+    }
+
+    pub fn symbol_dunder_rem(&self) -> Symbol {
+        self.symbol_dunder_rem
+    }
+
+    pub fn symbol_dunder_eq(&self) -> Symbol {
+        self.symbol_dunder_eq
+    }
+
+    pub fn symbol_dunder_lt(&self) -> Symbol {
+        self.symbol_dunder_lt
     }
 
     pub(crate) fn trace_push(&mut self, module_name: RcStr, lineno: usize) {

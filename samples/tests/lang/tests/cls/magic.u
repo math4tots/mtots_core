@@ -1,0 +1,68 @@
+# Test that the magic methods work
+# Tests for repr/str are in sibling script str.u
+
+class Foo {
+    # Test binops where other is same type
+    [i]
+    def __add(self, other) = Foo(self.i + other.i)
+    def __sub(self, other) = Foo(self.i - other.i)
+    def __mul(self, other) = Foo(self.i * other.i)
+    def __div(self, other) = Foo(self.i / other.i)
+    def __truncdiv(self, other) = Foo(self.i // other.i)
+    def __rem(self, other) = Foo(self.i % other.i)
+    def __lt(self, other) = self.i < other.i
+    def __eq(self, other) = type(other) is Foo and self.i == other.i
+    def __repr(self) = 'Foo(%r)' % [self.i]
+}
+
+def __test_magic() {
+    assert_eq(str(Foo(2) + Foo(3)), 'Foo(5)')
+    assert_eq(str(Foo(2) - Foo(3)), 'Foo(-1)')
+    assert_eq(str(Foo(2) * Foo(3)), 'Foo(6)')
+    assert_eq(str(Foo(3) / Foo(2)), 'Foo(1.5)')
+    assert_eq(str(Foo(3) // Foo(2)), 'Foo(1)')
+    assert_eq(str(Foo(2) % Foo(3)), 'Foo(2)')
+    assert_eq(Foo(2) == Foo(3), false)
+    assert_eq(Foo(2) == Foo(2), true)
+    assert_eq(Foo(2) != Foo(3), true)
+    assert_eq(Foo(2) != Foo(2), false)
+    assert_eq(Foo(2) < Foo(3), true)
+    assert_eq(Foo(3) < Foo(3), false)
+    assert_eq(Foo(4) < Foo(3), false)
+    assert_eq(Foo(2) <= Foo(3), true)
+    assert_eq(Foo(3) <= Foo(3), true)
+    assert_eq(Foo(4) <= Foo(3), false)
+    assert_eq(Foo(3) > Foo(2), true)
+    assert_eq(Foo(3) > Foo(3), false)
+    assert_eq(Foo(3) > Foo(4), false)
+}
+
+class Bar {
+    # Test binops where other is not same type
+    [i]
+    def __add(self, other) = Bar(self.i + other)
+    def __sub(self, other) = Bar(self.i - other)
+    def __mul(self, other) = Bar(self.i * other)
+    def __div(self, other) = Bar(self.i / other)
+    def __truncdiv(self, other) = Bar(self.i // other)
+    def __rem(self, other) = Bar(self.i % other)
+    def __lt(self, other) = self.i < other
+    def __eq(self, other) = self.i == other
+    def __repr(self) = 'Bar(%r)' % [self.i]
+}
+
+def __test_magic_2() {
+    assert_eq(str(Bar(2) + 3), 'Bar(5)')
+    assert_eq(str(Bar(2) - 3), 'Bar(-1)')
+    assert_eq(str(Bar(2) * 3), 'Bar(6)')
+    assert_eq(str(Bar(3) / 2), 'Bar(1.5)')
+    assert_eq(str(Bar(3) // 2), 'Bar(1)')
+    assert_eq(str(Bar(2) % 3), 'Bar(2)')
+    assert_eq(Bar(2) == 3, false)
+    assert_eq(Bar(2) == 2, true)
+    assert_eq(Bar(2) != 3, true)
+    assert_eq(Bar(2) != 2, false)
+    assert_eq(Bar(2) < 3, true)
+    assert_eq(Bar(3) < 3, false)
+    assert_eq(Bar(4) < 3, false)
+}

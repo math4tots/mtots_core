@@ -717,6 +717,14 @@ impl Eval {
             }
             (Value::Set(a), Value::Set(b)) => eq_set(globals, a, b, debuginfo)?,
             (Value::Map(a), Value::Map(b)) => eq_map(globals, a, b, debuginfo)?,
+            (Value::UserObject(_), _) => {
+                a.is(b)
+                    || Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                        let name = globals.symbol_dunder_eq();
+                        let truthy = Eval::call_method(globals, name, vec![a.clone(), b.clone()])?;
+                        Eval::truthy(globals, &truthy)
+                    })?
+            }
             (Value::MutableString(a), Value::MutableString(b)) => a == b,
             (Value::MutableList(a), Value::MutableList(b)) => {
                 eq_list(globals, &a.borrow(), &b.borrow(), debuginfo)?
@@ -793,6 +801,11 @@ impl Eval {
             (Value::Symbol(a), Value::Symbol(b)) => a < b,
             (Value::String(a), Value::String(b)) => a < b,
             (Value::Path(a), Value::Path(b)) => a < b,
+            (Value::UserObject(_), _) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_lt();
+                let truthy = Eval::call_method(globals, name, vec![a.clone(), b.clone()])?;
+                Eval::truthy(globals, &truthy)
+            })?,
             _ => return Self::handle_unsupported_op(globals, debuginfo, "<", vec![a, b]),
         })
     }
@@ -918,6 +931,10 @@ impl Eval {
                 }
                 Value::Map(map.into())
             }
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_add();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "+", vec![&a, &b]),
         })
     }
@@ -937,6 +954,10 @@ impl Eval {
             (Value::Float(a), Value::Float(b)) => Value::Float(a - b),
             (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) - b),
             (Value::Float(a), Value::Int(b)) => Value::Float(a - (b as f64)),
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_sub();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "-", vec![&a, &b]),
         })
     }
@@ -962,21 +983,29 @@ impl Eval {
                 s.repeat(n).into()
             }
             (Value::List(list), Value::Int(n)) => {
-                let n = Self::expect_usize(globals, &Value::Int(n))?;
-                let mut ret = Vec::new();
-                for _ in 0..n {
-                    ret.extend(list.iter().map(|v| v.clone()));
-                }
-                ret.into()
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let n = Self::expect_usize(globals, &Value::Int(n))?;
+                    let mut ret = Vec::new();
+                    for _ in 0..n {
+                        ret.extend(list.iter().map(|v| v.clone()));
+                    }
+                    Ok(ret.into())
+                })?
             }
             (Value::MutableList(list), Value::Int(n)) => {
-                let n = Self::expect_usize(globals, &Value::Int(n))?;
-                let mut ret = Vec::new();
-                for _ in 0..n {
-                    ret.extend(list.borrow().iter().map(|v| v.clone()));
-                }
-                Value::MutableList(RefCell::new(ret).into())
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let n = Self::expect_usize(globals, &Value::Int(n))?;
+                    let mut ret = Vec::new();
+                    for _ in 0..n {
+                        ret.extend(list.borrow().iter().map(|v| v.clone()));
+                    }
+                    Ok(Value::MutableList(RefCell::new(ret).into()))
+                })?
             }
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_mul();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "*", vec![&a, &b]),
         })
     }
@@ -996,6 +1025,10 @@ impl Eval {
             (Value::Float(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
             (Value::Float(a), Value::Int(b)) => Value::Float((a as f64) / (b as f64)),
             (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_div();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "/", vec![&a, &b]),
         })
     }
@@ -1047,6 +1080,10 @@ impl Eval {
             (Value::Float(a), Value::Float(b)) => Value::Int((a / b).trunc() as i64),
             (Value::Int(a), Value::Float(b)) => Value::Int(((a as f64) / b).trunc() as i64),
             (Value::Float(a), Value::Int(b)) => Value::Int((a / (b as f64)).trunc() as i64),
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_truncdiv();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "//", vec![&a, &b]),
         })
     }
@@ -1067,13 +1104,22 @@ impl Eval {
             (Value::String(s), Value::List(args)) => {
                 Self::wrap_debuginfo(globals, debuginfo, |globals| {
                     Eval::fmtstr(globals, s.str(), &args)
-                })?.into()
+                })?
+                .into()
             }
+            (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                let name = globals.symbol_dunder_rem();
+                Eval::call_method(globals, name, vec![a, b])
+            })?,
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "%", vec![&a, &b]),
         })
     }
 
-    fn wrap_debuginfo<F, R>(globals: &mut Globals, debuginfo: Option<(&Code, usize)>, f: F) -> EvalResult<R>
+    fn wrap_debuginfo<F, R>(
+        globals: &mut Globals,
+        debuginfo: Option<(&Code, usize)>,
+        f: F,
+    ) -> EvalResult<R>
     where
         F: FnOnce(&mut Globals) -> EvalResult<R>,
     {
@@ -1084,6 +1130,14 @@ impl Eval {
             Ok(r)
         } else {
             f(globals)
+        }
+    }
+
+    pub fn call_method(globals: &mut Globals, name: Symbol, args: Vec<Value>) -> EvalResult<Value> {
+        let cls = Self::classof(globals, &args[0])?.clone();
+        match cls.get_from_instance_map(&name) {
+            Some(method) => Self::call(globals, method, args),
+            None => globals.set_exc_legacy(EvalError::NoSuchMethod(name.str().into(), cls)),
         }
     }
 
