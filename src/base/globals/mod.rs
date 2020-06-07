@@ -66,6 +66,8 @@ pub struct Globals {
     builtin_exceptions: BuiltinExceptions,
 
     symbol_registry: SymbolRegistryHandle,
+    symbol_dunder_str: Symbol,
+    symbol_dunder_repr: Symbol,
 }
 
 impl Globals {
@@ -74,6 +76,8 @@ impl Globals {
         let (exception_registry, builtin_exceptions) = exc::new(&symbol_registry);
         let builtin_classes = Self::new_builtin_classes(&symbol_registry);
         let builtin_functions = bfuncs::new(&symbol_registry);
+        let symbol_dunder_repr = symbol_registry.intern_str("__repr");
+        let symbol_dunder_str = symbol_registry.intern_str("__str");
         let mut globals = Globals {
             trace: Vec::new(),
             line_cache: HashMap::new(),
@@ -92,10 +96,20 @@ impl Globals {
             exception_registry,
             builtin_exceptions,
             symbol_registry,
+            symbol_dunder_repr,
+            symbol_dunder_str,
         };
         globals.add_builtin_native_modules();
         super::emb::install_embedded_sources(&mut globals);
         globals
+    }
+
+    pub fn symbol_dunder_repr(&self) -> Symbol {
+        self.symbol_dunder_repr
+    }
+
+    pub fn symbol_dunder_str(&self) -> Symbol {
+        self.symbol_dunder_str
     }
 
     pub(crate) fn trace_push(&mut self, module_name: RcStr, lineno: usize) {

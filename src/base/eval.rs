@@ -1064,9 +1064,27 @@ impl Eval {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => Value::Int(a % b),
             (Value::Float(a), Value::Float(b)) => Value::Float(a % b),
-            (Value::String(s), Value::List(args)) => Eval::fmtstr(globals, s.str(), &args)?.into(),
+            (Value::String(s), Value::List(args)) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    Eval::fmtstr(globals, s.str(), &args)
+                })?.into()
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "%", vec![&a, &b]),
         })
+    }
+
+    fn wrap_debuginfo<F, R>(globals: &mut Globals, debuginfo: Option<(&Code, usize)>, f: F) -> EvalResult<R>
+    where
+        F: FnOnce(&mut Globals) -> EvalResult<R>,
+    {
+        if let Some((code, lineno)) = debuginfo {
+            globals.trace_push(code.module_name().clone(), lineno);
+            let r = f(globals)?;
+            globals.trace_pop();
+            Ok(r)
+        } else {
+            f(globals)
+        }
     }
 
     pub fn call(globals: &mut Globals, f: &Value, args: Vec<Value>) -> EvalResult<Value> {
@@ -1151,6 +1169,18 @@ impl Eval {
                     return globals.set_exc_legacy(EvalError::NotUnicode(os_string));
                 }
             },
+            Value::UserObject(x) => {
+                let cls = x.get_class();
+                if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_str()) {
+                    let strval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &strval)?.clone()
+                } else if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
+                    let strval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &strval)?.clone()
+                } else {
+                    format!("{:?}", x).into()
+                }
+            }
             Value::Exception(x) => format!("{}", x).into(),
             _ => Self::repr(globals, value)?,
         })
@@ -1171,7 +1201,15 @@ impl Eval {
             Value::Table(x) => table2str(globals, x.map())?.into(),
             Value::Set(x) => set2str(globals, "Set", &*x)?.into(),
             Value::Map(x) => map2str(globals, &*x)?.into(),
-            Value::UserObject(x) => format!("{:?}", x).into(),
+            Value::UserObject(x) => {
+                let cls = x.get_class();
+                if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
+                    let reprval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &reprval)?.clone()
+                } else {
+                    format!("{:?}", x).into()
+                }
+            }
             Value::Exception(x) => format!("{:?}", x).into(),
             Value::NativeFunction(f) => format!("{:?}", f).into(),
             Value::NativeClosure(f) => format!("{:?}", f).into(),
