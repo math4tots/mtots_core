@@ -870,7 +870,7 @@ impl Eval {
                 } else {
                     Value::Float((a as f64).powf(b as f64))
                 }
-            },
+            }
             (Value::Float(a), Value::Float(b)) => Value::Float(a.powf(b)),
             (Value::Int(a), Value::Float(b)) => Value::Float((a as f64).powf(b)),
             (Value::Float(a), Value::Int(b)) => Value::Float(a.powf(b as f64)),

@@ -70,55 +70,61 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             Eval::extend_from_iterable(globals, &mut list.borrow_mut(), &args[1])?;
             Ok(Value::Nil)
         }),
-        NativeFunction::snew(sr, "any", (&["self"], &[("f", Value::Nil)], None, None), |globals, args, _kwargs| {
-            let list = Eval::expect_mutable_list(globals, &args[0])?;
-            let f = &args[1];
-            for x in list.borrow().clone() {
-                let truthy = if let Value::Nil = f {
-                    Eval::truthy(globals, &x)?
-                } else {
-                    let fx = Eval::call(globals, f, vec![x])?;
-                    Eval::truthy(globals, &fx)?
-                };
-                if truthy {
-                    return Ok(true.into())
+        NativeFunction::snew(
+            sr,
+            "any",
+            (&["self"], &[("f", Value::Nil)], None, None),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let f = &args[1];
+                for x in list.borrow().clone() {
+                    let truthy = if let Value::Nil = f {
+                        Eval::truthy(globals, &x)?
+                    } else {
+                        let fx = Eval::call(globals, f, vec![x])?;
+                        Eval::truthy(globals, &fx)?
+                    };
+                    if truthy {
+                        return Ok(true.into());
+                    }
                 }
-            }
-            Ok(false.into())
-        }),
-        NativeFunction::snew(sr, "all", (&["self"], &[("f", Value::Nil)], None, None), |globals, args, _kwargs| {
-            let list = Eval::expect_mutable_list(globals, &args[0])?;
-            let f = &args[1];
-            for x in list.borrow().clone() {
-                let truthy = if let Value::Nil = f {
-                    Eval::truthy(globals, &x)?
-                } else {
-                    let fx = Eval::call(globals, f, vec![x])?;
-                    Eval::truthy(globals, &fx)?
-                };
-                if !truthy {
-                    return Ok(false.into())
+                Ok(false.into())
+            },
+        ),
+        NativeFunction::snew(
+            sr,
+            "all",
+            (&["self"], &[("f", Value::Nil)], None, None),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let f = &args[1];
+                for x in list.borrow().clone() {
+                    let truthy = if let Value::Nil = f {
+                        Eval::truthy(globals, &x)?
+                    } else {
+                        let fx = Eval::call(globals, f, vec![x])?;
+                        Eval::truthy(globals, &fx)?
+                    };
+                    if !truthy {
+                        return Ok(false.into());
+                    }
                 }
-            }
-            Ok(true.into())
-        }),
+                Ok(true.into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
 
-    let static_methods = vec![NativeFunction::simple0(
-        sr,
-        "new",
-        &["x"],
-        |globals, args, _kwargs| Eval::mutable_list_from_iterable(globals, &args[0]),
-    ),
-    NativeFunction::simple0(
-        sr,
-        "from_iterable",
-        &["x"],
-        |globals, args, _kwargs| Eval::mutable_list_from_iterable(globals, &args[0]),
-    )]
+    let static_methods = vec![
+        NativeFunction::simple0(sr, "new", &["x"], |globals, args, _kwargs| {
+            Eval::mutable_list_from_iterable(globals, &args[0])
+        }),
+        NativeFunction::simple0(sr, "from_iterable", &["x"], |globals, args, _kwargs| {
+            Eval::mutable_list_from_iterable(globals, &args[0])
+        }),
+    ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();

@@ -693,7 +693,12 @@ fn assign(builder: &mut CodeBuilder, target: &Expression) -> Result<(), Error> {
     Ok(())
 }
 
-fn augassign(builder: &mut CodeBuilder, target: &Expression, op: Binop, used: bool) -> Result<(), Error> {
+fn augassign(
+    builder: &mut CodeBuilder,
+    target: &Expression,
+    op: Binop,
+    used: bool,
+) -> Result<(), Error> {
     // NOTES:
     //   * TODO: aug-assign for subscript,
     //   * aug-assign for attributes are not implemented on purpose because

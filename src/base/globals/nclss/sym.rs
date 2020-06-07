@@ -8,11 +8,12 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
-    let static_methods = vec![
-        NativeFunction::simple0(sr, "__call", &["symbollike"], |globals, args, _kwargs| {
-            Ok(Eval::expect_symbollike(globals, &args[0])?.into())
-        }),
-    ]
+    let static_methods = vec![NativeFunction::simple0(
+        sr,
+        "__call",
+        &["symbollike"],
+        |globals, args, _kwargs| Ok(Eval::expect_symbollike(globals, &args[0])?.into()),
+    )]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
