@@ -976,19 +976,20 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                         let stmt = state.stmt()?;
                         let offset = stmt.offset();
                         let lineno = stmt.lineno();
-                        let name = match get_simple_assignment_name(&stmt) {
-                            Some(name) => name.clone(),
+                        let stmt_kind = stmt.kind();
+                        let (name, member) = match break_assignment(stmt) {
+                            Some((name, member)) => (name, member),
                             None => {
                                 return Err(ParseError {
                                     offset,
                                     lineno,
                                     kind: ParseErrorKind::ExpectedClassMember {
-                                        but_got: stmt.kind(),
+                                        but_got: stmt_kind,
                                     },
                                 });
                             }
                         };
-                        out.push((name, stmt));
+                        out.push((name, member));
                         state.expect_delim()?;
                     }
                 }
@@ -1314,10 +1315,10 @@ fn mkbinop(
     ))
 }
 
-fn get_simple_assignment_name(expr: &Expression) -> Option<&RcStr> {
-    match expr.data() {
-        ExpressionData::Assign(target, _) => match target.data() {
-            ExpressionData::Name(name) => Some(name),
+fn break_assignment(expr: Expression) -> Option<(RcStr, Expression)> {
+    match expr.data_move() {
+        ExpressionData::Assign(target, expr) => match target.data_move() {
+            ExpressionData::Name(name) => Some((name, *expr)),
             _ => None,
         },
         _ => None,
