@@ -1057,8 +1057,8 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
             mkunop(state, prec, op)
         }),
         (&["@"], |state| {
-            // For now let '@' have same precedence as '-/+/!'
-            let prec = state.prec(TokenKind::Punctuator(Punctuator::Star2)) - PREC_STEP / 2;
+            // '@' should bind tighter than '.'
+            let prec = state.prec(TokenKind::Punctuator(Punctuator::Dot)) + PREC_STEP / 2;
             let (offset, lineno) = state.pos();
             state.gettok();
             let expr = state.expr(prec)?;

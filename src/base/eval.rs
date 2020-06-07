@@ -969,6 +969,14 @@ impl Eval {
                 }
                 ret.into()
             }
+            (Value::MutableList(list), Value::Int(n)) => {
+                let n = Self::expect_usize(globals, &Value::Int(n))?;
+                let mut ret = Vec::new();
+                for _ in 0..n {
+                    ret.extend(list.borrow().iter().map(|v| v.clone()));
+                }
+                Value::MutableList(RefCell::new(ret).into())
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "*", vec![&a, &b]),
         })
     }

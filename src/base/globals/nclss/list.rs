@@ -41,6 +41,38 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
+        NativeFunction::snew(sr, "any", (&["self"], &[("f", Value::Nil)], None, None), |globals, args, _kwargs| {
+            let list = Eval::expect_list(globals, &args[0])?;
+            let f = &args[1];
+            for x in list {
+                let truthy = if let Value::Nil = f {
+                    Eval::truthy(globals, x)?
+                } else {
+                    let fx = Eval::call(globals, f, vec![x.clone()])?;
+                    Eval::truthy(globals, &fx)?
+                };
+                if truthy {
+                    return Ok(true.into())
+                }
+            }
+            Ok(false.into())
+        }),
+        NativeFunction::snew(sr, "all", (&["self"], &[("f", Value::Nil)], None, None), |globals, args, _kwargs| {
+            let list = Eval::expect_list(globals, &args[0])?;
+            let f = &args[1];
+            for x in list {
+                let truthy = if let Value::Nil = f {
+                    Eval::truthy(globals, x)?
+                } else {
+                    let fx = Eval::call(globals, f, vec![x.clone()])?;
+                    Eval::truthy(globals, &fx)?
+                };
+                if !truthy {
+                    return Ok(false.into())
+                }
+            }
+            Ok(true.into())
+        }),
         NativeFunction::simple0(sr, "iter", &["self"], |globals, args, _kwargs| {
             Eval::iter(globals, &args[0])
         }),
