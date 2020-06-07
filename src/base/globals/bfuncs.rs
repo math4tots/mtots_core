@@ -14,6 +14,7 @@ pub struct NativeFunctions {
     sorted: Rc<NativeFunction>,
     min: Rc<NativeFunction>,
     max: Rc<NativeFunction>,
+    hash: Rc<NativeFunction>,
     assert: Rc<NativeFunction>,
     assert_eq: Rc<NativeFunction>,
     assert_raises: Rc<NativeFunction>,
@@ -36,6 +37,7 @@ impl NativeFunctions {
             &self.sorted,
             &self.min,
             &self.max,
+            &self.hash,
             &self.assert,
             &self.assert_eq,
             &self.assert_raises,
@@ -142,6 +144,12 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
             Ok(best)
         },
     )
+    .into();
+
+    let hash = NativeFunction::simple0(sr, "hash", &["x"], |globals, args, _kwargs| {
+        let hash = Eval::hash(globals, &args[0])?;
+        Ok((hash as i64).into())
+    })
     .into();
 
     let assert = NativeFunction::simple0(sr, "assert", &["x"], |globals, args, _kwargs| {
@@ -320,6 +328,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         sorted,
         min,
         max,
+        hash,
         assert,
         assert_eq,
         assert_raises,
