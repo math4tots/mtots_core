@@ -474,14 +474,14 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         frame.stack.push(Value::Function(Function::new(cells, func_code).into()));
     }
 
-    MAKE_CLASS(full_name: Name, is_trait: Int) [+ 5 1] {
+    MAKE_CLASS(full_name: Name, class_kind: Int) [+ 5 1] {
         // Expects:
         //   TOS : static member Table
         //   TOS1: instance method Table
         //   TOS2: List of field names (as symbols)
         //   TOS3: docstr (or nil if not present)
         //   TOS4: List of traits
-        let kind = if is_trait != 0 { ClassKind::Trait } else { ClassKind::UserDefinedClass };
+        let kind = ClassKind::from_usize(class_kind).unwrap();
         let full_name = globals.symbol_rcstr(code.names[full_name]).clone();
         let len = frame.stack.len();
         let cls = new_class(globals, kind, full_name, &frame.stack[len - 5..])?;
@@ -724,7 +724,7 @@ fn new_class(
                         .set_exc_other("field lists are not allowed on traits".into())?;
                 }
             }
-            ClassKind::UserDefinedClass => Some(fields),
+            ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => Some(fields),
         }
     };
     let map = Eval::expect_table(globals, &args[3])?.map().clone();

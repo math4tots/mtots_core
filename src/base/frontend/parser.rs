@@ -1,5 +1,6 @@
 use crate::ArgumentList;
 use crate::Binop;
+use crate::ClassKind;
 use crate::Expression;
 use crate::ExpressionData;
 use crate::ExpressionKind;
@@ -924,7 +925,11 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
         }),
         (&["class", "trait"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
-            let is_trait = state.peek().kind() == TokenKind::Punctuator(Punctuator::Trait);
+            let class_kind = if state.peek().kind() == TokenKind::Punctuator(Punctuator::Trait) {
+                ClassKind::Trait
+            } else {
+                ClassKind::UserDefinedClass
+            };
             state.gettok();
             let short_name = state.expect_name()?.into();
             let bases = {
@@ -955,7 +960,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                     let (offset, lineno) = state.pos();
                     fields = match state.consume_fields()? {
                         Some(fields) => {
-                            if is_trait {
+                            if let ClassKind::Trait = class_kind {
                                 return Err(ParseError {
                                     offset,
                                     lineno,
@@ -999,7 +1004,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 offset,
                 lineno,
                 ExpressionData::ClassDisplay(
-                    is_trait,
+                    class_kind,
                     short_name,
                     bases,
                     docstring,
@@ -1071,6 +1076,23 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                     ExpressionData::String(s) => ExpressionData::MutableString(s),
                     ExpressionData::ListDisplay(exprs) => ExpressionData::MutableListDisplay(exprs),
                     ExpressionData::MapDisplay(pairs) => ExpressionData::MutableMapDisplay(pairs),
+                    ExpressionData::ClassDisplay(
+                        ClassKind::UserDefinedClass,
+                        name,
+                        bases,
+                        docstr,
+                        fields,
+                        methods,
+                        smethods,
+                    ) => ExpressionData::ClassDisplay(
+                        ClassKind::MutableUserDefinedClass,
+                        name,
+                        bases,
+                        docstr,
+                        fields,
+                        methods,
+                        smethods,
+                    ),
                     _ => {
                         return Err(ParseError {
                             offset,

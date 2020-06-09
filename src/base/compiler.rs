@@ -1,5 +1,6 @@
 use crate::ArgumentList;
 use crate::Binop;
+use crate::ClassKind;
 use crate::Code;
 use crate::CodeBuilder;
 use crate::CodeBuilderError;
@@ -13,7 +14,6 @@ use crate::RcStr;
 use crate::SymbolRegistryHandle;
 use crate::Unop;
 use crate::Value;
-
 use std::fmt;
 
 #[derive(Debug)]
@@ -488,7 +488,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             }
         }
         ExpressionData::ClassDisplay(
-            is_trait,
+            class_kind,
             short_name,
             bases,
             docstring,
@@ -507,7 +507,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 builder.load_const(());
             }
 
-            let fields = if *is_trait {
+            let fields = if let ClassKind::Trait = class_kind {
                 assert!(fields.is_none());
                 vec![]
             } else {
@@ -537,7 +537,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             builder.make_table(static_methods.len());
 
             let full_name = format!("{}::{}", builder.module_name(), short_name).into();
-            builder.make_class(&full_name, *is_trait);
+            builder.make_class(&full_name, *class_kind);
 
             if !used {
                 builder.pop();

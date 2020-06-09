@@ -1,3 +1,4 @@
+use crate::ClassKind;
 use crate::RcStr;
 use crate::Symbol;
 
@@ -322,7 +323,7 @@ pub enum ExpressionData {
         Box<Expression>,          // body
     ),
     ClassDisplay(
-        bool,                     // is trait?
+        ClassKind,                // (trait, class or @class)
         RcStr,                    // short name
         Vec<Expression>,          // bases
         Option<RcStr>,            // docstring

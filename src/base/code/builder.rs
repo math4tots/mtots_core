@@ -4,6 +4,7 @@ use super::Symbol;
 use super::VariableLocation;
 use crate::short_name_from_full_name;
 use crate::Binop;
+use crate::ClassKind;
 use crate::Code;
 use crate::CodeKind;
 use crate::ConstValue;
@@ -12,7 +13,6 @@ use crate::RcStr;
 use crate::SymbolRegistryHandle;
 use crate::Unop;
 use crate::Value;
-
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -330,12 +330,10 @@ impl CodeBuilder {
         self.code.push(PseudoOpcode::MakeFunction(i));
     }
 
-    pub fn make_class(&mut self, full_name: &RcStr, is_trait: bool) {
+    pub fn make_class(&mut self, full_name: &RcStr, class_kind: ClassKind) {
         let full_name = self.add_to_names(full_name);
-        self.code.push(PseudoOpcode::MakeClass(
-            full_name,
-            if is_trait { 1 } else { 0 },
-        ));
+        self.code
+            .push(PseudoOpcode::MakeClass(full_name, class_kind.to_usize()));
     }
 
     pub fn make_exception_kind(&mut self, full_name: &RcStr) {

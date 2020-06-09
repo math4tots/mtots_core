@@ -1,0 +1,26 @@
+# Mutable instances with user defined types
+
+@class SomeClass {
+    [a, b]
+
+    def __add(self, other) = SomeClass(self.a + other.a, self.b + other.b)
+}
+
+def __test_mutable_fields() {
+    x = SomeClass('11', '22')
+    assert_eq(x.a, '11')
+    assert_eq(x.a, '11')
+
+    assert_eq(x.a = 555, 555)
+    assert_eq(x.a, 555)
+    assert_eq(x.b = 555, 555)
+    assert_eq(x.b, 555)
+
+    assert_eq(str(x), '<%s::SomeClass @instance>' % [__name])
+}
+
+def __test_magic() {
+    x = SomeClass('aaa', 44) + SomeClass('qqq', 12)
+    assert_eq(x.a, 'aaaqqq')
+    assert_eq(x.b, 56)
+}

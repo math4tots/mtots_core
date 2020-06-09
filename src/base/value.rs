@@ -60,6 +60,7 @@ pub enum Value {
     MutableList(Rc<RefCell<Vec<Value>>>), // @[x, ..]
     MutableSet(Rc<RefCell<VSet>>),        // MutableSet([x, ..])
     MutableMap(Rc<RefCell<VMap>>),        // @[k:v, ..]
+    MutableUserObject(Rc<MutableUserObject>),
 
     // 'internal' values
     Cell(Rc<RefCell<Value>>), // for implementing closures
@@ -287,6 +288,7 @@ impl Value {
             Value::MutableList(..) => ValueKind::MutableList,
             Value::MutableSet(..) => ValueKind::MutableSet,
             Value::MutableMap(..) => ValueKind::MutableMap,
+            Value::MutableUserObject(..) => ValueKind::MutableUserObject,
             Value::Cell(..) => ValueKind::Cell,
         }
     }
@@ -360,6 +362,7 @@ pub enum ValueKind {
     MutableList,
     MutableSet,
     MutableMap,
+    MutableUserObject,
     Cell,
 }
 
@@ -589,6 +592,39 @@ impl From<Rc<UserObject>> for Value {
 impl fmt::Debug for UserObject {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<{} instance>", self.cls.full_name)
+    }
+}
+
+pub struct MutableUserObject {
+    cls: Rc<Class>,
+    map: HashMap<Symbol, RefCell<Value>>,
+}
+
+impl MutableUserObject {
+    pub fn get(&self, symbol: Symbol) -> Option<&RefCell<Value>> {
+        self.map.get(&symbol)
+    }
+
+    pub fn get_class(&self) -> &Rc<Class> {
+        &self.cls
+    }
+}
+
+impl From<MutableUserObject> for Value {
+    fn from(obj: MutableUserObject) -> Value {
+        Value::MutableUserObject(obj.into())
+    }
+}
+
+impl From<Rc<MutableUserObject>> for Value {
+    fn from(obj: Rc<MutableUserObject>) -> Value {
+        Value::MutableUserObject(obj)
+    }
+}
+
+impl fmt::Debug for MutableUserObject {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<{} @instance>", self.cls.full_name)
     }
 }
 
@@ -1015,6 +1051,27 @@ pub enum ClassKind {
     Trait,
     NativeClass,
     UserDefinedClass,
+    MutableUserDefinedClass,
+}
+impl ClassKind {
+    pub fn from_usize(i: usize) -> Option<ClassKind> {
+        match i {
+            0 => Some(ClassKind::Trait),
+            1 => Some(ClassKind::NativeClass),
+            2 => Some(ClassKind::UserDefinedClass),
+            3 => Some(ClassKind::MutableUserDefinedClass),
+            _ => None,
+        }
+    }
+
+    pub fn to_usize(self) -> usize {
+        match self {
+            ClassKind::Trait => 0,
+            ClassKind::NativeClass => 1,
+            ClassKind::UserDefinedClass => 2,
+            ClassKind::MutableUserDefinedClass => 3,
+        }
+    }
 }
 pub struct Class {
     kind: ClassKind,
@@ -1032,6 +1089,7 @@ impl fmt::Debug for Class {
         let kind = match self.kind {
             ClassKind::Trait => "trait",
             ClassKind::NativeClass | ClassKind::UserDefinedClass => "class",
+            ClassKind::MutableUserDefinedClass => "@class",
         };
         write!(f, "<{} {}>", kind, self.full_name)
     }
@@ -1113,7 +1171,7 @@ impl Class {
                     vec![]
                 }
             }
-            ClassKind::UserDefinedClass => {
+            ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => {
                 if let Some(fields) = fields {
                     fields
                 } else {
@@ -1186,23 +1244,41 @@ impl Class {
         globals: &mut Globals,
         args: Vec<Value>,
         kwargs: Option<HashMap<Symbol, Value>>,
-    ) -> EvalResult<UserObject> {
-        if let ClassKind::UserDefinedClass = cls.kind {
-            let (args, kwargs) = match cls.fields_as_parameter_info.translate(args, kwargs) {
-                Ok(pair) => pair,
-                Err(error) => return globals.set_exc_legacy(error.into()),
-            };
-            assert!(kwargs.is_none());
-            let mut map = HashMap::new();
-            for (key, arg) in cls.fields.iter().zip(args) {
-                map.insert(*key, arg);
+    ) -> EvalResult<Value> {
+        match cls.kind {
+            ClassKind::UserDefinedClass => {
+                let (args, kwargs) = match cls.fields_as_parameter_info.translate(args, kwargs) {
+                    Ok(pair) => pair,
+                    Err(error) => return globals.set_exc_legacy(error.into()),
+                };
+                assert!(kwargs.is_none());
+                let mut map = HashMap::new();
+                for (key, arg) in cls.fields.iter().zip(args) {
+                    map.insert(*key, arg);
+                }
+                Ok(UserObject {
+                    cls: cls.clone(),
+                    map,
+                }
+                .into())
             }
-            Ok(UserObject {
-                cls: cls.clone(),
-                map,
-            })
-        } else {
-            return globals.set_exc_str("Only user defined classes may be instantiated");
+            ClassKind::MutableUserDefinedClass => {
+                let (args, kwargs) = match cls.fields_as_parameter_info.translate(args, kwargs) {
+                    Ok(pair) => pair,
+                    Err(error) => return globals.set_exc_legacy(error.into()),
+                };
+                assert!(kwargs.is_none());
+                let mut map = HashMap::new();
+                for (key, arg) in cls.fields.iter().zip(args) {
+                    map.insert(*key, RefCell::new(arg));
+                }
+                Ok(MutableUserObject {
+                    cls: cls.clone(),
+                    map,
+                }
+                .into())
+            }
+            _ => globals.set_exc_str("Only user defined classes may be instantiated"),
         }
     }
 }

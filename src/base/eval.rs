@@ -182,6 +182,7 @@ impl Eval {
             Value::MutableList(_) => &globals.builtin_classes().MutableList,
             Value::MutableSet(_) => &globals.builtin_classes().MutableSet,
             Value::MutableMap(_) => &globals.builtin_classes().MutableMap,
+            Value::MutableUserObject(obj) => obj.get_class(),
             Value::Cell(_) => &globals.builtin_classes().Cell,
         })
     }
@@ -670,6 +671,7 @@ impl Eval {
             Value::MutableList(x) => !x.borrow().is_empty(),
             Value::MutableSet(x) => !x.borrow().is_empty(),
             Value::MutableMap(x) => !x.borrow().is_empty(),
+            Value::MutableUserObject(_) => true,
             Value::Cell(_) => true,
         })
     }
@@ -734,6 +736,14 @@ impl Eval {
             }
             (Value::MutableMap(a), Value::MutableMap(b)) => {
                 eq_map(globals, &a.borrow(), &b.borrow(), debuginfo)?
+            }
+            (Value::MutableUserObject(_), _) => {
+                a.is(b)
+                    || Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                        let name = globals.symbol_dunder_eq();
+                        let truthy = Eval::call_method(globals, name, vec![a.clone(), b.clone()])?;
+                        Eval::truthy(globals, &truthy)
+                    })?
             }
             _ => a.is(b),
         })
@@ -806,6 +816,13 @@ impl Eval {
                 let truthy = Eval::call_method(globals, name, vec![a.clone(), b.clone()])?;
                 Eval::truthy(globals, &truthy)
             })?,
+            (Value::MutableUserObject(_), _) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_lt();
+                    let truthy = Eval::call_method(globals, name, vec![a.clone(), b.clone()])?;
+                    Eval::truthy(globals, &truthy)
+                })?
+            }
             _ => return Self::handle_unsupported_op(globals, debuginfo, "<", vec![a, b]),
         })
     }
@@ -935,6 +952,12 @@ impl Eval {
                 let name = globals.symbol_dunder_add();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_add();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "+", vec![&a, &b]),
         })
     }
@@ -958,6 +981,12 @@ impl Eval {
                 let name = globals.symbol_dunder_sub();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_sub();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "-", vec![&a, &b]),
         })
     }
@@ -1006,6 +1035,12 @@ impl Eval {
                 let name = globals.symbol_dunder_mul();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_mul();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "*", vec![&a, &b]),
         })
     }
@@ -1029,6 +1064,12 @@ impl Eval {
                 let name = globals.symbol_dunder_div();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_div();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "/", vec![&a, &b]),
         })
     }
@@ -1084,6 +1125,12 @@ impl Eval {
                 let name = globals.symbol_dunder_truncdiv();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_truncdiv();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "//", vec![&a, &b]),
         })
     }
@@ -1111,6 +1158,12 @@ impl Eval {
                 let name = globals.symbol_dunder_rem();
                 Eval::call_method(globals, name, vec![a, b])
             })?,
+            (a @ Value::MutableUserObject(_), b) => {
+                Self::wrap_debuginfo(globals, debuginfo, |globals| {
+                    let name = globals.symbol_dunder_rem();
+                    Eval::call_method(globals, name, vec![a, b])
+                })?
+            }
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "%", vec![&a, &b]),
         })
     }
@@ -1160,7 +1213,7 @@ impl Eval {
                     let f = Self::get_static_attr_or_err(globals, f, Symbol::DUNDER_CALL)?;
                     Self::call_with_kwargs(globals, &f, args, kwargs)?
                 }
-                ClassKind::UserDefinedClass => {
+                ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => {
                     if cls.has_static_call() {
                         let f = Self::get_static_attr_or_err(globals, f, Symbol::DUNDER_CALL)?;
                         Self::call_with_kwargs(globals, &f, args, kwargs)?
@@ -1235,6 +1288,18 @@ impl Eval {
                     format!("{:?}", x).into()
                 }
             }
+            Value::MutableUserObject(x) => {
+                let cls = x.get_class();
+                if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_str()) {
+                    let strval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &strval)?.clone()
+                } else if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
+                    let strval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &strval)?.clone()
+                } else {
+                    format!("{:?}", x).into()
+                }
+            }
             Value::Exception(x) => format!("{}", x).into(),
             _ => Self::repr(globals, value)?,
         })
@@ -1279,6 +1344,15 @@ impl Eval {
             Value::MutableList(x) => format!("@{}", list2str(globals, &x.borrow())?).into(),
             Value::MutableSet(x) => set2str(globals, "MutableSet", &x.borrow())?.into(),
             Value::MutableMap(x) => format!("@{}", map2str(globals, &x.borrow())?).into(),
+            Value::MutableUserObject(x) => {
+                let cls = x.get_class();
+                if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
+                    let reprval = Self::call(globals, mt, vec![value.clone()])?;
+                    Self::expect_string(globals, &reprval)?.clone()
+                } else {
+                    format!("{:?}", x).into()
+                }
+            }
             Value::Cell(x) => format!("<cell {}>", Self::repr(globals, &x.borrow())?).into(),
         })
     }
@@ -1287,18 +1361,22 @@ impl Eval {
         match owner {
             Value::Table(table) => table.get(name).cloned(),
             Value::UserObject(obj) => obj.get(name).cloned(),
+            Value::MutableUserObject(obj) => obj.get(name).map(|rfc| rfc.borrow().clone()),
             _ => return None,
         }
     }
 
-    pub fn setattr(
-        _: &mut Globals,
-        _owner: &Value,
-        _name: Symbol,
-        _value: Value,
-    ) -> Result<(), ()> {
-        // setattr not yet supported
-        Err(())
+    pub fn setattr(_: &mut Globals, owner: &Value, name: Symbol, value: Value) -> Result<(), ()> {
+        match owner {
+            Value::MutableUserObject(obj) => match obj.get(name) {
+                Some(rfc) => {
+                    *rfc.borrow_mut() = value;
+                    Ok(())
+                }
+                None => Err(()),
+            },
+            _ => Err(()),
+        }
     }
 
     pub fn get_static_attr(_: &mut Globals, owner: &Value, name: Symbol) -> Option<Value> {
