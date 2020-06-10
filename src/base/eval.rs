@@ -30,6 +30,7 @@ use crate::Value;
 use crate::ValueKind;
 use std::cell::Ref;
 use std::cell::RefCell;
+use std::cell::RefMut;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fmt;
@@ -475,6 +476,26 @@ impl Eval {
     ) -> EvalResult<Ref<'a, T>> {
         if let Value::Opaque(opq) = value {
             if let Some(value) = opq.borrow() {
+                Ok(value)
+            } else {
+                let type_name = opq.type_name();
+                globals.set_exc_str(&format!(
+                    "Opaque downcast expected {:?} but got {:?}",
+                    std::any::type_name::<T>(),
+                    type_name,
+                ))
+            }
+        } else {
+            globals.set_kind_error(ValueKind::Opaque, value.kind())
+        }
+    }
+
+    pub fn expect_opaque_mut<'a, T: 'static>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<RefMut<'a, T>> {
+        if let Value::Opaque(opq) = value {
+            if let Some(value) = opq.borrow_mut() {
                 Ok(value)
             } else {
                 let type_name = opq.type_name();
