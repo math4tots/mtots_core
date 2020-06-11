@@ -792,6 +792,7 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match x {
             Value::Int(x) => Value::Int(-*x),
+            Value::Float(x) => Value::Float(-*x),
             _ => return Self::handle_unsupported_op(globals, debuginfo, "-", vec![x]),
         })
     }
@@ -1637,6 +1638,18 @@ impl Eval {
         let second = triple.next().unwrap();
         let third = triple.next().unwrap();
         Ok((first, second, third))
+    }
+
+    pub fn unpack4(
+        globals: &mut Globals,
+        iterable: &Value,
+    ) -> EvalResult<(Value, Value, Value, Value)> {
+        let mut quadruple = Self::unpack(globals, iterable, 4)?.into_iter();
+        let first = quadruple.next().unwrap();
+        let second = quadruple.next().unwrap();
+        let third = quadruple.next().unwrap();
+        let fourth = quadruple.next().unwrap();
+        Ok((first, second, third, fourth))
     }
 
     pub fn fmtstr(globals: &mut Globals, fmt: &str, args: &Vec<Value>) -> EvalResult<String> {
