@@ -26,6 +26,8 @@ enum PseudoOpcode {
     Label(Label),      // target of a jump location
     Pop,
     RotTwo,
+    SwapTos1Tos2,
+    PullTos2,
     PullTos3,
     DupTop,
     LoadConst(usize),
@@ -211,6 +213,14 @@ impl CodeBuilder {
 
     pub fn rot_two(&mut self) {
         self.code.push(PseudoOpcode::RotTwo);
+    }
+
+    pub fn swap_tos1_tos2(&mut self) {
+        self.code.push(PseudoOpcode::SwapTos1Tos2);
+    }
+
+    pub fn pull_tos2(&mut self) {
+        self.code.push(PseudoOpcode::PullTos2);
     }
 
     pub fn pull_tos3(&mut self) {
@@ -605,6 +615,12 @@ impl CodeBuilder {
                     }
                     PseudoOpcode::RotTwo => {
                         state.add(opc::ROT_TWO, &[]);
+                    }
+                    PseudoOpcode::SwapTos1Tos2 => {
+                        state.add(opc::SWAP_TOS1_TOS2, &[]);
+                    }
+                    PseudoOpcode::PullTos2 => {
+                        state.add(opc::PULL_TOS2, &[]);
                     }
                     PseudoOpcode::PullTos3 => {
                         state.add(opc::PULL_TOS3, &[]);

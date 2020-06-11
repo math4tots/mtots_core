@@ -1395,7 +1395,10 @@ impl Eval {
                     *rfc.borrow_mut() = value;
                     Ok(())
                 }
-                None => Err(()),
+                None => {
+                    println!("OBJ -> {:?}", obj);
+                    Err(())
+                }
             },
             _ => Err(()),
         }

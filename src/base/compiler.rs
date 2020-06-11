@@ -701,10 +701,6 @@ fn augassign(
 ) -> Result<(), Error> {
     // NOTES:
     //   * TODO: aug-assign for subscript,
-    //   * aug-assign for attributes are not implemented on purpose because
-    //     it'd be difficult to test, because currently, there are no types
-    //     that permit mutable fields. In this vein, I probably should remove
-    //     the logic for normal-assign of attributes.
     match target.data() {
         ExpressionData::Name(name) => {
             builder.load_var(name.clone());
@@ -714,6 +710,20 @@ fn augassign(
                 builder.dup_top();
             }
             builder.store_var(name.clone());
+        }
+        ExpressionData::Attribute(owner, name) => {
+            rec(builder, owner, true)?;
+            builder.dup_top();
+            builder.load_attr(name);
+            builder.swap_tos1_tos2();
+            builder.binop(op);
+            if used {
+                builder.dup_top();
+                builder.pull_tos2();
+            } else {
+                builder.rot_two();
+            }
+            builder.store_attr(name);
         }
         _ => {
             return Err(Error::new(

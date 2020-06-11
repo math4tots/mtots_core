@@ -16,6 +16,12 @@ def __test_mutable_fields() {
     assert_eq(x.b = 555, 555)
     assert_eq(x.b, 555)
 
+    assert_eq(x.b += 5, 555 + 5)
+    assert_eq(x.b, 555 + 5)
+
+    x.a += 2
+    assert_eq(x.a, 555 + 2)
+
     assert_eq(str(x), '<%s::SomeClass @instance>' % [__name])
 }
 

@@ -260,6 +260,20 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         let len = frame.stack.len();
         frame.stack.swap(len - 1, len - 2);
     }
+    SWAP_TOS1_TOS2() [+ 3 3] {
+        // Swaps TOS1 (the scond from the top element) with TOS2 (the third
+        // from the top element)
+        let len = frame.stack.len();
+        frame.stack.swap(len - 2, len - 3);
+    }
+    PULL_TOS2() [+ 3 3] {
+        // pulls TOS2 (3rd element from the top of the stack) out,
+        // and puts it on top, so it becomes the new TOS, with all
+        // elements that used to be on top of it one position down
+        let len = frame.stack.len();
+        let tos2 = frame.stack.remove(len - 3);
+        frame.stack.push(tos2);
+    }
     PULL_TOS3() [+ 4 4] {
         // pulls TOS3 (4th element from the top of the stack) out,
         // and puts it on top, so it becomes the new TOS, with all
