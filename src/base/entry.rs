@@ -41,6 +41,9 @@ pub fn main(globals: &mut Globals) {
         &[_, "-m", module_name] => {
             run(globals, &[], RunTarget::Module(module_name));
         }
+        &[_, extra_source, path] => {
+            run(globals, &[extra_source], RunTarget::Path(&path));
+        }
         _ => {
             eprintln!("<path-to-script> [-- args...]");
         }
