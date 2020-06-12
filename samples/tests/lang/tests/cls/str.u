@@ -36,3 +36,7 @@ def __test_str() {
     assert_eq(str(x), '<xstr 777>')
     assert_eq(repr(x), '<xrepr 777>')
 }
+
+def __test_chars() {
+    assert_eq('hello'.chars(), ['h', 'e', 'l', 'l', 'o'])
+}

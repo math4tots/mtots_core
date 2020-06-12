@@ -76,6 +76,7 @@ pub struct Globals {
     symbol_dunder_rem: Symbol,
     symbol_dunder_eq: Symbol,
     symbol_dunder_lt: Symbol,
+    char_cache: Vec<Value>,
 }
 
 impl Globals {
@@ -94,6 +95,14 @@ impl Globals {
         let symbol_dunder_rem = symbol_registry.intern_str("__rem");
         let symbol_dunder_eq = symbol_registry.intern_str("__eq");
         let symbol_dunder_lt = symbol_registry.intern_str("__lt");
+        let char_cache = {
+            let mut cache = Vec::<Value>::new();
+            for i in 0..128 {
+                let c = (i as u8) as char;
+                cache.push(format!("{}", c).into());
+            }
+            cache
+        };
         let mut globals = Globals {
             trace: Vec::new(),
             line_cache: HashMap::new(),
@@ -122,10 +131,19 @@ impl Globals {
             symbol_dunder_rem,
             symbol_dunder_eq,
             symbol_dunder_lt,
+            char_cache,
         };
         globals.add_builtin_native_modules();
         super::emb::install_embedded_sources(&mut globals);
         globals
+    }
+
+    pub fn char_to_val(&self, ch: char) -> Value {
+        if (ch as u8) < 128 {
+            self.char_cache[ch as usize].clone()
+        } else {
+            format!("{}", ch).into()
+        }
     }
 
     pub fn symbol_dunder_str(&self) -> Symbol {

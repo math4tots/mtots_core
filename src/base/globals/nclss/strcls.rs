@@ -76,6 +76,20 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+        NativeFunction::sdnew(
+            sr,
+            "chars",
+            (&["self"], &[], None, None),
+            Some("Returns a list of chars of this String"),
+            |globals, args, _kwargs| {
+                let s = Eval::expect_string(globals, &args[0])?;
+                let mut ret = Vec::new();
+                for c in s.chars() {
+                    ret.push(globals.char_to_val(c));
+                }
+                Ok(ret.into())
+            },
+        ),
         NativeFunction::simple0(sr, "trim", &["self"], |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
             Ok(s.trim().into())
