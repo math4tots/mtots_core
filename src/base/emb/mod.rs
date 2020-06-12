@@ -9,6 +9,7 @@ pub(super) fn install_embedded_sources(globals: &mut Globals) {
     add(globals, "a.os", include_str!("os.u"));
     add(globals, "a.math", include_str!("math.u"));
     add(globals, "a.fs", include_str!("fs.u"));
+    add(globals, "a.test", include_str!("test.u"));
 }
 
 fn add(globals: &mut Globals, name: &'static str, data: &'static str) {
