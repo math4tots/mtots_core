@@ -1,4 +1,4 @@
-import os
+import a.os
 
 def __test_dir_list() {
     assert(__file.is_file())

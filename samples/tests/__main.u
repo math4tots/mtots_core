@@ -3,10 +3,10 @@ r###"
 cls && export MTOTS_PATH="stdlib" && time cargo run -- samples/tests
 
 "###
-import os
-import os::PIPE
-import os::UTF8
-import os::Process
+import a.os
+import a.os::PIPE
+import a.os::UTF8
+import a.os::Process
 
 def main() {
     root = __file.parent().canon()

@@ -17,7 +17,7 @@ def __test_path_parent_loop() {
 }
 
 def __test_misc() {
-    import os
+    import a.os
 
     print(os)
 

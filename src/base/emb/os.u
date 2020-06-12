@@ -1,5 +1,5 @@
-import _os
-import _os.proc as osproc
+import a._os
+import a._os.proc as osproc
 
 name = _os::name
 family = _os::family
