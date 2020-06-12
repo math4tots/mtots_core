@@ -1,6 +1,8 @@
 mod base;
 mod util;
 
+extern crate alloc;
+
 use base::compile;
 use base::short_name_from_full_name;
 use base::ArgumentError;

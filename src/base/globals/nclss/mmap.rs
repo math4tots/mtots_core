@@ -5,7 +5,7 @@ use crate::NativeFunction;
 use crate::SymbolRegistryHandle;
 use crate::VMap;
 use crate::Value;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![

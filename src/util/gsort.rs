@@ -2,7 +2,7 @@
 /// I can't use the builtin sorting functions, because they
 /// don't support the case where the comparison operation itself
 /// may fail
-use std::mem;
+use core::mem;
 
 /// Simple failable merge sort
 /// TODO: implement a faster sort
@@ -84,7 +84,7 @@ use Command::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cmp;
+    use core::cmp;
 
     /// Calls gsort, but with trivial type arguments for
     /// the error handling parts so that at least the sorting

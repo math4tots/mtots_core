@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token<'a> {

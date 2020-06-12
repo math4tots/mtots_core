@@ -7,10 +7,10 @@ use crate::Opaque;
 use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
 use std::process::Child;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub const NAME: &str = "_os.proc";
 

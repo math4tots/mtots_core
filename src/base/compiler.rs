@@ -14,7 +14,7 @@ use crate::RcStr;
 use crate::SymbolRegistryHandle;
 use crate::Unop;
 use crate::Value;
-use std::fmt;
+use core::fmt;
 
 #[derive(Debug)]
 pub struct CompileError {

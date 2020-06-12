@@ -15,15 +15,15 @@ use crate::Symbol;
 use crate::SymbolRegistryHandle;
 use crate::VMap;
 use crate::VSet;
-use std::any::Any;
-use std::cell::Ref;
-use std::cell::RefCell;
-use std::cell::RefMut;
+use core::any::Any;
+use core::cell::Ref;
+use core::cell::RefCell;
+use core::cell::RefMut;
 use std::collections::HashMap;
-use std::fmt;
+use core::fmt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -641,7 +641,7 @@ impl fmt::Display for ArgumentError {
             ArgumentError::MismatchedArgumentCount { argc, min, max } => {
                 if min == max {
                     write!(f, "Expected {} args but got {}", min, argc)?;
-                } else if *max == std::usize::MAX {
+                } else if *max == core::usize::MAX {
                     write!(f, "Expected at least {} args but got {}", min, argc)?;
                 } else {
                     write!(
@@ -804,7 +804,7 @@ impl ParameterInfo {
             let min = self.required.len();
             let wopt = min + self.optional.len();
             let max = if self.variadic.is_some() {
-                std::usize::MAX
+                core::usize::MAX
             } else {
                 wopt
             };
@@ -1221,16 +1221,16 @@ impl Class {
 
     pub fn get_from_instance_map<K>(&self, name: &K) -> Option<&Value>
     where
-        Symbol: std::borrow::Borrow<K>,
-        K: ?Sized + Eq + std::hash::Hash,
+        Symbol: core::borrow::Borrow<K>,
+        K: ?Sized + Eq + core::hash::Hash,
     {
         self.map.get(name)
     }
 
     pub fn get_static<K>(&self, name: &K) -> Option<&Value>
     where
-        Symbol: std::borrow::Borrow<K>,
-        K: ?Sized + Eq + std::hash::Hash,
+        Symbol: core::borrow::Borrow<K>,
+        K: ?Sized + Eq + core::hash::Hash,
     {
         self.static_map.get(name)
     }
@@ -1449,7 +1449,7 @@ impl From<Rc<Opaque>> for Value {
 }
 impl Opaque {
     pub fn new<T: 'static>(t: T) -> Opaque {
-        let type_name = std::any::type_name::<T>();
+        let type_name = core::any::type_name::<T>();
         Opaque {
             type_name,
             ptr: RefCell::new(Some(Box::new(t))),

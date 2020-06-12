@@ -1,19 +1,19 @@
 use crate::HMap;
 use crate::RcStr;
-use std::cell::Ref;
-use std::cell::RefCell;
-use std::cmp;
+use core::cell::Ref;
+use core::cell::RefCell;
+use core::cmp;
 use std::collections::HashMap;
-use std::fmt;
-use std::hash;
-use std::rc::Rc;
+use core::fmt;
+use core::hash;
+use alloc::rc::Rc;
 
 // Borrow<str> is not implemented for Symbol by design
 // The contract of Borrow would requrie that Eq, Ord and Hash
 // be equivalent as compared to str.
 // This would mean that all of those operations would need to
 // be against the &str value rather than against just the id
-assert_not_impl!(Symbol, std::borrow::Borrow<str>);
+assert_not_impl!(Symbol, core::borrow::Borrow<str>);
 
 #[derive(Debug)]
 pub struct Symbol(&'static (usize, &'static str));
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn symbol_size() {
-        use std::mem::size_of;
+        use core::mem::size_of;
         assert_eq!(size_of::<Symbol>(), size_of::<usize>());
 
         // if &str were ever to be the same size as &&str,
@@ -233,9 +233,9 @@ mod tests {
         // check that all preloaded symbols are the 'same' as
         // any symbol interned later with the same values
 
-        fn hash<T: std::hash::Hash>(t: T) -> u64 {
+        fn hash<T: core::hash::Hash>(t: T) -> u64 {
             use std::collections::hash_map::DefaultHasher;
-            use std::hash::Hasher;
+            use core::hash::Hasher;
             let mut h = DefaultHasher::new();
             t.hash(&mut h);
             h.finish()

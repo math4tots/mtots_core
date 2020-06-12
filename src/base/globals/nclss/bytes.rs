@@ -7,7 +7,7 @@ use crate::SymbolRegistryHandle;
 use crate::Value;
 
 use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![NativeFunction::simple0(
@@ -18,7 +18,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let bytes = Eval::expect_bytes(globals, &args[0])?;
             let encoding = Eval::expect_symbol(globals, &args[1])?;
             if encoding == Symbol::UTF8 {
-                match std::str::from_utf8(bytes) {
+                match core::str::from_utf8(bytes) {
                     Ok(s) => Ok(s.into()),
                     Err(error) => globals.set_utf8_error(error),
                 }

@@ -17,10 +17,10 @@ use crate::SymbolRegistryHandle;
 use crate::Token;
 use crate::Value;
 use crate::ValueKind;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
 
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 mod bfuncs;
 mod builtins;
@@ -242,12 +242,12 @@ impl Globals {
         line_cache.get(&key).map(|line| line.clone())
     }
 
-    pub fn trace_fmt<'a>(&'a mut self) -> impl std::fmt::Display + 'a {
+    pub fn trace_fmt<'a>(&'a mut self) -> impl core::fmt::Display + 'a {
         struct Disp<'a> {
             globals: RefCell<&'a mut Globals>,
         }
-        impl<'a> std::fmt::Display for Disp<'a> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl<'a> core::fmt::Display for Disp<'a> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 for (source_name, lineno, line) in self.globals.borrow_mut().translated_trace() {
                     write!(f, "  {}, line {}\n", source_name, lineno)?;
                     if let Some(line) = line {
@@ -286,7 +286,7 @@ impl Globals {
     }
 
     pub fn exc_move(&mut self) -> Exception {
-        std::mem::replace(&mut self.exc, None).expect("Tried to get an error when none is present")
+        core::mem::replace(&mut self.exc, None).expect("Tried to get an error when none is present")
     }
 
     pub fn set_exc<T>(&mut self, exc: Exception) -> Result<T, ErrorIndicator> {
@@ -407,7 +407,7 @@ impl Globals {
         ))
     }
 
-    pub fn set_utf8_error<T>(&mut self, error: std::str::Utf8Error) -> Result<T, ErrorIndicator> {
+    pub fn set_utf8_error<T>(&mut self, error: core::str::Utf8Error) -> Result<T, ErrorIndicator> {
         self.set_exc(Exception::new(
             self.builtin_exceptions.OSError.clone(),
             vec![format!("{:?}", error).into()],

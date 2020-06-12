@@ -4,8 +4,8 @@ use crate::SymbolRegistryHandle;
 use crate::Value;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::fmt;
-use std::rc::Rc;
+use core::fmt;
+use alloc::rc::Rc;
 
 pub struct ExceptionRegistry {
     by_id: Vec<Rc<ExceptionKind>>,
@@ -103,13 +103,13 @@ impl ExceptionKind {
     }
 }
 
-impl std::cmp::PartialEq for ExceptionKind {
+impl core::cmp::PartialEq for ExceptionKind {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
 }
 
-impl std::cmp::Eq for ExceptionKind {}
+impl core::cmp::Eq for ExceptionKind {}
 
 impl fmt::Debug for ExceptionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

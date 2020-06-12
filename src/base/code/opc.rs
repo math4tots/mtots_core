@@ -14,9 +14,9 @@ use crate::RcStr;
 use crate::Table;
 use crate::VMap;
 use crate::Value;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 macro_rules! count_ident {
     (()) => {

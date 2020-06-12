@@ -8,7 +8,7 @@ use crate::Value;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![

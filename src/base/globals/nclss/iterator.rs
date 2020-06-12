@@ -8,7 +8,7 @@ use crate::SymbolRegistryHandle;
 use crate::Value;
 
 use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 // There are only two Iterator types, NativeIterator and GeneratorObject
 // TODO: Enforce this in the runtime (e.g. something like Scala's sealed traits)

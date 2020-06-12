@@ -16,11 +16,11 @@ use crate::SymbolRegistryHandle;
 use crate::Table;
 use crate::Value;
 use opc::OpcodeArgumentType;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
-use std::fmt;
+use core::fmt;
 
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub use builder::CodeBuilder;
 pub use builder::CodeBuilderError;

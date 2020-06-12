@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
-use std::fmt;
-use std::ops;
-use std::rc::Rc;
+use core::borrow::Borrow;
+use core::fmt;
+use core::ops;
+use alloc::rc::Rc;
 
 /// Implemented like Rc<String> so that it can stay a thin pointer,
 /// but dereferences to &str like Rc<str>

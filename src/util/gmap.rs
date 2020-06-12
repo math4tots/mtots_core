@@ -17,9 +17,9 @@
 //! HMap is a specialization of GMap that only require Key and Value generic
 //! parameters
 //!
-use std::fmt;
-use std::iter;
-use std::mem;
+use core::fmt;
+use core::iter;
+use core::mem;
 
 pub trait FailableEq<S, T, E> {
     fn eq(state: &mut S, a: &T, b: &T) -> Result<bool, E>;
@@ -39,10 +39,10 @@ where
     index_map: Vec<usize>,
     entries: Vec<Option<Entry<K, V>>>,
     change_count: usize,
-    eqf_type: std::marker::PhantomData<*const EqF>,
-    hashf_type: std::marker::PhantomData<*const HashF>,
-    state_type: std::marker::PhantomData<*const S>,
-    error_type: std::marker::PhantomData<*const E>,
+    eqf_type: core::marker::PhantomData<*const EqF>,
+    hashf_type: core::marker::PhantomData<*const HashF>,
+    state_type: core::marker::PhantomData<*const S>,
+    error_type: core::marker::PhantomData<*const E>,
 }
 
 #[derive(Clone)]
@@ -63,12 +63,12 @@ impl<K, V> Entry<K, V> {
     }
 }
 
-const NULL_INDEX: usize = std::usize::MAX;
+const NULL_INDEX: usize = core::usize::MAX;
 const INIT_CAP: usize = 8;
 const PERTURB_SHIFT: usize = 5;
 const MIN_CAP: usize = INIT_CAP;
 
-pub struct DefaultEqF<K>(std::marker::PhantomData<K>);
+pub struct DefaultEqF<K>(core::marker::PhantomData<K>);
 
 impl<K: PartialEq> FailableEq<(), K, ()> for DefaultEqF<K> {
     fn eq(_: &mut (), a: &K, b: &K) -> Result<bool, ()> {
@@ -76,11 +76,11 @@ impl<K: PartialEq> FailableEq<(), K, ()> for DefaultEqF<K> {
     }
 }
 
-pub struct DefaultHashF<K>(std::marker::PhantomData<K>);
+pub struct DefaultHashF<K>(core::marker::PhantomData<K>);
 
-impl<K: std::hash::Hash> FailableHash<(), K, ()> for DefaultHashF<K> {
+impl<K: core::hash::Hash> FailableHash<(), K, ()> for DefaultHashF<K> {
     fn hash(_: &mut (), x: &K) -> Result<u64, ()> {
-        use std::hash::Hasher;
+        use core::hash::Hasher;
         let mut s = std::collections::hash_map::DefaultHasher::new();
         x.hash(&mut s);
         Ok(s.finish())
@@ -90,7 +90,7 @@ impl<K: std::hash::Hash> FailableHash<(), K, ()> for DefaultHashF<K> {
 /// AlwaysFalseEqF is useful when we're inserting into the map
 /// and we know that there are no duplicates. This allows us to
 /// avoid actually calling the user-specified failable functions.
-struct AlwaysFalseEqF<K>(std::marker::PhantomData<K>);
+struct AlwaysFalseEqF<K>(core::marker::PhantomData<K>);
 
 impl<S, K> FailableEq<S, K, ()> for AlwaysFalseEqF<K> {
     fn eq(_: &mut S, _: &K, _: &K) -> Result<bool, ()> {
@@ -113,10 +113,10 @@ where
             index_map: vec![NULL_INDEX; INIT_CAP],
             entries: Vec::new(),
             change_count: 0,
-            eqf_type: std::marker::PhantomData,
-            hashf_type: std::marker::PhantomData,
-            state_type: std::marker::PhantomData,
-            error_type: std::marker::PhantomData,
+            eqf_type: core::marker::PhantomData,
+            hashf_type: core::marker::PhantomData,
+            state_type: core::marker::PhantomData,
+            error_type: core::marker::PhantomData,
         }
     }
 
@@ -371,7 +371,7 @@ where
 /// Some convenience methods for the default case
 impl<K, V> HMap<K, V>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + core::hash::Hash,
 {
     pub fn get(&self, key: &K) -> Option<&V> {
         self.s_get(&mut (), key).unwrap()
@@ -388,7 +388,7 @@ where
 
 impl<K, V> PartialEq for HMap<K, V>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + core::hash::Hash,
     V: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -398,14 +398,14 @@ where
 
 impl<K, V> Eq for HMap<K, V>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + core::hash::Hash,
     V: Eq,
 {
 }
 
 impl<K, V> iter::FromIterator<(K, V)> for HMap<K, V>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + core::hash::Hash,
 {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> HMap<K, V> {
         let iter = iter.into_iter();
@@ -462,7 +462,7 @@ where
 
 pub struct GMapIntoIter<K, V> {
     done: bool,
-    iter: std::vec::IntoIter<Option<Entry<K, V>>>,
+    iter: alloc::vec::IntoIter<Option<Entry<K, V>>>,
 }
 
 impl<K, V> Iterator for GMapIntoIter<K, V> {
@@ -501,7 +501,7 @@ where
 
 pub struct GMapRefIter<'a, K, V> {
     done: bool,
-    iter: std::slice::Iter<'a, Option<Entry<K, V>>>,
+    iter: core::slice::Iter<'a, Option<Entry<K, V>>>,
 }
 
 impl<'a, K, V> Iterator for GMapRefIter<'a, K, V> {
@@ -540,7 +540,7 @@ where
 
 pub struct GMapRefKeysIter<'a, K, V> {
     done: bool,
-    iter: std::slice::Iter<'a, Option<Entry<K, V>>>,
+    iter: core::slice::Iter<'a, Option<Entry<K, V>>>,
 }
 
 impl<'a, K, V> Iterator for GMapRefKeysIter<'a, K, V> {

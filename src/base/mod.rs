@@ -65,7 +65,7 @@ pub use value::ValueKind;
 
 use crate::RcPath;
 use crate::RcStr;
-use std::fmt;
+use core::fmt;
 
 pub enum SourceName {
     File(RcPath),
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn value_and_eval_result_size() {
-        use std::mem::size_of;
+        use core::mem::size_of;
 
         assert_eq!(size_of::<Value>(), 2 * size_of::<usize>());
         assert_eq!(size_of::<EvalResult<Value>>(), 2 * size_of::<usize>());

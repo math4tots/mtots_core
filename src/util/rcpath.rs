@@ -1,9 +1,9 @@
-use std::borrow::Borrow;
-use std::fmt;
-use std::ops;
+use core::borrow::Borrow;
+use core::fmt;
+use core::ops;
 use std::path::Path;
 use std::path::PathBuf;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 /// Implemented like Rc<PathBuf> so that it can stay a thin pointer,
 /// but dereferences to &Path like Rc<Path>

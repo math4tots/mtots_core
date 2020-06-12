@@ -3,7 +3,7 @@ use crate::ClassKind;
 use crate::SymbolRegistryHandle;
 
 use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub(super) fn mkcls(_symbol_registry: &SymbolRegistryHandle) -> Rc<Class> {
     Class::new0(

@@ -3,7 +3,7 @@ use crate::Class;
 use crate::Globals;
 use crate::SymbolRegistryHandle;
 
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 mod bewl;
 mod bf;

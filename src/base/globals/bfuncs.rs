@@ -4,7 +4,7 @@ use crate::NativeFunction;
 use crate::SymbolRegistryHandle;
 use crate::Value;
 
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub struct NativeFunctions {
     print: Rc<NativeFunction>,

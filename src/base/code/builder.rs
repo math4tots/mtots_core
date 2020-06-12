@@ -15,7 +15,7 @@ use crate::Unop;
 use crate::Value;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Label(usize);
@@ -578,7 +578,7 @@ impl CodeBuilder {
                 }
                 fn push_label(&mut self, label: Label) {
                     let offset = self.pos();
-                    self.push(std::usize::MAX);
+                    self.push(core::usize::MAX);
 
                     // We might not know what the label value is, so
                     // save this as a task for later

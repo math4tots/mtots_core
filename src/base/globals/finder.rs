@@ -4,12 +4,12 @@ use crate::HMap;
 use crate::RcPath;
 use crate::RcStr;
 use crate::Value;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 pub const SOURCE_FILE_EXTENSION: &str = "u";
 pub const MTOTS_PATH: &str = "MTOTS_PATH";

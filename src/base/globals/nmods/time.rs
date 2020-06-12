@@ -5,9 +5,9 @@ use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
-use std::cell::RefCell;
+use core::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::rc::Rc;
 use std::time::SystemTime;
 
 pub const NAME: &str = "time";

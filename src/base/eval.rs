@@ -28,17 +28,17 @@ use crate::Table;
 use crate::UnorderedHasher;
 use crate::Value;
 use crate::ValueKind;
-use std::cell::Ref;
-use std::cell::RefCell;
-use std::cell::RefMut;
+use core::cell::Ref;
+use core::cell::RefCell;
+use core::cell::RefMut;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::fmt;
-use std::hash::Hash;
-use std::hash::Hasher;
+use core::fmt;
+use core::hash::Hash;
+use core::hash::Hasher;
 use std::path::Path;
 use std::path::PathBuf;
-use std::rc::Rc;
+use alloc::rc::Rc;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -486,7 +486,7 @@ impl Eval {
                 let type_name = opq.type_name();
                 globals.set_exc_str(&format!(
                     "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
+                    core::any::type_name::<T>(),
                     type_name,
                 ))
             }
@@ -506,7 +506,7 @@ impl Eval {
                 let type_name = opq.type_name();
                 globals.set_exc_str(&format!(
                     "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
+                    core::any::type_name::<T>(),
                     type_name,
                 ))
             }
@@ -528,7 +528,7 @@ impl Eval {
                 let type_name = opq.type_name();
                 globals.set_exc_str(&format!(
                     "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
+                    core::any::type_name::<T>(),
                     type_name,
                 ))
             }
@@ -922,7 +922,7 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Int(a), Value::Int(b)) => {
-                if b >= 0 && b <= (std::u32::MAX as i64) {
+                if b >= 0 && b <= (core::u32::MAX as i64) {
                     Value::Int(a.pow(b as u32))
                 } else {
                     Value::Float((a as f64).powf(b as f64))
@@ -1035,7 +1035,7 @@ impl Eval {
             (Value::Float(a), Value::Int(b)) => Value::Float(a * (b as f64)),
             (Value::String(s), Value::Int(n)) => {
                 // TODO: consider throwing instead if n is < 0
-                let n = std::cmp::max(0, n) as usize;
+                let n = core::cmp::max(0, n) as usize;
                 s.repeat(n).into()
             }
             (Value::List(list), Value::Int(n)) => {
