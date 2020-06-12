@@ -1,4 +1,4 @@
-import time
+import a.time
 
 def __test_now() {
     now = time::now()

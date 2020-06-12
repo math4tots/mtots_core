@@ -7,6 +7,8 @@ use crate::Globals;
 pub(super) fn install_embedded_sources(globals: &mut Globals) {
     add(globals, "__prelude", include_str!("prel.u"));
     add(globals, "a.os", include_str!("os.u"));
+    add(globals, "a.math", include_str!("math.u"));
+    add(globals, "a.fs", include_str!("fs.u"));
 }
 
 fn add(globals: &mut Globals, name: &'static str, data: &'static str) {
