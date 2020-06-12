@@ -215,6 +215,7 @@ impl CodeBuilder {
         self.code.push(PseudoOpcode::RotTwo);
     }
 
+    #[allow(dead_code)]
     pub fn swap_tos1_tos2(&mut self) {
         self.code.push(PseudoOpcode::SwapTos1Tos2);
     }

@@ -715,7 +715,7 @@ fn augassign(
             rec(builder, owner, true)?;
             builder.dup_top();
             builder.load_attr(name);
-            builder.swap_tos1_tos2();
+            builder.pull_tos2();
             builder.binop(op);
             if used {
                 builder.dup_top();
