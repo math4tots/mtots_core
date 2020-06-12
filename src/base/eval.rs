@@ -59,7 +59,7 @@ pub enum EvalError {
     UnpackSize { expected: usize, but_got: usize },
     ExpectedIterable(ValueKind),
     ExpectedIterator(ValueKind),
-    NoSuchAttribute(Symbol),
+    NoSuchAttribute(Symbol, RcStr),
     CouldNotAssignAttribute(Symbol),
     OperationNotSupportedForKinds(Operation, Vec<ValueKind>),
 }
@@ -84,7 +84,7 @@ impl EvalError {
             EvalError::UnpackSize { .. } => "UnpackSize",
             EvalError::ExpectedIterable(_) => "ExpectedIterable",
             EvalError::ExpectedIterator(_) => "ExpectedIterator",
-            EvalError::NoSuchAttribute(_) => "NoSuchAttribute",
+            EvalError::NoSuchAttribute(_, _) => "NoSuchAttribute",
             EvalError::CouldNotAssignAttribute(_) => "CouldNotAssignAttribute",
             EvalError::OperationNotSupportedForKinds(_, _) => "OperationNotSupportedForKinds",
         }
@@ -125,7 +125,12 @@ impl fmt::Display for EvalError {
             }
             EvalError::ExpectedIterable(kind) => write!(f, "Expected iterable but got {:?}", kind),
             EvalError::ExpectedIterator(kind) => write!(f, "Expected iterator but got {:?}", kind),
-            EvalError::NoSuchAttribute(name) => write!(f, "Attribute {:?} not found", name.str()),
+            EvalError::NoSuchAttribute(name, clsname) => write!(
+                f,
+                "Attribute {:?} not found for instance of type {:?}",
+                name.str(),
+                clsname
+            ),
             EvalError::CouldNotAssignAttribute(name) => write!(f, "{:?}", name.str()),
             EvalError::OperationNotSupportedForKinds(op, kinds) => {
                 write!(f, "{:?}", op)?;

@@ -636,7 +636,8 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         if let Some(value) = Eval::getattr(globals, &owner, name) {
             frame.stack.push(value);
         } else {
-            let error = EvalError::NoSuchAttribute(name);
+            let cls = Eval::classof(globals, &owner)?;
+            let error = EvalError::NoSuchAttribute(name, cls.full_name().clone());
             let lineno = code.find_lineno_for_opcode_at(frame.i - 1 - ARGC);
             globals.trace_push(code.module_name.clone(), lineno);
             return globals.set_exc_legacy(error.into())?;
