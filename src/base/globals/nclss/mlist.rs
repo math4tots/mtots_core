@@ -70,6 +70,19 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             Eval::extend_from_iterable(globals, &mut list.borrow_mut(), &args[1])?;
             Ok(Value::Nil)
         }),
+        NativeFunction::simple0(sr, "resize", &["self", "new_size"], |globals, args, _kwargs| {
+            let list = Eval::expect_mutable_list(globals, &args[0])?;
+            let mut list = list.borrow_mut();
+            let new_size = Eval::expect_usize(globals, &args[1])?;
+            if list.len() < new_size {
+                for _ in list.len()..new_size {
+                    list.push(Value::Nil);
+                }
+            } else {
+                list.truncate(new_size);
+            }
+            Ok(Value::Nil)
+        }),
         NativeFunction::snew(
             sr,
             "any",

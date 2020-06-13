@@ -65,3 +65,16 @@ def __test_any_all() {
     assert_eq([1, 12].any(def(x) = x > 10), true)
     assert_eq([1, 2].any(def(x) = x > 10), false)
 }
+
+def __test_resize() {
+    list = @[1, 2, 3, 4]
+    list.resize(6)
+    assert_eq(list, @[1, 2, 3, 4, nil, nil])
+    list.resize(2)
+    assert_eq(list, @[1, 2])
+    list = @[1, 2, 3, 4]
+    list.resize(2)
+    assert_eq(list, @[1, 2])
+    list.resize(2)
+    assert_eq(list, @[1, 2])
+}
