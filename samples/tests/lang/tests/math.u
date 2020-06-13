@@ -1,0 +1,7 @@
+import a.math
+
+
+def __test_trig() {
+    assert_eq(math::sin(2) ** 2 + math::cos(2) ** 2, 1)
+    assert_eq(math::cos(math::PI), -1)
+}

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::env;
 use std::rc::Rc;
 
-pub const NAME: &str = "_os";
+pub const NAME: &str = "a._os";
 
 const OS: &str = std::env::consts::OS;
 const FAMILY: &str = std::env::consts::FAMILY;

@@ -19,9 +19,11 @@ pub enum SourceFinderError {
     SourceNotFound,
     ConflictingModulePaths(Vec<RcPath>),
     IOError(io::Error),
+    Custom(String),
 }
 
 pub struct SourceFinder {
+    custom: Option<Box<dyn Fn(&str) -> Result<Option<String>, String>>>,
     roots: Vec<RcPath>,
     cache: HashMap<RcStr, SourceItem>,
 }
@@ -37,9 +39,17 @@ fn os_sep() -> &'static str {
 impl SourceFinder {
     pub fn new() -> SourceFinder {
         SourceFinder {
+            custom: None,
             roots: Vec::new(),
             cache: HashMap::new(),
         }
+    }
+
+    pub fn set_custom_finder<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> Result<Option<String>, String> + 'static,
+    {
+        self.custom = Some(Box::new(f));
     }
 
     pub fn add_root(&mut self, root: RcPath) {
@@ -87,6 +97,13 @@ impl SourceFinder {
     }
 
     fn load_nocache(&mut self, name: &RcStr) -> Result<SourceItem, SourceFinderError> {
+        if let Some(custom_finder) = &self.custom {
+            match custom_finder(name.str()) {
+                Ok(Some(data)) => return Ok(SourceItem::Custom { data: data.into() }),
+                Ok(None) => (),
+                Err(message) => return Err(SourceFinderError::Custom(message)),
+            }
+        }
         for root in &self.roots {
             let path = get_file_path_for_module(root, name)?;
             if path.is_file() {
@@ -153,5 +170,8 @@ pub(crate) enum SourceItem {
     },
     Embedded {
         data: &'static str,
+    },
+    Custom {
+        data: RcStr,
     },
 }

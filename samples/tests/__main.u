@@ -1,51 +1,6 @@
-r###"
+# cls && time cargo run -- samples/tests
+import a.test
 
-cls && export MTOTS_PATH="stdlib" && time cargo run -- samples/tests
-
-"###
-import os
-import os::PIPE
-import os::UTF8
-import os::Process
-
-def main() {
-    root = __file.parent().canon()
-    for module_name in _get_module_names(root, "lang") {
-        print(module_name)
-        module = __import(module_name)
-        keys = module.keys().filter(def(k) = str(k).starts_with('__test_')).to(List)
-        if keys {
-            for attr in keys {
-                attr_str = str(attr)
-                print('  ' + attr_str)
-                module.get(attr)()
-            }
-        } else {
-            print('  no tests')
-        }
-    }
+if __name == __main() {
+    test::run(__file.parent(), 'lang')
 }
-
-def* _get_module_names(root, package_name) {
-    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name)) {
-        if filepaths.map(def(fp) = fp.basename()).has('__init.u') {
-            yield str(dirpath.relpath(root)).replace(os::sep, '.')
-        }
-        for filepath in sorted(filepaths) {
-            basename = filepath.basename()
-            if basename.ends_with('.u') and basename != '__init.u' {
-                yield str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
-            }
-        }
-    }
-}
-
-if __name == '__main' {
-    main()
-}
-
-"""
-print(os::run("ls", ['.'], stdout=PIPE, stderr=PIPE, encoding=UTF8))
-print(os::run("pwd", stdout=PIPE, stderr=PIPE, encoding=UTF8))
-print(Process)
-"""

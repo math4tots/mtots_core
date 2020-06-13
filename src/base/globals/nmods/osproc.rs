@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::process::Child;
 use std::rc::Rc;
 
-pub const NAME: &str = "_os.proc";
+pub const NAME: &str = "a._os.proc";
 
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let sr = globals.symbol_registry();

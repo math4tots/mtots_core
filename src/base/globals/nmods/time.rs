@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::SystemTime;
 
-pub const NAME: &str = "time";
+pub const NAME: &str = "a.time";
 
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let sr = globals.symbol_registry();
