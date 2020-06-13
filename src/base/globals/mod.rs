@@ -424,7 +424,7 @@ impl Globals {
 
     pub fn set_custom_source_finder<F>(&mut self, f: F)
     where
-        F: Fn(&str) -> Option<String> + 'static,
+        F: Fn(&str) -> Result<Option<String>, String> + 'static,
     {
         self.finder.set_custom_finder(f);
     }
@@ -486,6 +486,9 @@ impl Globals {
                 Err(SourceFinderError::ConflictingModulePaths(paths)) => {
                     return self
                         .set_exc_str(&format!("Conflicting paths for module ({:?})", paths));
+                }
+                Err(SourceFinderError::Custom(message)) => {
+                    return self.set_exc_str(&message);
                 }
                 Ok(SourceItem::Native { body }) => {
                     let map = body(self)?;

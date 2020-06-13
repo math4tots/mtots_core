@@ -19,10 +19,11 @@ pub enum SourceFinderError {
     SourceNotFound,
     ConflictingModulePaths(Vec<RcPath>),
     IOError(io::Error),
+    Custom(String),
 }
 
 pub struct SourceFinder {
-    custom: Option<Box<dyn Fn(&str) -> Option<String>>>,
+    custom: Option<Box<dyn Fn(&str) -> Result<Option<String>, String>>>,
     roots: Vec<RcPath>,
     cache: HashMap<RcStr, SourceItem>,
 }
@@ -46,7 +47,7 @@ impl SourceFinder {
 
     pub fn set_custom_finder<F>(&mut self, f: F)
     where
-        F: Fn(&str) -> Option<String> + 'static,
+        F: Fn(&str) -> Result<Option<String>, String> + 'static,
     {
         self.custom = Some(Box::new(f));
     }
@@ -97,8 +98,10 @@ impl SourceFinder {
 
     fn load_nocache(&mut self, name: &RcStr) -> Result<SourceItem, SourceFinderError> {
         if let Some(custom_finder) = &self.custom {
-            if let Some(data) = custom_finder(name.str()) {
-                return Ok(SourceItem::Custom { data: data.into() });
+            match custom_finder(name.str()) {
+                Ok(Some(data)) => return Ok(SourceItem::Custom { data: data.into() }),
+                Ok(None) => (),
+                Err(message) => return Err(SourceFinderError::Custom(message)),
             }
         }
         for root in &self.roots {
