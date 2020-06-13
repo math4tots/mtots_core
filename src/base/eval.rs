@@ -1004,6 +1004,15 @@ impl Eval {
             (Value::Float(a), Value::Float(b)) => Value::Float(a - b),
             (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) - b),
             (Value::Float(a), Value::Int(b)) => Value::Float(a - (b as f64)),
+            (Value::Table(a), b) => {
+                let mut map = unwrap_or_clone_rc(a).map_move();
+                let iter = Self::iter(globals, &b)?;
+                while let Some(key) = Self::next(globals, &iter)? {
+                    let key = Self::expect_symbol(globals, &key)?;
+                    map.remove(&key);
+                }
+                Value::Table(Table::new(map).into())
+            }
             (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
                 let name = globals.symbol_dunder_sub();
                 Eval::call_method(globals, name, vec![a, b])

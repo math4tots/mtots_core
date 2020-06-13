@@ -50,3 +50,10 @@ def __test_from_iterable() {
     t = [[:a, 1], [:b, 2.0], [:c, '3']].to(Table)
     assert_eq(t, Table(a=1, b=2.0, c='3'))
 }
+
+def __test_minus() {
+    t = Table(a=1, b=2, c=3)
+    assert(t != Table(a=1, b=2))
+    t = t - [:c]
+    assert(t == Table(a=1, b=2))
+}
