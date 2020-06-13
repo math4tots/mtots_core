@@ -422,6 +422,13 @@ impl Globals {
         &self.builtin_classes
     }
 
+    pub fn set_custom_source_finder<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> Option<String> + 'static,
+    {
+        self.finder.set_custom_finder(f);
+    }
+
     pub fn add_source_root(&mut self, root: RcPath) {
         self.finder.add_root(root);
     }
@@ -491,6 +498,10 @@ impl Globals {
                     self.module_registry.insert(name.clone(), module);
                 }
                 Ok(SourceItem::Embedded { data }) => {
+                    let module = self.exec_module(name.clone(), None, data.into())?;
+                    self.module_registry.insert(name.clone(), module);
+                }
+                Ok(SourceItem::Custom { data }) => {
                     let module = self.exec_module(name.clone(), None, data.into())?;
                     self.module_registry.insert(name.clone(), module);
                 }
