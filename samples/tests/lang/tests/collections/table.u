@@ -56,4 +56,8 @@ def __test_minus() {
     assert(t != Table(a=1, b=2))
     t = t - [:c]
     assert(t == Table(a=1, b=2))
+
+    # remove a key that's not present
+    t = t - [:z]
+    assert(t == Table(a=1, b=2))
 }
