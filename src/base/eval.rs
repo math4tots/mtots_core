@@ -334,6 +334,22 @@ impl Eval {
         }
     }
 
+    pub fn expect_bytes_from_pattern(globals: &mut Globals, value: &Value) -> EvalResult<Vec<u8>> {
+        let mut bytes = Vec::new();
+        Self::add_bytes(globals, &mut bytes, value)?;
+        Ok(bytes)
+    }
+
+    fn add_bytes(globals: &mut Globals, bytes: &mut Vec<u8>, value: &Value) -> EvalResult<()> {
+        match value {
+            Value::Bytes(bb) => {
+                bytes.extend(bb.as_slice());
+                Ok(())
+            }
+            _ => globals.set_kind_error(ValueKind::Bytes, value.kind()),
+        }
+    }
+
     pub fn expect_path<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a RcPath> {
         if let Some(path) = value.path() {
             Ok(path)
