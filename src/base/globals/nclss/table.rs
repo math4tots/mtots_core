@@ -97,8 +97,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             |globals, args, _kwargs| {
                 let mut args = args.into_iter();
                 let mut table =
-                    Eval::move_or_clone_table(globals, args.next().unwrap())?
-                        .map_move();
+                    Eval::move_or_clone_table(globals, args.next().unwrap())?.map_move();
                 for key in args {
                     let key = Eval::expect_symbol(globals, &key)?;
                     table.remove(&key);

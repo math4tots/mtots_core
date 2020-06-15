@@ -62,6 +62,7 @@ pub use base::VSet;
 pub use base::Value;
 pub use base::ValueKind;
 pub use base::SOURCE_FILE_EXTENSION;
+pub use util::mini;
 pub use util::GMap;
 pub use util::HMap;
 pub use util::RcPath;
