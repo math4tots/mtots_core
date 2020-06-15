@@ -10,12 +10,10 @@ impl Node {
     pub fn eval(&self, scope: &Rc<RefCell<Scope>>) -> Result<Val, String> {
         match self {
             Node::Constant(v) => Ok(v.clone()),
-            Node::GetVar(name) => {
-                match scope.borrow().get(name) {
-                    Some(v) => Ok(v),
-                    None => Err(format!("Variable {:?} not found", name)),
-                }
-            }
+            Node::GetVar(name) => match scope.borrow().get(name) {
+                Some(v) => Ok(v),
+                None => Err(format!("Variable {:?} not found", name)),
+            },
             Node::SetVar(name, expr) => {
                 let val = expr.eval(scope)?;
                 scope.borrow_mut().set(name.clone(), val);
@@ -89,12 +87,8 @@ impl Node {
                         let rhs = args.next();
                         lhs.rem(&rhs)
                     }
-                    Operator::Pos => {
-                        args.next().pos()
-                    }
-                    Operator::Neg => {
-                        args.next().neg()
-                    }
+                    Operator::Pos => args.next().pos(),
+                    Operator::Neg => args.next().neg(),
                     Operator::Print => {
                         let val = args.next();
                         (scope.borrow().opts().print)(&val)

@@ -271,49 +271,40 @@ mod tests {
     #[test]
     fn sample() {
         let toks = lex("Hello, world").unwrap();
-        assert_eq!(toks, vec![
-            Token::Name("Hello"),
-            Token::Comma,
-            Token::Name("world"),
-            Token::EOF,
-        ]);
+        assert_eq!(
+            toks,
+            vec![
+                Token::Name("Hello"),
+                Token::Comma,
+                Token::Name("world"),
+                Token::EOF,
+            ]
+        );
     }
 
     #[test]
     fn float() {
         let toks = lex("44").unwrap();
-        assert_eq!(toks, vec![
-            Token::Number(44.0),
-            Token::EOF,
-        ]);
+        assert_eq!(toks, vec![Token::Number(44.0), Token::EOF,]);
         let toks = lex("56.78").unwrap();
-        assert_eq!(toks, vec![
-            Token::Number(56.78),
-            Token::EOF,
-        ]);
+        assert_eq!(toks, vec![Token::Number(56.78), Token::EOF,]);
     }
 
     #[test]
     fn string() {
         let toks = lex("'hello'").unwrap();
-        assert_eq!(toks, vec![
-            Token::String("hello".to_owned()),
-            Token::EOF,
-        ]);
+        assert_eq!(toks, vec![Token::String("hello".to_owned()), Token::EOF,]);
         let toks = lex("\"with double quotes\"").unwrap();
-        assert_eq!(toks, vec![
-            Token::String("with double quotes".to_owned()),
-            Token::EOF,
-        ]);
+        assert_eq!(
+            toks,
+            vec![Token::String("with double quotes".to_owned()), Token::EOF,]
+        );
         let toks = lex("\"with\nescapes\"").unwrap();
-        assert_eq!(toks, vec![
-            Token::String("with\nescapes".to_owned()),
-            Token::EOF,
-        ]);
+        assert_eq!(
+            toks,
+            vec![Token::String("with\nescapes".to_owned()), Token::EOF,]
+        );
         let toks = lex("r'some raw string'").unwrap();
-        assert_eq!(toks, vec![
-            Token::RawString("some raw string"),
-            Token::EOF,
-        ]);
+        assert_eq!(toks, vec![Token::RawString("some raw string"), Token::EOF,]);
     }
 }

@@ -62,7 +62,7 @@ impl Default for Options {
             print: Box::new(|x| {
                 println!("{}", x);
                 Ok(Val::Nil)
-            })
+            }),
         }
     }
 }

@@ -154,25 +154,23 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         let chstr = Eval::expect_string(globals, &args[0])?;
         let chars: Vec<_> = chstr.chars().collect();
         if chars.len() != 1 {
-            return globals.set_exc_str(&format!("Expected string with exactly 1 char, but got {} chars", chars.len()));
+            return globals.set_exc_str(&format!(
+                "Expected string with exactly 1 char, but got {} chars",
+                chars.len()
+            ));
         }
         Ok((chars[0] as u32 as i64).into())
     })
     .into();
 
     let chr = NativeFunction::simple0(sr, "chr", &["i"], |globals, args, _kwargs| {
-        let i = Eval::expect_usize(globals, &args[0])?;
-        if i > std::u32::MAX as usize {
-            return globals.set_exc_str(&format!(
-                "The char int does not fit in u32"
-            ));
+        let i = Eval::expect_uint(globals, &args[0])?;
+        if i > std::u32::MAX as u64 {
+            return globals.set_exc_str(&format!("The char int does not fit in u32"));
         }
         match std::char::from_u32(i as u32) {
             Some(ch) => Ok(globals.char_to_val(ch)),
-            None => globals.set_exc_str(&format!(
-                "{} is not a valid unicode codepoint",
-                i,
-            ))
+            None => globals.set_exc_str(&format!("{} is not a valid unicode codepoint", i,)),
         }
     })
     .into();

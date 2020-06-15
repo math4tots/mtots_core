@@ -31,8 +31,8 @@ use val::Function;
 
 pub use ast::Node;
 pub use parser::parse;
-pub use scope::Scope;
 pub use scope::Options;
+pub use scope::Scope;
 pub use val::Val;
 
 #[cfg(test)]
@@ -55,48 +55,62 @@ mod tests {
             ..Options::default()
         });
 
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         nil
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Nil));
 
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         5 + 7
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Number(12.0)));
 
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         $Len([1, 2, 3])
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Number(3.0)));
 
         output.borrow_mut().clear();
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         $Print([1, 2, 3])
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Nil));
-        assert_eq!(output.borrow().clone(), vec![
-            "[1, 2, 3]".to_owned(),
-        ]);
+        assert_eq!(output.borrow().clone(), vec!["[1, 2, 3]".to_owned(),]);
 
         output.borrow_mut().clear();
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         $Print("Hello world!")
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Nil));
-        assert_eq!(output.borrow().clone(), vec![
-            "Hello world!".to_owned(),
-        ]);
+        assert_eq!(output.borrow().clone(), vec!["Hello world!".to_owned(),]);
 
         output.borrow_mut().clear();
-        let ast = parse(r###"
+        let ast = parse(
+            r###"
         $Print("Hello world!")
         $Print(15 * 7)
-        "###).unwrap();
+        "###,
+        )
+        .unwrap();
         assert_eq!(ast.eval(&scope), Ok(Val::Nil));
-        assert_eq!(output.borrow().clone(), vec![
-            "Hello world!".to_owned(),
-            "105".to_owned(),
-        ]);
+        assert_eq!(
+            output.borrow().clone(),
+            vec!["Hello world!".to_owned(), "105".to_owned(),]
+        );
     }
 }

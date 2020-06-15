@@ -22,10 +22,7 @@ pub struct FunctionDisplay {
 
 impl FunctionDisplay {
     pub fn new(params: Vec<Rc<String>>, body: Node) -> FunctionDisplay {
-        FunctionDisplay {
-            params,
-            body,
-        }
+        FunctionDisplay { params, body }
     }
     pub fn params(&self) -> &Vec<Rc<String>> {
         &self.params

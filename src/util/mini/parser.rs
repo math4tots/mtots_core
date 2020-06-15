@@ -1,9 +1,9 @@
-use super::Node;
-use super::Val;
-use super::Token;
 use super::lex;
-use super::Operator;
 use super::FunctionDisplay;
+use super::Node;
+use super::Operator;
+use super::Token;
+use super::Val;
 use std::rc::Rc;
 
 type Prec = i64;
@@ -13,10 +13,7 @@ const UNARY_PREC: Prec = 100;
 
 pub fn parse(s: &str) -> Result<Node, String> {
     let toks = lex(s)?;
-    let mut parser = Parser {
-        toks,
-        i: 0,
-    };
+    let mut parser = Parser { toks, i: 0 };
     let mut exprs = Vec::new();
     while !parser.at(Token::EOF) {
         exprs.push(expr(&mut parser, 0)?);
@@ -81,15 +78,9 @@ fn atom(p: &mut Parser) -> Result<Node, String> {
             p.expect(Token::RParen)?;
             Ok(e)
         }
-        Token::Number(x) => {
-            Ok(Node::Constant(Val::Number(x)))
-        }
-        Token::String(x) => {
-            Ok(Node::Constant(Val::String(x.into())))
-        }
-        Token::RawString(x) => {
-            Ok(Node::Constant(Val::String(x.to_owned().into())))
-        }
+        Token::Number(x) => Ok(Node::Constant(Val::Number(x))),
+        Token::String(x) => Ok(Node::Constant(Val::String(x.into()))),
+        Token::RawString(x) => Ok(Node::Constant(Val::String(x.to_owned().into()))),
         Token::Plus => {
             let e = expr(p, UNARY_PREC)?;
             Ok(Node::Operation(Operator::Pos, vec![e]))
@@ -120,30 +111,30 @@ fn atom(p: &mut Parser) -> Result<Node, String> {
                 }
             }
             let body = expr(p, 0)?;
-            Ok(Node::FunctionDisplay(Rc::new(FunctionDisplay::new(params, body))))
+            Ok(Node::FunctionDisplay(Rc::new(FunctionDisplay::new(
+                params, body,
+            ))))
         }
-        Token::Name(name) => {
-            match name {
-                "nil" => Ok(Node::Constant(Val::Nil)),
-                "while" => {
-                    let cond = expr(p, 0)?;
-                    p.expect(Token::LBrace)?;
-                    let body = block(p)?;
-                    Ok(Node::While(cond.into(), body.into()))
-                }
-                "if" | "else" | "elif" | "true" | "false" | "class" | "struct" => {
-                    Err(format!("{:?} is a reserved name", name))
-                }
-                _ => {
-                    if p.consume(Token::Eq) {
-                        let e = expr(p, 0)?.into();
-                        Ok(Node::SetVar(name.to_owned().into(), e))
-                    } else {
-                        Ok(Node::GetVar(name.to_owned().into()))
-                    }
+        Token::Name(name) => match name {
+            "nil" => Ok(Node::Constant(Val::Nil)),
+            "while" => {
+                let cond = expr(p, 0)?;
+                p.expect(Token::LBrace)?;
+                let body = block(p)?;
+                Ok(Node::While(cond.into(), body.into()))
+            }
+            "if" | "else" | "elif" | "true" | "false" | "class" | "struct" => {
+                Err(format!("{:?} is a reserved name", name))
+            }
+            _ => {
+                if p.consume(Token::Eq) {
+                    let e = expr(p, 0)?.into();
+                    Ok(Node::SetVar(name.to_owned().into(), e))
+                } else {
+                    Ok(Node::GetVar(name.to_owned().into()))
                 }
             }
-        }
+        },
         Token::Dollar => {
             let optok = p.expect(Pat::Name)?;
             let opname = optok.name().unwrap();
@@ -222,7 +213,6 @@ fn infix(p: &mut Parser, lhs: Node) -> Result<Node, String> {
     }
 }
 
-
 #[derive(Debug, Clone)]
 enum Pat<'a> {
     Exact(Token<'a>),
@@ -237,11 +227,11 @@ impl<'a> Pat<'a> {
             Pat::Keyword(t) => match tok {
                 Token::Name(name) => t == name,
                 _ => false,
-            }
+            },
             Pat::Name => match tok {
                 Token::Name(_) => true,
                 _ => false,
-            }
+            },
         }
     }
 }

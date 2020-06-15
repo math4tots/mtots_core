@@ -201,6 +201,18 @@ impl Eval {
         }
     }
 
+    pub fn expect_uint(globals: &mut Globals, value: &Value) -> EvalResult<u64> {
+        if let Value::Int(i) = value {
+            if *i < 0 {
+                globals.set_exc_str(&format!("Expected non-negative int, but got {}", i))
+            } else {
+                Ok(*i as u64)
+            }
+        } else {
+            globals.set_kind_error(ValueKind::Int, value.kind())
+        }
+    }
+
     pub fn expect_usize(globals: &mut Globals, value: &Value) -> EvalResult<usize> {
         if let Value::Int(i) = value {
             if *i < 0 {
