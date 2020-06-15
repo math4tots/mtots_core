@@ -19,5 +19,63 @@ def __test_patterns() {
         Bytes('hello'),
         Bytes(['hel', [ord('l'), ord('o')]]),
     )
+    assert_eq(
+        Bytes('hello'),
+        Bytes([Bytes('hel'), [ord('l'), ord('o')]]),
+    )
     assert_eq(Bytes('hello').len(), 5)
+}
+
+def __test_le_be() {
+    LE = Bytes::le
+    BE = Bytes::be
+
+    assert_eq(
+        LE(1, 14),
+        Bytes([14]),
+    )
+    assert_eq(
+        LE(2, 14),
+        Bytes([14, 0]),
+    )
+    assert_eq(
+        LE(4, 14),
+        Bytes([14, 0, 0, 0]),
+    )
+    assert_eq(
+        LE(8, 14),
+        Bytes([14, 0, 0, 0, 0, 0, 0, 0]),
+    )
+
+    assert_eq(
+        BE(1, 14),
+        Bytes([14]),
+    )
+    assert_eq(
+        BE(2, 14),
+        Bytes([0, 14]),
+    )
+    assert_eq(
+        BE(4, 14),
+        Bytes([0, 0, 0, 14]),
+    )
+    assert_eq(
+        BE(8, 14),
+        Bytes([0, 0, 0, 0, 0, 0, 0, 14]),
+    )
+
+    assert_eq(
+        BE(8, 4.4),
+        Bytes([64, 17, 153, 153, 153, 153, 153, 154]),
+    )
+    assert_eq(
+        LE(8, 4.4),
+        Bytes([154, 153, 153, 153, 153, 153, 17, 64]),
+    )
+
+    # Should throw on invalid bytecount
+    # (For floats, bytecount must be 4 or 8,
+    # for integers, it must be 1, 2, 4 or 8)
+    assert_raises(RuntimeError, def = BE(0, 0))
+    assert_raises(RuntimeError, def = BE(3, 0))
 }

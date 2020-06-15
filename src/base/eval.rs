@@ -213,6 +213,54 @@ impl Eval {
         }
     }
 
+    pub fn check_u8(globals: &mut Globals, x: i64) -> EvalResult<u8> {
+        if x < 0 || x > u8::MAX as i64 {
+            globals.set_exc_str(&format!("Expected u8 but got {}", x))
+        } else {
+            Ok(x as u8)
+        }
+    }
+
+    pub fn check_u16(globals: &mut Globals, x: i64) -> EvalResult<u16> {
+        if x < 0 || x > u16::MAX as i64 {
+            globals.set_exc_str(&format!("Expected u16 but got {}", x))
+        } else {
+            Ok(x as u16)
+        }
+    }
+
+    pub fn check_u32(globals: &mut Globals, x: i64) -> EvalResult<u32> {
+        if x < 0 || x > u32::MAX as i64 {
+            globals.set_exc_str(&format!("Expected u32 but got {}", x))
+        } else {
+            Ok(x as u32)
+        }
+    }
+
+    pub fn check_i8(globals: &mut Globals, x: i64) -> EvalResult<i8> {
+        if x < i8::MIN as i64 || x > i8::MAX as i64 {
+            globals.set_exc_str(&format!("Expected i8 but got {}", x))
+        } else {
+            Ok(x as i8)
+        }
+    }
+
+    pub fn check_i16(globals: &mut Globals, x: i64) -> EvalResult<i16> {
+        if x < i16::MIN as i64 || x > i16::MAX as i64 {
+            globals.set_exc_str(&format!("Expected i16 but got {}", x))
+        } else {
+            Ok(x as i16)
+        }
+    }
+
+    pub fn check_i32(globals: &mut Globals, x: i64) -> EvalResult<i32> {
+        if x < i32::MIN as i64 || x > i32::MAX as i64 {
+            globals.set_exc_str(&format!("Expected i32 but got {}", x))
+        } else {
+            Ok(x as i32)
+        }
+    }
+
     pub fn expect_usize(globals: &mut Globals, value: &Value) -> EvalResult<usize> {
         if let Value::Int(i) = value {
             if *i < 0 {
@@ -355,12 +403,9 @@ impl Eval {
     fn add_bytes(globals: &mut Globals, bytes: &mut Vec<u8>, value: &Value) -> EvalResult<()> {
         match value {
             Value::Int(i) => {
-                if *i < 0 || *i > std::u8::MAX as i64 {
-                    globals.set_exc_str(&format!("{} is out of range for a byte", i))
-                } else {
-                    bytes.push(*i as u8);
-                    Ok(())
-                }
+                let i = Self::check_u8(globals, *i)?;
+                bytes.push(i);
+                Ok(())
             }
             Value::String(s) => {
                 bytes.extend(s.as_bytes());

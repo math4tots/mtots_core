@@ -1,7 +1,7 @@
-mod maclib;
 mod dm;
 mod gmap;
 mod gsort;
+mod maclib;
 mod rcpath;
 mod rcstr;
 mod symbol;

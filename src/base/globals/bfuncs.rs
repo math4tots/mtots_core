@@ -164,11 +164,9 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let chr = NativeFunction::simple0(sr, "chr", &["i"], |globals, args, _kwargs| {
-        let i = Eval::expect_uint(globals, &args[0])?;
-        if i > std::u32::MAX as u64 {
-            return globals.set_exc_str(&format!("The char int does not fit in u32"));
-        }
-        match std::char::from_u32(i as u32) {
+        let i = Eval::expect_int(globals, &args[0])?;
+        let i = Eval::check_u32(globals, i)?;
+        match std::char::from_u32(i) {
             Some(ch) => Ok(globals.char_to_val(ch)),
             None => globals.set_exc_str(&format!("{} is not a valid unicode codepoint", i,)),
         }
