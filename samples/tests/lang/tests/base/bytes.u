@@ -19,4 +19,5 @@ def __test_patterns() {
         Bytes('hello'),
         Bytes(['hel', [ord('l'), ord('o')]]),
     )
+    assert_eq(Bytes('hello').len(), 5)
 }
