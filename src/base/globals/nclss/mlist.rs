@@ -42,6 +42,21 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
+        NativeFunction::sdnew(
+            sr,
+            "__slice",
+            (&["self", "start", "end"], &[], None, None),
+            Some("Creates a new mutable list consisting of a subrange of this mutable list"),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let list = list.borrow();
+                let (start, end) =
+                    Eval::expect_range_indices(globals, &args[1], &args[2], list.len())?;
+                Ok(Value::MutableList(
+                    RefCell::new((*list)[start..end].to_vec()).into(),
+                ))
+            },
+        ),
         NativeFunction::simple0(sr, "map", &["self", "f"], |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             let f = &args[1];
