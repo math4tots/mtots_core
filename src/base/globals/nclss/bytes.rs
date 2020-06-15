@@ -36,6 +36,23 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok((bytes.len() as i64).into())
             },
         ),
+        NativeFunction::simple0(sr, "__getitem", &["self", "i"], |globals, args, _kwargs| {
+            let bytes = Eval::expect_bytes(globals, &args[0])?;
+            let i = Eval::expect_index(globals, &args[1], bytes.len())?;
+            Ok((bytes[i] as i64).into())
+        }),
+        NativeFunction::sdnew(
+            sr,
+            "__slice",
+            (&["self", "start", "end"], &[], None, None),
+            Some("Creates a new bytes object consisting of a subrange of this object"),
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_bytes(globals, &args[0])?;
+                let (start, end) =
+                    Eval::expect_range_indices(globals, &args[1], &args[2], bytes.len())?;
+                Ok((*bytes)[start..end].to_vec().into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
@@ -171,6 +188,12 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                     }
                 }
             },
+        ),
+        NativeFunction::simple0(
+            sr,
+            "from_iterable",
+            &["iterable"],
+            |globals, args, _kwargs| Eval::bytes_from_iterable(globals, &args[0]),
         ),
     ]
     .into_iter()

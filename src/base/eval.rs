@@ -1541,6 +1541,7 @@ impl Eval {
 
     pub fn iter(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
         match iterable {
+            Value::Bytes(bytes) => Ok(iterbytes(globals, bytes.clone()).into()),
             Value::List(list) => Ok(iterlist(globals, list.clone()).into()),
             Value::Set(set) => Ok(iterset(globals, set.clone()).into()),
             Value::Map(map) => Ok(itermap(globals, map.clone()).into()),
@@ -1585,6 +1586,19 @@ impl Eval {
                     .is_err());
                 return GeneratorResult::Error;
             }
+        }
+    }
+
+    pub fn bytes_from_iterable(globals: &mut Globals, iterable: &Value) -> EvalResult<Value> {
+        if let Value::Bytes(_) = &iterable {
+            Ok(iterable.clone())
+        } else {
+            let iterator = Self::iter(globals, iterable)?;
+            let mut bytes = Vec::new();
+            while let Some(item) = Self::next(globals, &iterator)? {
+                Self::add_bytes(globals, &mut bytes, &item)?;
+            }
+            Ok(bytes.into())
         }
     }
 
@@ -1993,6 +2007,18 @@ fn table2str(globals: &mut Globals, table: &HashMap<Symbol, Value>) -> EvalResul
     }
     ret.push_str(")");
     Ok(ret)
+}
+
+fn iterbytes(_: &mut Globals, bytes: Rc<Vec<u8>>) -> NativeIterator {
+    let mut i = 0;
+    NativeIterator::new(move |_, _| {
+        if i < bytes.len() {
+            i += 1;
+            GeneratorResult::Yield(((*bytes)[i - 1] as i64).into())
+        } else {
+            GeneratorResult::Done(Value::Nil)
+        }
+    })
 }
 
 fn iterlist(_: &mut Globals, list: Rc<Vec<Value>>) -> NativeIterator {
