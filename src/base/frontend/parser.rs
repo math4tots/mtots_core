@@ -1236,13 +1236,45 @@ fn geninfix() -> (
             (&["["], |state, lhs, _prec| {
                 let (offset, lineno) = state.pos();
                 state.gettok();
-                let expr = state.expr(0)?;
-                state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
-                Ok(Expression::new(
-                    offset,
-                    lineno,
-                    ExpressionData::Subscript(lhs.into(), expr.into()),
-                ))
+                if state.consume(TokenKind::Punctuator(Punctuator::Colon)) {
+                    // slice with start omitted
+                    let end = if state.peek() == Token::Punctuator(Punctuator::RBracket) {
+                        None
+                    } else {
+                        Some(state.expr(0)?.into())
+                    };
+                    state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
+                    Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::Slice(lhs.into(), None, end),
+                    ))
+                } else {
+                    let expr = state.expr(0)?;
+                    if state.consume(TokenKind::Punctuator(Punctuator::Colon)) {
+                        // slice with start present
+                        let start = Some(expr.into());
+                        let end = if state.peek() == Token::Punctuator(Punctuator::RBracket) {
+                            None
+                        } else {
+                            Some(state.expr(0)?.into())
+                        };
+                        state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
+                        Ok(Expression::new(
+                            offset,
+                            lineno,
+                            ExpressionData::Slice(lhs.into(), start, end),
+                        ))
+                    } else {
+                        // a simple subscript expression
+                        state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
+                        Ok(Expression::new(
+                            offset,
+                            lineno,
+                            ExpressionData::Subscript(lhs.into(), expr.into()),
+                        ))
+                    }
+                }
             }),
             (&["("], |state, lhs, _prec| {
                 let (offset, lineno) = state.pos();

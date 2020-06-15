@@ -96,6 +96,18 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(false.into())
         }),
+        NativeFunction::sdnew(
+            sr,
+            "__slice",
+            (&["self", "start", "end"], &[], None, None),
+            Some("Creates a new list consisting of a subrange of this list"),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_list(globals, &args[0])?;
+                let (start, end) =
+                    Eval::expect_range_indices(globals, &args[1], &args[2], list.len())?;
+                Ok((*list)[start..end].to_vec().into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))

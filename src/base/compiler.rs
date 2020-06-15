@@ -419,6 +419,24 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 builder.pop();
             }
         }
+        ExpressionData::Slice(owner, start, end) => {
+            rec(builder, owner, true)?;
+            builder.load_method(&"__slice".into());
+            if let Some(start) = start {
+                rec(builder, start, true)?;
+            } else {
+                builder.load_const(());
+            }
+            if let Some(end) = end {
+                rec(builder, end, true)?;
+            } else {
+                builder.load_const(());
+            }
+            builder.call_func(3);
+            if !used {
+                builder.pop();
+            }
+        }
         ExpressionData::FunctionCall(f, arglist) => {
             rec(builder, f, true)?;
             finish_call(builder, false, arglist)?;

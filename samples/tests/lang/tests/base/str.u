@@ -101,12 +101,13 @@ def __test_fmt_str() {
 }
 
 def __test_slice() {
-    assert_eq('hello'.slice(1), 'ello')
-    assert_eq('hello'.slice(0, -1), 'hell')
-    assert_eq('hello'.slice(1, -1), 'ell')
-    assert_eq('hello'.slice('hello'.len(), 'hello'.len()), '')
-    assert_eq('hello'.slice('hello'.len(), 'hello'.len() + 2), '')
-    assert_eq('hello'.slice(20, 20), '')
+    assert_eq('hello'[1:], 'ello')
+    assert_eq('hello'[0: -1], 'hell')
+    assert_eq('hello'[1: -1], 'ell')
+    assert_eq('hello'['hello'.len(): 'hello'.len()], '')
+    assert_eq('hello'['hello'.len(): 'hello'.len() + 2], '')
+    assert_eq('hello'[20: 20], '')
+    assert_eq('hello'[:-1], 'hell')
 }
 
 def __test_find() {

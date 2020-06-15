@@ -66,6 +66,11 @@ impl Expression {
             ExpressionData::Attribute(owner, _) => vec![&mut *owner],
             ExpressionData::StaticAttribute(owner, _) => vec![&mut *owner],
             ExpressionData::Subscript(owner, index) => vec![&mut *owner, &mut *index],
+            ExpressionData::Slice(owner, start, end) => join_mut_refs(vec![
+                vec![&mut *owner],
+                start.iter_mut().map(|e| &mut *e.as_mut()).collect(),
+                end.iter_mut().map(|e| &mut *e.as_mut()).collect(),
+            ]),
             ExpressionData::FunctionCall(f, arglist) => {
                 join_mut_refs(vec![vec![&mut *f], arglist.children_mut()])
             }
@@ -130,6 +135,7 @@ impl Expression {
             ExpressionData::Attribute(..) => ExpressionKind::Attribute,
             ExpressionData::StaticAttribute(..) => ExpressionKind::StaticAttribute,
             ExpressionData::Subscript(..) => ExpressionKind::Subscript,
+            ExpressionData::Slice(..) => ExpressionKind::Slice,
             ExpressionData::FunctionCall(..) => ExpressionKind::FunctionCall,
             ExpressionData::MethodCall(..) => ExpressionKind::MethodCall,
             ExpressionData::FunctionDisplay(..) => ExpressionKind::FunctionDisplay,
@@ -310,6 +316,11 @@ pub enum ExpressionData {
     Attribute(Box<Expression>, RcStr),
     StaticAttribute(Box<Expression>, RcStr),
     Subscript(Box<Expression>, Box<Expression>),
+    Slice(
+        Box<Expression>,
+        Option<Box<Expression>>,
+        Option<Box<Expression>>,
+    ),
     FunctionCall(Box<Expression>, ArgumentList),
     MethodCall(Box<Expression>, RcStr, ArgumentList),
     FunctionDisplay(
@@ -375,6 +386,7 @@ pub enum ExpressionKind {
     Attribute,
     StaticAttribute,
     Subscript,
+    Slice,
     FunctionCall,
     MethodCall,
     FunctionDisplay,

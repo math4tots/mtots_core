@@ -149,6 +149,16 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
         NativeFunction::snew(
             sr,
+            "__slice",
+            (&["self", "start", "end"], &[], None, None),
+            |globals, args, _kwargs| {
+                let (s, _start, _end) =
+                    Eval::expect_str_slice(globals, &args[0], &args[1], &args[2])?;
+                Ok(s.into())
+            },
+        ),
+        NativeFunction::snew(
+            sr,
             "find",
             (
                 &["self", "pattern"],
