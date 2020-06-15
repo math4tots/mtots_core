@@ -14,6 +14,8 @@ pub struct NativeFunctions {
     sorted: Rc<NativeFunction>,
     min: Rc<NativeFunction>,
     max: Rc<NativeFunction>,
+    ord: Rc<NativeFunction>,
+    chr: Rc<NativeFunction>,
     hash: Rc<NativeFunction>,
     assert: Rc<NativeFunction>,
     assert_eq: Rc<NativeFunction>,
@@ -37,6 +39,8 @@ impl NativeFunctions {
             &self.sorted,
             &self.min,
             &self.max,
+            &self.ord,
+            &self.chr,
             &self.hash,
             &self.assert,
             &self.assert_eq,
@@ -144,6 +148,33 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
             Ok(best)
         },
     )
+    .into();
+
+    let ord = NativeFunction::simple0(sr, "ord", &["ch"], |globals, args, _kwargs| {
+        let chstr = Eval::expect_string(globals, &args[0])?;
+        let chars: Vec<_> = chstr.chars().collect();
+        if chars.len() != 1 {
+            return globals.set_exc_str(&format!("Expected string with exactly 1 char, but got {} chars", chars.len()));
+        }
+        Ok((chars[0] as u32 as i64).into())
+    })
+    .into();
+
+    let chr = NativeFunction::simple0(sr, "chr", &["i"], |globals, args, _kwargs| {
+        let i = Eval::expect_usize(globals, &args[0])?;
+        if i > std::u32::MAX as usize {
+            return globals.set_exc_str(&format!(
+                "The char int does not fit in u32"
+            ));
+        }
+        match std::char::from_u32(i as u32) {
+            Some(ch) => Ok(globals.char_to_val(ch)),
+            None => globals.set_exc_str(&format!(
+                "{} is not a valid unicode codepoint",
+                i,
+            ))
+        }
+    })
     .into();
 
     let hash = NativeFunction::simple0(sr, "hash", &["x"], |globals, args, _kwargs| {
@@ -328,6 +359,8 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         sorted,
         min,
         max,
+        ord,
+        chr,
         hash,
         assert,
         assert_eq,

@@ -147,3 +147,15 @@ def __test_join() {
     assert_eq('x'.join(['a', '']), 'ax')
     assert_eq('x'.join(['', '']), 'x')
 }
+
+def __test_ord_chr() {
+    assert_eq(ord('a'), 97)
+    assert_eq(chr(97), 'a')
+    assert_eq(chr(98), 'b')
+    cap_diff = ord('A') - ord('a')
+    assert_eq(chr(ord('c') + cap_diff), 'C')
+    assert_eq(chr(ord('d') + cap_diff), 'D')
+    assert_raises(RuntimeError, def = ord('ab'))
+    assert_raises(RuntimeError, def = ord(''))
+    assert_raises(RuntimeError, def = chr(-1))
+}

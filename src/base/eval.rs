@@ -342,8 +342,26 @@ impl Eval {
 
     fn add_bytes(globals: &mut Globals, bytes: &mut Vec<u8>, value: &Value) -> EvalResult<()> {
         match value {
+            Value::Int(i) => {
+                if *i < 0 || *i > std::u8::MAX as i64 {
+                    globals.set_exc_str(&format!("{} is out of range for a byte", i))
+                } else {
+                    bytes.push(*i as u8);
+                    Ok(())
+                }
+            }
+            Value::String(s) => {
+                bytes.extend(s.as_bytes());
+                Ok(())
+            }
             Value::Bytes(bb) => {
                 bytes.extend(bb.as_slice());
+                Ok(())
+            }
+            Value::List(list) => {
+                for subval in list.iter() {
+                    Self::add_bytes(globals, bytes, subval)?;
+                }
                 Ok(())
             }
             _ => globals.set_kind_error(ValueKind::Bytes, value.kind()),
@@ -742,6 +760,7 @@ impl Eval {
             (Value::Float(a), Value::Int(b)) => *a == (*b as f64),
             (Value::Symbol(a), Value::Symbol(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bytes(a), Value::Bytes(b)) => a == b,
             (Value::Path(a), Value::Path(b)) => a == b,
             (Value::List(a), Value::List(b)) => eq_list(globals, a, b, debuginfo)?,
             (Value::Table(a), Value::Table(b)) => {
@@ -1366,7 +1385,7 @@ impl Eval {
             Value::Float(x) => format!("{}", x).into(),
             Value::Symbol(x) => format!(":{}", x.str()).into(),
             Value::String(x) => reprstr(x).into(),
-            Value::Bytes(x) => format!("{:?}", x).into(),
+            Value::Bytes(x) => format!("Bytes({:?})", x).into(),
             Value::Path(x) => format!("Path::new({:?})", x).into(),
             Value::List(x) => list2str(globals, &*x)?.into(),
             Value::Table(x) => table2str(globals, x.map())?.into(),

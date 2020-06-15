@@ -1,0 +1,22 @@
+
+
+def __test_patterns() {
+    assert_eq(
+        Bytes('hello'),
+        Bytes([
+            ord('h'),
+            ord('e'),
+            ord('l'),
+            ord('l'),
+            ord('o'),
+        ]),
+    )
+    assert_eq(
+        Bytes('hello'),
+        Bytes(['hel', 'lo']),
+    )
+    assert_eq(
+        Bytes('hello'),
+        Bytes(['hel', [ord('l'), ord('o')]]),
+    )
+}

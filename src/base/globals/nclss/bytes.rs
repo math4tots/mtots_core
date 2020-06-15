@@ -5,8 +5,6 @@ use crate::NativeFunction;
 use crate::Symbol;
 use crate::SymbolRegistryHandle;
 use crate::Value;
-
-use std::collections::HashMap;
 use std::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
@@ -30,7 +28,19 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
     .collect();
-    let static_methods = HashMap::new();
+
+    let static_methods = vec![NativeFunction::simple0(
+        sr,
+        "__call",
+        &["pattern"],
+        |globals, args, _kwargs| {
+            let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
+            Ok(bytes.into())
+        },
+    )]
+    .into_iter()
+    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .collect();
 
     Class::new0(
         ClassKind::NativeClass,

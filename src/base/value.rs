@@ -309,7 +309,7 @@ impl fmt::Display for Value {
             Value::Float(x) => write!(f, "{}", x),
             Value::Symbol(x) => write!(f, "{}", x),
             Value::String(s) => write!(f, "{}", s),
-            Value::Bytes(s) => write!(f, "{:?}", s),
+            Value::Bytes(s) => write!(f, "Bytes({:?})", s),
             Value::Path(p) => write!(f, "{:?}", p),
             Value::List(list) => {
                 write!(f, "[")?;
@@ -376,6 +376,7 @@ pub enum ConstValue {
     Symbol(Symbol),
     String(RcStr),
     Path(RcPath),
+    Bytes(Rc<Vec<u8>>),
 }
 
 impl<T: Into<ConstValue>> From<T> for Value {
@@ -390,6 +391,7 @@ impl<T: Into<ConstValue>> From<T> for Value {
             ConstValue::Symbol(x) => Value::Symbol(x),
             ConstValue::String(x) => Value::String(x),
             ConstValue::Path(x) => Value::Path(x),
+            ConstValue::Bytes(x) => Value::Bytes(x),
         }
     }
 }
@@ -458,6 +460,24 @@ impl From<PathBuf> for ConstValue {
     fn from(x: PathBuf) -> ConstValue {
         let x: &Path = &x;
         ConstValue::Path(x.into())
+    }
+}
+
+impl From<Vec<u8>> for ConstValue {
+    fn from(x: Vec<u8>) -> ConstValue {
+        ConstValue::Bytes(x.into())
+    }
+}
+
+impl From<Rc<Vec<u8>>> for ConstValue {
+    fn from(x: Rc<Vec<u8>>) -> ConstValue {
+        ConstValue::Bytes(x)
+    }
+}
+
+impl From<&Rc<Vec<u8>>> for ConstValue {
+    fn from(x: &Rc<Vec<u8>>) -> ConstValue {
+        ConstValue::Bytes(x.clone())
     }
 }
 
