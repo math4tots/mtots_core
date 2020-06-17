@@ -71,3 +71,15 @@ impl From<&str> for RcStr {
         RcStr(s.to_owned().into())
     }
 }
+
+impl From<Rc<String>> for RcStr {
+    fn from(s: Rc<String>) -> Self {
+        RcStr(s)
+    }
+}
+
+impl From<&Rc<String>> for RcStr {
+    fn from(s: &Rc<String>) -> Self {
+        RcStr(s.clone())
+    }
+}
