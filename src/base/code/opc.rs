@@ -314,8 +314,8 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
             Value::List(list) => {
                 if list.len() != n {
                     let err = EvalError::UnpackSize {
-                        expected: list.len(),
-                        but_got: n,
+                        expected: n,
+                        but_got: list.len(),
                     };
                     let lineno = code.find_lineno_for_opcode_at(frame.i - 1 - ARGC);
                     globals.trace_push(code.module_name.clone(), lineno);
@@ -327,8 +327,8 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
                 let items = Eval::iterable_to_vec(globals, &iterable)?;
                 if items.len() != n {
                     let err = EvalError::UnpackSize {
-                        expected: items.len(),
-                        but_got: n,
+                        expected: n,
+                        but_got: items.len(),
                     };
                     let lineno = code.find_lineno_for_opcode_at(frame.i - 1 - ARGC);
                     globals.trace_push(code.module_name.clone(), lineno);

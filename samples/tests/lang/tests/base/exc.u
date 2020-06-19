@@ -113,3 +113,13 @@ def __test_try() {
     assert_eq(side_effects.move(), ['before raise', 'after raise', 'finally called'])
     assert_eq(ret, 'end of main def')
 }
+
+def __test_unpack_msg() {
+    message = __try(def {
+        [a, b] = [1, 2, 3]
+        nil
+    }, RuntimeError, def(e) = {
+        str(e)
+    })
+    assert_eq(message, 'RuntimeError: UnpackSize: Expected 2 values but got 3')
+}
