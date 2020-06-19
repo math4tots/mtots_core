@@ -307,6 +307,19 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         frame.stack.push(Value::Cell(frame.cellvars[i].clone()));
     }
 
+    LOAD_DUNDER_NEW() [+ 0 1] {
+        frame.stack.push(globals.builtin_functions().dunder_new().into());
+    }
+    LOAD_CLASS_FOR_NEW() [+ 0 1] {
+        if let Some(cls) = globals.get_class_for_new() {
+            frame.stack.push(cls.clone().into());
+        } else {
+            let lineno = code.find_lineno_for_opcode_at(frame.i - 1 - ARGC);
+            globals.trace_push(code.module_name.clone(), lineno);
+            return globals.set_exc_str("'new' can only be used from inside a constructor")?;
+        }
+    }
+
     UNPACK_SEQUENCE(n: Int) [+ 1 n] {
         // Unpacks TOS into count individual values,
         // which are put onto the stack right-to-left
@@ -739,7 +752,9 @@ fn new_class(
                         .set_exc_other("field lists are not allowed on traits".into())?;
                 }
             }
-            ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => Some(fields),
+            ClassKind::UserDefinedClass
+            | ClassKind::UserDefinedCaseClass
+            | ClassKind::UserDefinedMutableClass => Some(fields),
         }
     };
     let map = Eval::expect_table(globals, &args[3])?.map().clone();

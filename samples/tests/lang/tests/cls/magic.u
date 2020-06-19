@@ -4,6 +4,7 @@
 class Foo {
     # Test binops where other is same type
     [i]
+    new(i) = new(i)
     def __add(self, other) = Foo(self.i + other.i)
     def __sub(self, other) = Foo(self.i - other.i)
     def __mul(self, other) = Foo(self.i * other.i)
@@ -40,6 +41,7 @@ def __test_magic() {
 class Bar {
     # Test binops where other is not same type
     [i]
+    new(i) = new(i)
     def __add(self, other) = Bar(self.i + other)
     def __sub(self, other) = Bar(self.i - other)
     def __mul(self, other) = Bar(self.i * other)

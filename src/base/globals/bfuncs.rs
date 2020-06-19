@@ -22,6 +22,7 @@ pub struct NativeFunctions {
     assert_raises: Rc<NativeFunction>,
     dunder_import: Rc<NativeFunction>,
     dunder_malloc: Rc<NativeFunction>,
+    dunder_new: Rc<NativeFunction>,
     dunder_args: Rc<NativeFunction>,
     dunder_main: Rc<NativeFunction>,
     dunder_raise: Rc<NativeFunction>,
@@ -53,6 +54,10 @@ impl NativeFunctions {
             &self.dunder_try,
             &self.dunder_iter,
         ]
+    }
+
+    pub(crate) fn dunder_new(&self) -> &Rc<NativeFunction> {
+        &self.dunder_new
     }
 }
 
@@ -247,6 +252,23 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     )
     .into();
 
+    let dunder_new = NativeFunction::sdnew(
+        sr,
+        "__new",
+        (&["cls"], &[], Some("args"), Some("kwargs")),
+        Some(concat!(
+            "Function used by 'new' expressions when building new instances\n",
+            "This function should never be called directly"
+        )),
+        |globals, mut args, kwargs| {
+            let cls_val = args.remove(0);
+            let cls = Eval::expect_class(globals, &cls_val)?;
+            let obj = Class::instantiate(cls, globals, args, kwargs)?;
+            Ok(obj.into())
+        },
+    )
+    .into();
+
     let dunder_args = NativeFunction::simple0(sr, "__args", &[], |globals, _args, _kwargs| {
         let mut ret: Vec<Value> = Vec::new();
         for arg in globals.cli_args() {
@@ -363,6 +385,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         assert_raises,
         dunder_import,
         dunder_malloc,
+        dunder_new,
         dunder_args,
         dunder_main,
         dunder_raise,

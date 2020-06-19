@@ -16,17 +16,17 @@ def __test_dir_list() {
 
 def __test_rename() {
     old = __file.parent().join("for.rename.txt")
-    new = __file.parent().join("for.rename2.txt")
+    new_ = __file.parent().join("for.rename2.txt")
     assert(old.is_file())
-    assert(!new.is_file())
+    assert(!new_.is_file())
 
-    old.rename(new)
+    old.rename(new_)
     assert(!old.is_file())
-    assert(new.is_file())
+    assert(new_.is_file())
 
-    new.rename(old)
+    new_.rename(old)
     assert(old.is_file())
-    assert(!new.is_file())
+    assert(!new_.is_file())
 }
 
 def __test_read() {

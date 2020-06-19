@@ -172,7 +172,7 @@ impl Eval {
             Value::Table(_) => &globals.builtin_classes().Table,
             Value::Set(_) => &globals.builtin_classes().Set,
             Value::Map(_) => &globals.builtin_classes().Map,
-            Value::UserObject(obj) => obj.get_class(),
+            Value::UserObject(obj) => obj.cls(),
             Value::Exception(_) => &globals.builtin_classes().Exception,
             Value::NativeFunction(_) => &globals.builtin_classes().NativeFunction,
             Value::NativeClosure(_) => &globals.builtin_classes().NativeClosure,
@@ -188,7 +188,7 @@ impl Eval {
             Value::MutableList(_) => &globals.builtin_classes().MutableList,
             Value::MutableSet(_) => &globals.builtin_classes().MutableSet,
             Value::MutableMap(_) => &globals.builtin_classes().MutableMap,
-            Value::MutableUserObject(obj) => obj.get_class(),
+            Value::MutableUserObject(obj) => obj.cls(),
             Value::Cell(_) => &globals.builtin_classes().Cell,
         })
     }
@@ -1326,6 +1326,29 @@ impl Eval {
         Self::call_with_kwargs(globals, f, args, None)
     }
 
+    fn user_defined_instantiate0(
+        globals: &mut Globals,
+        f: &Value,
+        args: Vec<Value>,
+        kwargs: Option<HashMap<Symbol, Value>>,
+    ) -> EvalResult<Value> {
+        let f = Self::get_static_attr_or_err(globals, f, Symbol::DUNDER_CALL)?;
+        Self::call_with_kwargs(globals, &f, args, kwargs)
+    }
+
+    fn user_defined_instantiate(
+        globals: &mut Globals,
+        cls: &Rc<Class>,
+        args: Vec<Value>,
+        kwargs: Option<HashMap<Symbol, Value>>,
+    ) -> EvalResult<Value> {
+        globals.push_new_stack(cls.clone());
+        let f = Value::Class(cls.clone());
+        let r = Self::user_defined_instantiate0(globals, &f, args, kwargs);
+        globals.pop_new_stack();
+        r
+    }
+
     pub fn call_with_kwargs(
         globals: &mut Globals,
         f: &Value,
@@ -1337,14 +1360,15 @@ impl Eval {
             Value::NativeClosure(f) => f.apply_with_kwargs(globals, args, kwargs)?,
             Value::Function(f) => f.apply_with_kwargs(globals, args, kwargs)?,
             Value::Class(cls) => match cls.kind() {
-                ClassKind::NativeClass | ClassKind::Trait => {
-                    let f = Self::get_static_attr_or_err(globals, f, Symbol::DUNDER_CALL)?;
-                    Self::call_with_kwargs(globals, &f, args, kwargs)?
+                ClassKind::NativeClass
+                | ClassKind::Trait
+                | ClassKind::UserDefinedClass
+                | ClassKind::UserDefinedMutableClass => {
+                    Self::user_defined_instantiate(globals, cls, args, kwargs)?
                 }
-                ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => {
+                ClassKind::UserDefinedCaseClass => {
                     if cls.has_static_call() {
-                        let f = Self::get_static_attr_or_err(globals, f, Symbol::DUNDER_CALL)?;
-                        Self::call_with_kwargs(globals, &f, args, kwargs)?
+                        Self::user_defined_instantiate(globals, cls, args, kwargs)?
                     } else {
                         Class::instantiate(cls, globals, args, kwargs)?.into()
                     }
@@ -1405,7 +1429,7 @@ impl Eval {
                 }
             },
             Value::UserObject(x) => {
-                let cls = x.get_class();
+                let cls = x.cls();
                 if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_str()) {
                     let strval = Self::call(globals, mt, vec![value.clone()])?;
                     Self::expect_string(globals, &strval)?.clone()
@@ -1417,7 +1441,7 @@ impl Eval {
                 }
             }
             Value::MutableUserObject(x) => {
-                let cls = x.get_class();
+                let cls = x.cls();
                 if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_str()) {
                     let strval = Self::call(globals, mt, vec![value.clone()])?;
                     Self::expect_string(globals, &strval)?.clone()
@@ -1449,7 +1473,7 @@ impl Eval {
             Value::Set(x) => set2str(globals, "Set", &*x)?.into(),
             Value::Map(x) => map2str(globals, &*x)?.into(),
             Value::UserObject(x) => {
-                let cls = x.get_class();
+                let cls = x.cls();
                 if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
                     let reprval = Self::call(globals, mt, vec![value.clone()])?;
                     Self::expect_string(globals, &reprval)?.clone()
@@ -1473,7 +1497,7 @@ impl Eval {
             Value::MutableSet(x) => set2str(globals, "MutableSet", &x.borrow())?.into(),
             Value::MutableMap(x) => format!("@{}", map2str(globals, &x.borrow())?).into(),
             Value::MutableUserObject(x) => {
-                let cls = x.get_class();
+                let cls = x.cls();
                 if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_repr()) {
                     let reprval = Self::call(globals, mt, vec![value.clone()])?;
                     Self::expect_string(globals, &reprval)?.clone()

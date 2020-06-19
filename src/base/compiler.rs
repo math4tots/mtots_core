@@ -439,7 +439,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
         }
         ExpressionData::FunctionCall(f, arglist) => {
             rec(builder, f, true)?;
-            finish_call(builder, false, arglist)?;
+            finish_call(builder, 0, arglist)?;
             if !used {
                 builder.pop();
             }
@@ -447,7 +447,15 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
         ExpressionData::MethodCall(owner, name, arglist) => {
             rec(builder, owner, true)?;
             builder.load_method(name);
-            finish_call(builder, true, arglist)?;
+            finish_call(builder, 1, arglist)?;
+            if !used {
+                builder.pop();
+            }
+        }
+        ExpressionData::New(arglist) => {
+            builder.load_dunder_new();
+            builder.load_class_for_new();
+            finish_call(builder, 1, arglist)?;
             if !used {
                 builder.pop();
             }
@@ -753,16 +761,19 @@ fn augassign(
     Ok(())
 }
 
+/// extra_args can be needed because:
+///   * method calls will have an extra owner argument in the beginning,
+///   * new expressions will have an extra 'class' argument in the beginning
 fn finish_call(
     builder: &mut CodeBuilder,
-    account_for_owner: bool,
+    extra_args: usize,
     arglist: &ArgumentList,
 ) -> Result<(), Error> {
     if let Some(args) = arglist.trivial() {
         for arg in args {
             rec(builder, arg, true)?;
         }
-        builder.call_func(if account_for_owner { 1 } else { 0 } + args.len());
+        builder.call_func(extra_args + args.len());
         Ok(())
     } else {
         let args = arglist.positional();
@@ -774,7 +785,7 @@ fn finish_call(
         for arg in args {
             rec(builder, arg, true)?;
         }
-        builder.make_list(if account_for_owner { 1 } else { 0 } + args.len());
+        builder.make_list(extra_args + args.len());
 
         // keyword args
         for (keystr, arg) in kwargs {

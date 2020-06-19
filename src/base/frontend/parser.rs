@@ -662,6 +662,12 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
             let name = state.peek().name().unwrap();
             mk1tokexpr(state, ExpressionData::Name(name.into()))
         }),
+        (&["new"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            state.gettok();
+            let args = state.args()?;
+            Ok(Expression::new(offset, lineno, ExpressionData::New(args)))
+        }),
         (&["{"], |state: &mut ParserState| state.block()),
         (&["("], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
@@ -923,14 +929,17 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 ),
             ))
         }),
-        (&["class", "trait"], |state: &mut ParserState| {
+        (&["class", "trait", "case"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
-            let class_kind = if state.peek().kind() == TokenKind::Punctuator(Punctuator::Trait) {
+            let class_kind = if state.consume(TokenKind::Punctuator(Punctuator::Trait)) {
                 ClassKind::Trait
-            } else {
+            } else if state.consume(TokenKind::Punctuator(Punctuator::Class)) {
                 ClassKind::UserDefinedClass
+            } else {
+                state.expect(TokenKind::Punctuator(Punctuator::Case))?;
+                state.expect(TokenKind::Punctuator(Punctuator::Class))?;
+                ClassKind::UserDefinedCaseClass
             };
-            state.gettok();
             let short_name = state.expect_name()?.into();
             let bases = {
                 let mut bases = Vec::new();
@@ -973,28 +982,50 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                     };
 
                     while !state.consume(TokenKind::Punctuator(Punctuator::RBrace)) {
-                        let out = if state.consume(TokenKind::Punctuator(Punctuator::Static)) {
-                            &mut static_methods
+                        if state.consume(TokenKind::Punctuator(Punctuator::New)) {
+                            let (offset, lineno) = state.pos();
+                            let (req, opt, var, kw) = state.params()?;
+                            state.expect(TokenKind::Punctuator(Punctuator::Eq))?;
+                            let (doc, body) = if state.peek() == Token::Punctuator(Punctuator::LBrace) {
+                                state.block_with_doc()?
+                            } else {
+                                (None, state.expr(0)?)
+                            };
+                            let member = Expression::new(offset, lineno, ExpressionData::FunctionDisplay(
+                                false,
+                                Some("__call".into()),
+                                req,
+                                opt,
+                                var,
+                                kw,
+                                doc,
+                                body.into(),
+                            ));
+                            static_methods.push((RcStr::from("__call"), member));
                         } else {
-                            &mut methods
-                        };
-                        let stmt = state.stmt()?;
-                        let offset = stmt.offset();
-                        let lineno = stmt.lineno();
-                        let stmt_kind = stmt.kind();
-                        let (name, member) = match break_assignment(stmt) {
-                            Some((name, member)) => (name, member),
-                            None => {
-                                return Err(ParseError {
-                                    offset,
-                                    lineno,
-                                    kind: ParseErrorKind::ExpectedClassMember {
-                                        but_got: stmt_kind,
-                                    },
-                                });
-                            }
-                        };
-                        out.push((name, member));
+                            let out = if state.consume(TokenKind::Punctuator(Punctuator::Static)) {
+                                &mut static_methods
+                            } else {
+                                &mut methods
+                            };
+                            let stmt = state.stmt()?;
+                            let offset = stmt.offset();
+                            let lineno = stmt.lineno();
+                            let stmt_kind = stmt.kind();
+                            let (name, member) = match break_assignment(stmt) {
+                                Some((name, member)) => (name, member),
+                                None => {
+                                    return Err(ParseError {
+                                        offset,
+                                        lineno,
+                                        kind: ParseErrorKind::ExpectedClassMember {
+                                            but_got: stmt_kind,
+                                        },
+                                    });
+                                }
+                            };
+                            out.push((name, member));
+                        }
                         state.expect_delim()?;
                     }
                 }
@@ -1085,7 +1116,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                         methods,
                         smethods,
                     ) => ExpressionData::ClassDisplay(
-                        ClassKind::MutableUserDefinedClass,
+                        ClassKind::UserDefinedMutableClass,
                         name,
                         bases,
                         docstr,

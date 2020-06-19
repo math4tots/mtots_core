@@ -1,20 +1,24 @@
 # Test classes with custom str/repr
 
 class NoCustomStr {
+    new() = new()
 }
 
 class CustomStrOnly {
     [i]
+    new(i) = new(i)
     def __str(self) = '<custom-str %r>' % [self.i]
 }
 
 class CustomReprOnly {
     [i]
+    new(i) = new(i)
     def __repr(self) = '<custom-repr %r>' % [self.i]
 }
 
 class CustomReprAndStr {
     [i]
+    new(i) = new(i)
     def __repr(self) = '<xrepr %r>' % [self.i]
     def __str(self) = '<xstr %r>' % [self.i]
 }

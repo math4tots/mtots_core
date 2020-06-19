@@ -4,16 +4,21 @@ trait Foo {
 }
 
 class Bar {
+
+    static def __call() = __malloc(Bar, [])
+
     static def bar() = 'Bar::bar ---'
 }
 
 class Baz(Foo) {
     [foo, bar]
 
+    new(foo, bar) = new(foo, bar)
+
     def add_one_to_foo(self) = self.foo + 1
 }
 
-class NoExplicitFields(Foo)
+case class NoExplicitFields(Foo)
 
 def __test_static_method_call() {
     assert_eq(Foo::foo(), 'Foo::foo return value')

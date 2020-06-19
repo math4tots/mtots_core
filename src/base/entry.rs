@@ -67,9 +67,7 @@ fn run(mut globals: Globals, extra_sources: &[&str], target: RunTarget) {
         }
         RunTarget::Module(module_name) => module_name,
     };
-    globals.exit_on_error(|globals| {
-        globals.load_main(module_name)
-    })
+    globals.exit_on_error(|globals| globals.load_main(module_name))
 }
 
 fn add_source(globals: &mut Globals, pathstr: &str, name: Option<&str>) {

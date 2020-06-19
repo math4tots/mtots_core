@@ -592,7 +592,7 @@ impl UserObject {
         self.map.get(&symbol)
     }
 
-    pub fn get_class(&self) -> &Rc<Class> {
+    pub fn cls(&self) -> &Rc<Class> {
         &self.cls
     }
 }
@@ -625,7 +625,7 @@ impl MutableUserObject {
         self.map.get(&symbol)
     }
 
-    pub fn get_class(&self) -> &Rc<Class> {
+    pub fn cls(&self) -> &Rc<Class> {
         &self.cls
     }
 }
@@ -701,6 +701,13 @@ enum ParameterInfoKind {
     // without any parameter processing
     PassThrough,
 
+    /// required, *args, and **kwargs are all present, but
+    /// there are no optional/default parameters.
+    /// This case is almost like PassThrough, except that we
+    /// have to check that the input has a minimum number of
+    /// positional arguments.
+    OnlyOptionalsEmpty,
+
     // requires full argument processing logic
     Mixed,
 }
@@ -719,12 +726,12 @@ impl ParameterInfo {
         variadic: Option<Symbol>,
         keywords: Option<Symbol>,
     ) -> ParameterInfo {
-        let kind = if required.is_empty()
-            && optional.is_empty()
-            && variadic.is_some()
-            && keywords.is_some()
-        {
-            ParameterInfoKind::PassThrough
+        let kind = if optional.is_empty() && variadic.is_some() && keywords.is_some() {
+            if required.is_empty() {
+                ParameterInfoKind::PassThrough
+            } else {
+                ParameterInfoKind::OnlyOptionalsEmpty
+            }
         } else {
             ParameterInfoKind::Mixed
         };
@@ -769,6 +776,13 @@ impl ParameterInfo {
     ) -> Result<(Vec<Value>, Option<HashMap<Symbol, Value>>), ArgumentError> {
         match self.kind {
             ParameterInfoKind::PassThrough => Ok((args, kwargs)),
+            ParameterInfoKind::OnlyOptionalsEmpty => {
+                if args.len() < self.required().len() {
+                    Err(ArgumentError::NotEnoughPositionalArguments { argc: args.len() })
+                } else {
+                    Ok((args, kwargs))
+                }
+            }
             ParameterInfoKind::Mixed => self.translate_without_kind(args, kwargs),
         }
     }
@@ -871,6 +885,16 @@ pub struct NativeFunction {
 impl From<NativeFunction> for Value {
     fn from(f: NativeFunction) -> Value {
         Value::NativeFunction(f.into())
+    }
+}
+impl From<Rc<NativeFunction>> for Value {
+    fn from(f: Rc<NativeFunction>) -> Value {
+        Value::NativeFunction(f)
+    }
+}
+impl From<&Rc<NativeFunction>> for Value {
+    fn from(f: &Rc<NativeFunction>) -> Value {
+        Value::NativeFunction(f.clone())
     }
 }
 impl fmt::Debug for NativeFunction {
@@ -1071,7 +1095,8 @@ pub enum ClassKind {
     Trait,
     NativeClass,
     UserDefinedClass,
-    MutableUserDefinedClass,
+    UserDefinedCaseClass,
+    UserDefinedMutableClass,
 }
 impl ClassKind {
     pub fn from_usize(i: usize) -> Option<ClassKind> {
@@ -1079,7 +1104,8 @@ impl ClassKind {
             0 => Some(ClassKind::Trait),
             1 => Some(ClassKind::NativeClass),
             2 => Some(ClassKind::UserDefinedClass),
-            3 => Some(ClassKind::MutableUserDefinedClass),
+            3 => Some(ClassKind::UserDefinedCaseClass),
+            4 => Some(ClassKind::UserDefinedMutableClass),
             _ => None,
         }
     }
@@ -1089,7 +1115,8 @@ impl ClassKind {
             ClassKind::Trait => 0,
             ClassKind::NativeClass => 1,
             ClassKind::UserDefinedClass => 2,
-            ClassKind::MutableUserDefinedClass => 3,
+            ClassKind::UserDefinedCaseClass => 3,
+            ClassKind::UserDefinedMutableClass => 4,
         }
     }
 }
@@ -1109,7 +1136,8 @@ impl fmt::Debug for Class {
         let kind = match self.kind {
             ClassKind::Trait => "trait",
             ClassKind::NativeClass | ClassKind::UserDefinedClass => "class",
-            ClassKind::MutableUserDefinedClass => "@class",
+            ClassKind::UserDefinedCaseClass => "case class",
+            ClassKind::UserDefinedMutableClass => "@class",
         };
         write!(f, "<{} {}>", kind, self.full_name)
     }
@@ -1191,7 +1219,9 @@ impl Class {
                     vec![]
                 }
             }
-            ClassKind::UserDefinedClass | ClassKind::MutableUserDefinedClass => {
+            ClassKind::UserDefinedClass
+            | ClassKind::UserDefinedCaseClass
+            | ClassKind::UserDefinedMutableClass => {
                 if let Some(fields) = fields {
                     fields
                 } else {
@@ -1266,7 +1296,7 @@ impl Class {
         kwargs: Option<HashMap<Symbol, Value>>,
     ) -> EvalResult<Value> {
         match cls.kind {
-            ClassKind::UserDefinedClass => {
+            ClassKind::UserDefinedClass | ClassKind::UserDefinedCaseClass => {
                 let (args, kwargs) = match cls.fields_as_parameter_info.translate(args, kwargs) {
                     Ok(pair) => pair,
                     Err(error) => return globals.set_exc_legacy(error.into()),
@@ -1282,7 +1312,7 @@ impl Class {
                 }
                 .into())
             }
-            ClassKind::MutableUserDefinedClass => {
+            ClassKind::UserDefinedMutableClass => {
                 let (args, kwargs) = match cls.fields_as_parameter_info.translate(args, kwargs) {
                     Ok(pair) => pair,
                     Err(error) => return globals.set_exc_legacy(error.into()),

@@ -1,4 +1,5 @@
 use crate::compile;
+use crate::Class;
 use crate::EvalError;
 use crate::EvalResult;
 use crate::Expression;
@@ -64,6 +65,13 @@ pub struct Globals {
 
     trampoline_callback: Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>>,
 
+    /// Used by 'new' to determine what class to instantiate.
+    /// The usize value records the length of trace when the corresponding
+    /// class is added to the stack, so that we can prevent functions
+    /// called from inside __call from inadvertently gaining access
+    /// to the class.
+    new_stack: Vec<(Rc<Class>, usize)>,
+
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
 
@@ -121,6 +129,7 @@ impl Globals {
             cli_args: Vec::new(),
             main_module_name: None,
             trampoline_callback: None,
+            new_stack: Vec::new(),
             exception_registry,
             builtin_exceptions,
             symbol_registry,
@@ -278,6 +287,10 @@ impl Globals {
         fields: Option<Vec<RcStr>>,
     ) -> Rc<ExceptionKind> {
         self.exception_registry.add(base, name, message, fields)
+    }
+
+    pub fn builtin_functions(&self) -> &NativeFunctions {
+        &self.builtin_functions
     }
 
     pub fn builtin_exceptions(&self) -> &BuiltinExceptions {
@@ -550,7 +563,8 @@ impl Globals {
     /// Will also handle trampoline requests
     ///
     pub fn exit_on_error<F>(mut self, f: F) -> ()
-    where F: FnOnce(&mut Globals) -> EvalResult<()>
+    where
+        F: FnOnce(&mut Globals) -> EvalResult<()>,
     {
         match f(&mut self) {
             Ok(r) => r,
@@ -562,7 +576,6 @@ impl Globals {
                     // The Globals object is consumed, so there's not much we can do besides
                     // just unwrap if an error is returned here
                     trampoline_callback(self).unwrap();
-
                 } else {
                     eprint!("{}\n{}", error, self.trace_fmt());
                     std::process::exit(1);
@@ -588,7 +601,8 @@ impl Globals {
     /// gives me an experimental warning from Rust.
     ///
     pub fn escape_to_trampoline<R, F>(&mut self, f: F) -> EvalResult<R>
-    where F: FnOnce(Globals) -> EvalResult<()> + 'static
+    where
+        F: FnOnce(Globals) -> EvalResult<()> + 'static,
     {
         self.trampoline_callback = Some(Box::new(f));
         self.set_escape_to_trampoline_exc()
@@ -598,8 +612,28 @@ impl Globals {
     /// when a JumpToTrampoline method is thrown.
     /// If the host does not take care to do this, code that depends on the trampoline
     /// mechanism may not work
-    pub fn move_trampoline_callback(&mut self) -> Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>> {
+    pub fn move_trampoline_callback(
+        &mut self,
+    ) -> Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>> {
         std::mem::replace(&mut self.trampoline_callback, None)
+    }
+
+    pub(crate) fn push_new_stack(&mut self, cls: Rc<Class>) {
+        let len = self.trace.len();
+        self.new_stack.push((cls, len));
+    }
+
+    pub(crate) fn pop_new_stack(&mut self) {
+        self.new_stack.pop().unwrap();
+    }
+
+    pub(crate) fn get_class_for_new(&self) -> Option<&Rc<Class>> {
+        if let Some((cls, len)) = self.new_stack.last() {
+            if *len == self.trace.len() {
+                return Some(cls);
+            }
+        }
+        None
     }
 
     fn exec_module_with_ast(

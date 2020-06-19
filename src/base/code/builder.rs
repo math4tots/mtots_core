@@ -34,6 +34,8 @@ enum PseudoOpcode {
     LoadVar(RcStr),
     StoreVar(RcStr),
     LoadCell(RcStr),
+    LoadDunderNew,
+    LoadClassForNew,
     Nonlocal(RcStr),
     Unpack(usize),
     MakeMutableString(usize),
@@ -282,6 +284,14 @@ impl CodeBuilder {
 
     pub fn load_cell(&mut self, name: RcStr) {
         self.code.push(PseudoOpcode::LoadCell(name));
+    }
+
+    pub fn load_dunder_new(&mut self) {
+        self.code.push(PseudoOpcode::LoadDunderNew);
+    }
+
+    pub fn load_class_for_new(&mut self) {
+        self.code.push(PseudoOpcode::LoadClassForNew);
     }
 
     pub fn nonlocal(&mut self, name: RcStr) {
@@ -663,6 +673,12 @@ impl CodeBuilder {
                         }
                         _ => panic!("LoadCell on non-cell var"),
                     },
+                    PseudoOpcode::LoadDunderNew => {
+                        state.add(opc::LOAD_DUNDER_NEW, &[]);
+                    }
+                    PseudoOpcode::LoadClassForNew => {
+                        state.add(opc::LOAD_CLASS_FOR_NEW, &[]);
+                    }
                     PseudoOpcode::Nonlocal(_) => {
                         // nonlocal is a no-op -- the primary
                         // purpose of nonlocal is to mark the given

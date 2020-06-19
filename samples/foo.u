@@ -21,3 +21,6 @@ for i in foo() {
 
 print(foo())
 main()
+
+# Recorded performance:
+#   2020/06/19, mbp, *, 1.829s

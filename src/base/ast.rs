@@ -77,6 +77,7 @@ impl Expression {
             ExpressionData::MethodCall(owner, _, arglist) => {
                 join_mut_refs(vec![vec![&mut *owner], arglist.children_mut()])
             }
+            ExpressionData::New(arglist) => arglist.children_mut(),
             ExpressionData::FunctionDisplay(_, _, _, defparams, _, _, _, body) => {
                 join_mut_refs(vec![
                     defparams.iter_mut().map(|(_, e)| e).collect(),
@@ -138,6 +139,7 @@ impl Expression {
             ExpressionData::Slice(..) => ExpressionKind::Slice,
             ExpressionData::FunctionCall(..) => ExpressionKind::FunctionCall,
             ExpressionData::MethodCall(..) => ExpressionKind::MethodCall,
+            ExpressionData::New(..) => ExpressionKind::New,
             ExpressionData::FunctionDisplay(..) => ExpressionKind::FunctionDisplay,
             ExpressionData::ClassDisplay(..) => ExpressionKind::ClassDisplay,
             ExpressionData::ExceptionKindDisplay(..) => ExpressionKind::ExceptionKindDisplay,
@@ -323,6 +325,7 @@ pub enum ExpressionData {
     ),
     FunctionCall(Box<Expression>, ArgumentList),
     MethodCall(Box<Expression>, RcStr, ArgumentList),
+    New(ArgumentList),
     FunctionDisplay(
         bool,                     // is generator?
         Option<RcStr>,            // name
@@ -389,6 +392,7 @@ pub enum ExpressionKind {
     Slice,
     FunctionCall,
     MethodCall,
+    New,
     FunctionDisplay,
     ClassDisplay,
     ExceptionKindDisplay,
