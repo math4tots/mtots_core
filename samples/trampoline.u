@@ -1,0 +1,4 @@
+# Unfortunately the trampoline mechanism is rather tricky
+# to test in a normal test script
+# Instead see the ggez binding in mtots as a test of whether
+# this mechanism works

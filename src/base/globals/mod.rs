@@ -62,6 +62,8 @@ pub struct Globals {
     cli_args: Vec<RcStr>,
     main_module_name: Option<RcStr>,
 
+    trampoline_callback: Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>>,
+
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
 
@@ -118,6 +120,7 @@ impl Globals {
             parser: Parser::new(symbol_registry.clone()),
             cli_args: Vec::new(),
             main_module_name: None,
+            trampoline_callback: None,
             exception_registry,
             builtin_exceptions,
             symbol_registry,
@@ -311,6 +314,13 @@ impl Globals {
         self.set_exc(Exception::new(
             self.builtin_exceptions.RuntimeError.clone(),
             vec![message.into()],
+        ))
+    }
+
+    fn set_escape_to_trampoline_exc<T>(&mut self) -> Result<T, ErrorIndicator> {
+        self.set_exc(Exception::new(
+            self.builtin_exceptions.EscapeToTrampoline.clone(),
+            vec![],
         ))
     }
 
@@ -531,6 +541,65 @@ impl Globals {
 
     pub fn main_module_name(&self) -> &Option<RcStr> {
         &self.main_module_name
+    }
+
+    /// convenience method that will pretty-print the stack
+    /// trace and call std::process::exit(1) if an error
+    /// is encountered.
+    ///
+    /// Will also handle trampoline requests
+    ///
+    pub fn exit_on_error<F>(mut self, f: F) -> ()
+    where F: FnOnce(&mut Globals) -> EvalResult<()>
+    {
+        match f(&mut self) {
+            Ok(r) => r,
+            Err(_) => {
+                let error = self.exc_move();
+                if let Some(trampoline_callback) = self.move_trampoline_callback() {
+                    assert_eq!(error.kind(), &self.builtin_exceptions().EscapeToTrampoline);
+
+                    // The Globals object is consumed, so there's not much we can do besides
+                    // just unwrap if an error is returned here
+                    trampoline_callback(self).unwrap();
+
+                } else {
+                    eprint!("{}\n{}", error, self.trace_fmt());
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
+
+    /// Sometimes there will be cases where the Global object needs to be moved
+    /// For example, a game engine may hijack the current thread and give back
+    /// limited control through callbacks.
+    /// For these situations, we need to unwind all the way back to where
+    /// the Global object is allocated, so that we can move it.
+    /// Calling escape_to_trampoline will return an EvalResult with a JumpToTrampoline
+    /// exception, and allow unwinding as far as needed.
+    /// Of course, once at the allocation point, the receiver must cooperate and
+    /// actually check for, and call the trampoline callback.
+    /// The default entrypoint (as in entry.rs) will do this.
+    ///
+    /// The callback should really return '!', because the trampoline will consume
+    /// the Globals instance, making it impossible to retrieve the original stack
+    /// trace. However at this moment, trying to return '!' from the callback
+    /// gives me an experimental warning from Rust.
+    ///
+    pub fn escape_to_trampoline<R, F>(&mut self, f: F) -> EvalResult<R>
+    where F: FnOnce(Globals) -> EvalResult<()> + 'static
+    {
+        self.trampoline_callback = Some(Box::new(f));
+        self.set_escape_to_trampoline_exc()
+    }
+
+    /// Method that should be called by the host (i.e. whoever owns the Globals instance)
+    /// when a JumpToTrampoline method is thrown.
+    /// If the host does not take care to do this, code that depends on the trampoline
+    /// mechanism may not work
+    pub fn move_trampoline_callback(&mut self) -> Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>> {
+        std::mem::replace(&mut self.trampoline_callback, None)
     }
 
     fn exec_module_with_ast(

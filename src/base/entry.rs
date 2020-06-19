@@ -1,7 +1,7 @@
 use crate::Globals;
 use std::path::Path;
 
-pub fn main(globals: &mut Globals) {
+pub fn main(mut globals: Globals) {
     match globals.add_roots_from_env() {
         Ok(()) => (),
         Err(std::env::VarError::NotPresent) => (),
@@ -46,6 +46,7 @@ pub fn main(globals: &mut Globals) {
         }
         _ => {
             eprintln!("<path-to-script> [-- args...]");
+            std::process::exit(1)
         }
     }
 }
@@ -55,22 +56,20 @@ enum RunTarget<'a> {
     Module(&'a str),
 }
 
-fn run(globals: &mut Globals, extra_sources: &[&str], target: RunTarget) {
+fn run(mut globals: Globals, extra_sources: &[&str], target: RunTarget) {
     for source in extra_sources {
-        add_source(globals, source, None);
+        add_source(&mut globals, source, None);
     }
     let module_name = match target {
         RunTarget::Path(path) => {
-            add_source(globals, path, Some("__main"));
+            add_source(&mut globals, path, Some("__main"));
             "__main"
         }
         RunTarget::Module(module_name) => module_name,
     };
-    if let Err(_) = globals.load_main(module_name) {
-        let error = globals.exc_move();
-        eprint!("{}\n{}", error, globals.trace_fmt());
-        std::process::exit(1);
-    }
+    globals.exit_on_error(|globals| {
+        globals.load_main(module_name)
+    })
 }
 
 fn add_source(globals: &mut Globals, pathstr: &str, name: Option<&str>) {

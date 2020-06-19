@@ -205,6 +205,7 @@ impl Exception {
 #[allow(non_snake_case)]
 pub struct BuiltinExceptions {
     pub BaseException: Rc<ExceptionKind>,
+    pub EscapeToTrampoline: Rc<ExceptionKind>,
     pub Exception: Rc<ExceptionKind>,
     pub RuntimeError: Rc<ExceptionKind>,
     pub NameError: Rc<ExceptionKind>,
@@ -247,6 +248,12 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> (ExceptionRegistry, BuiltinExcep
     };
 
     let BaseException = registry.add_without_base("BaseException".into(), "".into());
+    let EscapeToTrampoline = registry.add(
+        BaseException.clone(),
+        "EscapeToTrampoline".into(),
+        "Escape to trampoline requested".into(),
+        None,
+    );
     let Exception = registry.add(BaseException.clone(), "Exception".into(), "".into(), None);
     let RuntimeError = registry.add(
         Exception.clone(),
@@ -328,6 +335,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> (ExceptionRegistry, BuiltinExcep
         registry,
         BuiltinExceptions {
             BaseException,
+            EscapeToTrampoline,
             Exception,
             RuntimeError,
             NameError,
