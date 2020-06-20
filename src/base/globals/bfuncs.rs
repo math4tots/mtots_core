@@ -255,12 +255,18 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     let dunder_new = NativeFunction::sdnew(
         sr,
         "__new",
-        (&["cls"], &[], Some("args"), Some("kwargs")),
+        (&["class"], &[], Some("args"), Some("kwargs")),
         Some(concat!(
             "Function used by 'new' expressions when building new instances\n",
             "This function should never be called directly"
         )),
         |globals, mut args, kwargs| {
+            // Making the first parameter of the function 'class' is intentional
+            // since the user may pass arbitrary keyword parameters, a normal
+            // identifier may clash with the keyword parameter.
+            // The user can provide a kwargs table that contains class as a key,
+            // however, it should never conflict with a class field, since fields
+            // should all be legal identifiers.
             let cls_val = args.remove(0);
             let cls = Eval::expect_class(globals, &cls_val)?;
             let obj = Class::instantiate(cls, globals, args, kwargs)?;
