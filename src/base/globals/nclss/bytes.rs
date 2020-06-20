@@ -26,16 +26,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
-            sr,
-            "len",
-            &["self"],
-            None,
-            |globals, args, _kwargs| {
-                let bytes = Eval::expect_bytes(globals, &args[0])?;
-                Ok((bytes.len() as i64).into())
-            },
-        ),
+        NativeFunction::sdnew0(sr, "len", &["self"], None, |globals, args, _kwargs| {
+            let bytes = Eval::expect_bytes(globals, &args[0])?;
+            Ok((bytes.len() as i64).into())
+        }),
         NativeFunction::simple0(sr, "__getitem", &["self", "i"], |globals, args, _kwargs| {
             let bytes = Eval::expect_bytes(globals, &args[0])?;
             let i = Eval::expect_index(globals, &args[1], bytes.len())?;

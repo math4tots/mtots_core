@@ -1027,7 +1027,12 @@ impl fmt::Debug for NativeClosure {
     }
 }
 impl NativeClosure {
-    pub fn new<F>(name: RcStr, parameter_info: ParameterInfo, doc: Option<RcStr>, body: F) -> NativeClosure
+    pub fn new<F>(
+        name: RcStr,
+        parameter_info: ParameterInfo,
+        doc: Option<RcStr>,
+        body: F,
+    ) -> NativeClosure
     where
         F: Fn(&mut Globals, Vec<Value>, Option<HashMap<Symbol, Value>>) -> FunctionResult + 'static,
     {

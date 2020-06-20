@@ -986,21 +986,26 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                             let (offset, lineno) = state.pos();
                             let (req, opt, var, kw) = state.params()?;
                             state.expect(TokenKind::Punctuator(Punctuator::Eq))?;
-                            let (doc, body) = if state.peek() == Token::Punctuator(Punctuator::LBrace) {
-                                state.block_with_doc()?
-                            } else {
-                                (None, state.expr(0)?)
-                            };
-                            let member = Expression::new(offset, lineno, ExpressionData::FunctionDisplay(
-                                false,
-                                Some("__call".into()),
-                                req,
-                                opt,
-                                var,
-                                kw,
-                                doc,
-                                body.into(),
-                            ));
+                            let (doc, body) =
+                                if state.peek() == Token::Punctuator(Punctuator::LBrace) {
+                                    state.block_with_doc()?
+                                } else {
+                                    (None, state.expr(0)?)
+                                };
+                            let member = Expression::new(
+                                offset,
+                                lineno,
+                                ExpressionData::FunctionDisplay(
+                                    false,
+                                    Some("__call".into()),
+                                    req,
+                                    opt,
+                                    var,
+                                    kw,
+                                    doc,
+                                    body.into(),
+                                ),
+                            );
                             static_methods.push((RcStr::from("__call"), member));
                         } else {
                             let out = if state.consume(TokenKind::Punctuator(Punctuator::Static)) {

@@ -49,6 +49,7 @@ pub use base::Function;
 pub use base::GeneratorResult;
 pub use base::Globals;
 pub use base::Module;
+pub use base::NativeClosure;
 pub use base::NativeFunction;
 pub use base::NativeFunctions;
 pub use base::NativeIterator;

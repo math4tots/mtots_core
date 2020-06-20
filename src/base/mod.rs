@@ -55,6 +55,7 @@ pub use value::ClassKind;
 pub use value::ConstValue;
 pub use value::Function;
 pub use value::Module;
+pub use value::NativeClosure;
 pub use value::NativeFunction;
 pub use value::NativeIterator;
 pub use value::Opaque;
