@@ -1003,11 +1003,22 @@ pub type NativeClosureBody =
 pub struct NativeClosure {
     name: RcStr,
     parameter_info: ParameterInfo,
+    doc: Option<RcStr>,
     body: NativeClosureBody,
 }
 impl From<NativeClosure> for Value {
     fn from(f: NativeClosure) -> Value {
         Value::NativeClosure(f.into())
+    }
+}
+impl From<Rc<NativeClosure>> for Value {
+    fn from(f: Rc<NativeClosure>) -> Value {
+        Value::NativeClosure(f)
+    }
+}
+impl From<&Rc<NativeClosure>> for Value {
+    fn from(f: &Rc<NativeClosure>) -> Value {
+        Value::NativeClosure(f.clone())
     }
 }
 impl fmt::Debug for NativeClosure {
@@ -1016,18 +1027,51 @@ impl fmt::Debug for NativeClosure {
     }
 }
 impl NativeClosure {
-    pub fn new<F>(name: RcStr, parameter_info: ParameterInfo, body: F) -> NativeClosure
+    pub fn new<F>(name: RcStr, parameter_info: ParameterInfo, doc: Option<RcStr>, body: F) -> NativeClosure
     where
         F: Fn(&mut Globals, Vec<Value>, Option<HashMap<Symbol, Value>>) -> FunctionResult + 'static,
     {
         NativeClosure {
             name,
             parameter_info,
+            doc,
             body: Box::new(body),
         }
     }
+    pub fn sdnew(
+        sr: &SymbolRegistryHandle,
+        name: &str,
+        parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
+        doc: Option<&str>,
+        body: NativeFunctionBody,
+    ) -> Self {
+        Self::new(
+            name.into(),
+            ParameterInfo::snew(
+                sr,
+                parameter_info.0,
+                parameter_info.1,
+                parameter_info.2,
+                parameter_info.3,
+            ),
+            doc.map(|s| s.into()),
+            body,
+        )
+    }
+    pub fn sdnew0(
+        sr: &SymbolRegistryHandle,
+        name: &str,
+        params: &[&str],
+        doc: Option<&str>,
+        body: NativeFunctionBody,
+    ) -> Self {
+        Self::sdnew(sr, name, (params, &[], None, None), doc, body)
+    }
     pub fn name(&self) -> &RcStr {
         &self.name
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn apply_with_kwargs(
         &self,
