@@ -584,6 +584,20 @@ impl Globals {
         }
     }
 
+    /// Print a formatted error message if an error was encountered.
+    /// Returns true if an error was processed, false otherwise.
+    ///
+    /// This method will consume the error.
+    pub fn print_if_error<F>(&mut self) -> bool {
+        if self.exc.is_some() {
+            let error = self.exc_move();
+            eprint!("{}\n{}", error, self.trace_fmt());
+            true
+        } else {
+            false
+        }
+    }
+
     /// Sometimes there will be cases where the Global object needs to be moved
     /// For example, a game engine may hijack the current thread and give back
     /// limited control through callbacks.
