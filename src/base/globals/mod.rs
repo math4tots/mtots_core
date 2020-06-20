@@ -588,7 +588,7 @@ impl Globals {
     /// Returns true if an error was processed, false otherwise.
     ///
     /// This method will consume the error.
-    pub fn print_if_error<F>(&mut self) -> bool {
+    pub fn print_if_error(&mut self) -> bool {
         if self.exc.is_some() {
             let error = self.exc_move();
             eprint!("{}\n{}", error, self.trace_fmt());
