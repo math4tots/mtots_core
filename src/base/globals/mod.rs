@@ -18,9 +18,10 @@ use crate::SymbolRegistryHandle;
 use crate::Token;
 use crate::Value;
 use crate::ValueKind;
+use std::any::Any;
+use std::any::TypeId;
 use std::cell::RefCell;
 use std::collections::HashMap;
-
 use std::rc::Rc;
 
 mod bfuncs;
@@ -29,10 +30,12 @@ mod exc;
 mod finder;
 mod nclss;
 mod nmods;
+mod stash;
 
 use finder::SourceFinder;
 use finder::SourceFinderError;
 use finder::SourceItem;
+pub use stash::Stashable;
 
 pub use bfuncs::NativeFunctions;
 pub use exc::BuiltinExceptions;
@@ -71,6 +74,9 @@ pub struct Globals {
     /// called from inside __call from inadvertently gaining access
     /// to the class.
     new_stack: Vec<(Rc<Class>, usize)>,
+
+    /// Stash for storing arbitrary global values.
+    stash: HashMap<TypeId, Rc<dyn Any>>,
 
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
@@ -130,6 +136,7 @@ impl Globals {
             main_module_name: None,
             trampoline_callback: None,
             new_stack: Vec::new(),
+            stash: HashMap::new(),
             exception_registry,
             builtin_exceptions,
             symbol_registry,
@@ -648,6 +655,33 @@ impl Globals {
             }
         }
         None
+    }
+
+    /// The global stash allows native modules to store and share arbitrary data.
+    ///
+    /// To share data, you need to create a new struct and implement the Stashable
+    /// trait. The stash will store exactly a single instance of each type
+    /// that is stored.
+    ///
+    /// This means that the visibility of your data in the stash lines up with
+    /// the visibility of the struct you are using. This should allow you to
+    /// maintain data private to your module.
+    ///
+    /// As part of the Stashable trait, you will need to implement Default.
+    ///
+    /// The first time you call get_from_stash, Default will be used to construct
+    /// the values.
+    ///
+    pub fn get_from_stash<S: Stashable>(&mut self) -> Rc<RefCell<S>> {
+        let key = TypeId::of::<S>();
+        if !self.stash.contains_key(&key) {
+            let typed_rc: Rc<RefCell<S>> = Rc::new(RefCell::new(S::default()));
+            let untyped_rc: Rc<dyn Any> = typed_rc;
+            self.stash.insert(key.clone(), untyped_rc);
+        }
+        let untyped_rc = self.stash.get(&key).unwrap().clone();
+        let typed_rc: Rc<RefCell<S>> = untyped_rc.downcast().unwrap();
+        typed_rc
     }
 
     fn exec_module_with_ast(

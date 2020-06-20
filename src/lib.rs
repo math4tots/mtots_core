@@ -57,6 +57,7 @@ pub use base::Opaque;
 pub use base::ParameterInfo;
 pub use base::ParameterKind;
 pub use base::ParseError;
+pub use base::Stashable;
 pub use base::Table;
 pub use base::VMap;
 pub use base::VSet;

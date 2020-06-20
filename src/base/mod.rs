@@ -48,6 +48,7 @@ pub use globals::Exception;
 pub use globals::ExceptionKind;
 pub use globals::Globals;
 pub use globals::NativeFunctions;
+pub use globals::Stashable;
 pub use globals::SOURCE_FILE_EXTENSION;
 pub use value::ArgumentError;
 pub use value::Class;
