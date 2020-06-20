@@ -946,6 +946,15 @@ impl NativeFunction {
             body,
         )
     }
+    pub fn sdnew0(
+        sr: &SymbolRegistryHandle,
+        name: &str,
+        params: &[&str],
+        doc: Option<&str>,
+        body: NativeFunctionBody,
+    ) -> NativeFunction {
+        Self::sdnew(sr, name, (params, &[], None, None), doc, body)
+    }
     pub fn simple0(
         symbol_registry: &SymbolRegistryHandle,
         name: &str,

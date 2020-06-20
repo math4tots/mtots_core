@@ -96,10 +96,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(false.into())
         }),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "__slice",
-            (&["self", "start", "end"], &[], None, None),
+            &["self", "start", "end"],
             Some("Creates a new list consisting of a subrange of this list"),
             |globals, args, _kwargs| {
                 let list = Eval::expect_list(globals, &args[0])?;

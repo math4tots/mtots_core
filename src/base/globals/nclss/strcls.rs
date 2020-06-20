@@ -76,10 +76,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "chars",
-            (&["self"], &[], None, None),
+            &["self"],
             Some("Returns a list of chars of this String"),
             |globals, args, _kwargs| {
                 let s = Eval::expect_string(globals, &args[0])?;

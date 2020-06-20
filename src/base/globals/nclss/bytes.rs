@@ -26,10 +26,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "len",
-            (&["self"], &[], None, None),
+            &["self"],
             None,
             |globals, args, _kwargs| {
                 let bytes = Eval::expect_bytes(globals, &args[0])?;
@@ -41,10 +41,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let i = Eval::expect_index(globals, &args[1], bytes.len())?;
             Ok((bytes[i] as i64).into())
         }),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "__slice",
-            (&["self", "start", "end"], &[], None, None),
+            &["self", "start", "end"],
             Some("Creates a new bytes object consisting of a subrange of this object"),
             |globals, args, _kwargs| {
                 let bytes = Eval::expect_bytes(globals, &args[0])?;
@@ -63,10 +63,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
             Ok(bytes.into())
         }),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "le",
-            (&["n", "val"], &[], None, None),
+            &["n", "val"],
             Some(concat!(
                 "Create little endian bytes from an integer or float\n",
                 "The first parameter n specifies the number of bytes to use\n",
@@ -126,10 +126,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "be",
-            (&["n", "val"], &[], None, None),
+            &["n", "val"],
             Some(concat!(
                 "Create big endian bytes from an integer or float\n",
                 "The first parameter n specifies the number of bytes to use\n",

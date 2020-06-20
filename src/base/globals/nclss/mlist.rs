@@ -42,10 +42,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::sdnew0(
             sr,
             "__slice",
-            (&["self", "start", "end"], &[], None, None),
+            &["self", "start", "end"],
             Some("Creates a new mutable list consisting of a subrange of this mutable list"),
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;

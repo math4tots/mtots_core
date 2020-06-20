@@ -76,10 +76,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let y = Eval::expect_floatlike(globals, &args[1])?;
                 Ok(x.log(y).into())
             }),
-            NativeFunction::sdnew(
+            NativeFunction::sdnew0(
                 sr,
                 "emod",
-                (&["a", "b"], &[], None, None),
+                &["a", "b"],
                 Some("Euclidean modulo on integers"),
                 |globals, args, _| {
                     let x = Eval::expect_int(globals, &args[0])?;
@@ -87,10 +87,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(x.rem_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::sdnew0(
                 sr,
                 "ediv",
-                (&["a", "b"], &[], None, None),
+                &["a", "b"],
                 Some("Euclidean division on integers"),
                 |globals, args, _| {
                     let x = Eval::expect_int(globals, &args[0])?;
@@ -98,10 +98,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(x.div_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::sdnew0(
                 sr,
                 "fmod",
-                (&["a", "b"], &[], None, None),
+                &["a", "b"],
                 Some("Euclidean modulo on floats"),
                 |globals, args, _| {
                     let x = Eval::expect_floatlike(globals, &args[0])?;
@@ -109,10 +109,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(x.rem_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::sdnew0(
                 sr,
                 "fdiv",
-                (&["a", "b"], &[], None, None),
+                &["a", "b"],
                 Some("Euclidean division on floats"),
                 |globals, args, _| {
                     let x = Eval::expect_floatlike(globals, &args[0])?;
