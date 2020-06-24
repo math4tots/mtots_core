@@ -1060,6 +1060,13 @@ impl Eval {
                 map.extend(b.iter().map(|(k, v)| (*k, v.clone())));
                 Value::Table(Table::new(map).into())
             }
+            (Value::Set(a), Value::Set(b)) => {
+                let mut set = unwrap_or_clone_rc(a);
+                for (k, ()) in b.iter() {
+                    set.s_insert(globals, k.clone(), ())?;
+                }
+                Value::Set(set.into())
+            }
             (Value::Map(a), Value::Map(b)) => {
                 let mut map = unwrap_or_clone_rc(a);
                 for (k, v) in b.iter() {

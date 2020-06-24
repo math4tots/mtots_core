@@ -40,3 +40,9 @@ def __test_sets_as_keys() {
     assert_eq(d[Set([3, 2, 1])], 123)
     assert_eq(d.len(), 1)
 }
+
+def __test_set_add() {
+    a = Set([1, 2, 3])
+    b = Set([3, 4, 5])
+    assert_eq(a + b, Set([1, 2, 3, 4, 5]))
+}
