@@ -450,15 +450,16 @@ impl Frame {
             if let Some(value) = scope.get(&name_rcstr) {
                 cellvars.push(value.clone());
             } else {
-                match name.str() {
-                    "__name" => cellvars.push(Rc::new(RefCell::new(Value::String(code.full_name().clone())))),
-                    "__file" => cellvars.push(Rc::new(RefCell::new(Value::Nil))),
+                cellvars.push(Rc::new(RefCell::new(match name.str() {
+                    "__name" => Value::String(code.full_name().clone()),
+                    "__file" => Value::Nil,
                     _ => {
-                        let value = Rc::new(RefCell::new(Value::Uninitialized));
-                        cellvars.push(value.clone());
-                        scope.insert(name_rcstr, value);
+                        return Err(FrameError::MissingBuiltin {
+                            name: name_rcstr,
+                            lineno: code.find_var_first_used_lineno(*name).unwrap(),
+                        });
                     }
-                }
+                })));
             }
         }
 
@@ -468,7 +469,9 @@ impl Frame {
             let cell = if let Some(cell) = scope.get(&name) {
                 cell.clone()
             } else {
-                Rc::new(RefCell::new(Value::Uninitialized))
+                let cell = Rc::new(RefCell::new(Value::Uninitialized));
+                scope.insert(name, cell.clone());
+                cell
             };
             cellvars.push(cell);
         }
