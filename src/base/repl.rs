@@ -18,6 +18,7 @@ pub(crate) fn run_repl<D: ReplDelegate + ?Sized>(mut globals: Globals, delegate:
                     break 'outer;
                 }
             }
+            let trace_len = globals.trace().len();
             match globals.exec_repl(&mut scope, &line) {
                 Ok(Value::Nil) => {}
                 Ok(value) => match Eval::repr(&mut globals, &value) {
@@ -32,6 +33,7 @@ pub(crate) fn run_repl<D: ReplDelegate + ?Sized>(mut globals: Globals, delegate:
                     assert!(globals.print_if_error());
                 }
             }
+            globals.trace_trunc(trace_len);
             delegate.accept_scope(&scope);
         } else {
             break;
