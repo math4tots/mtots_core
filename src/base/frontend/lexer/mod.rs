@@ -12,11 +12,12 @@ pub struct LexError {
     kind: LexErrorKind,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LexErrorKind {
     UnrecognizedToken(RcStr),
     UnterminatedStringLiteral,
-    UnmatchedGroupingPunctuator,
+    UnmatchedOpeningSymbol,
+    UnmatchedClosingSymbol,
     MismatchedGroupingPunctuator {
         open: Punctuator,
         open_offset: usize,
@@ -27,6 +28,10 @@ pub enum LexErrorKind {
 impl LexError {
     pub fn move_(self) -> (usize, usize, LexErrorKind) {
         (self.offset, self.lineno, self.kind)
+    }
+
+    pub fn kind(&self) -> LexErrorKind {
+        self.kind.clone()
     }
 }
 
@@ -335,7 +340,7 @@ impl Lexer {
                                 return Err(LexError {
                                     offset: pos,
                                     lineno,
-                                    kind: LexErrorKind::UnmatchedGroupingPunctuator,
+                                    kind: LexErrorKind::UnmatchedClosingSymbol,
                                 })
                             }
                             Some((open, open_pos, open_lineno)) => {
@@ -385,7 +390,7 @@ impl Lexer {
             return Err(LexError {
                 offset: *open_pos,
                 lineno: *open_lineno,
-                kind: LexErrorKind::UnmatchedGroupingPunctuator,
+                kind: LexErrorKind::UnmatchedOpeningSymbol,
             });
         }
 
@@ -535,7 +540,7 @@ mod tests {
             Err(LexError {
                 offset: 0,
                 lineno: 1,
-                kind: LexErrorKind::UnmatchedGroupingPunctuator,
+                kind: LexErrorKind::UnmatchedOpeningSymbol,
             }),
         );
         assert_eq!(
@@ -543,7 +548,7 @@ mod tests {
             Err(LexError {
                 offset: 0,
                 lineno: 1,
-                kind: LexErrorKind::UnmatchedGroupingPunctuator,
+                kind: LexErrorKind::UnmatchedClosingSymbol,
             }),
         );
         assert_eq!(

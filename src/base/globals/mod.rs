@@ -7,11 +7,14 @@ use crate::Frame;
 use crate::FrameError;
 use crate::HMap;
 use crate::LexError;
+use crate::LexErrorKind;
 use crate::Lexer;
 use crate::Module;
 use crate::Parser;
 use crate::RcPath;
 use crate::RcStr;
+use crate::ReplDelegate;
+use crate::ReplScope;
 use crate::SourceName;
 use crate::Symbol;
 use crate::SymbolRegistryHandle;
@@ -684,6 +687,64 @@ impl Globals {
         typed_rc
     }
 
+    /// Initializes a REPL scope with builtins for use with exec_repl
+    pub fn new_repl_scope(&self) -> ReplScope {
+        let mut map = HashMap::new();
+        for (key, val) in self.builtins.iter() {
+            map.insert(key.clone(), Rc::new(RefCell::new(val.clone())));
+        }
+        map
+    }
+
+    fn exec_repl_with_ast(
+        &mut self,
+        scope: &mut ReplScope,
+        expr: &Expression,
+    ) -> EvalResult<Value> {
+        let code = match compile(
+            self.symbol_registry.clone(),
+            crate::REPL_PSEUDO_MODULE_NAME.into(),
+            expr,
+        ) {
+            Ok(code) => code,
+            Err(error) => {
+                let (name, lineno, kind) = error.move_();
+                self.trace_push(name, lineno);
+                return self.set_exc_legacy(EvalError::CompileError(kind));
+            }
+        };
+
+        let mut frame = match Frame::for_repl(self.symbol_registry.clone(), &code, scope) {
+            Ok(x) => x,
+            Err(FrameError::MissingBuiltin {
+                name: varname,
+                lineno,
+            }) => {
+                self.trace_push(crate::REPL_PSEUDO_MODULE_NAME.into(), lineno);
+                return self.set_name_error(varname);
+            }
+        };
+
+        code.run(self, &mut frame)
+    }
+
+    /// Convenience method for determining whether some input source
+    /// is ready to be passed to the exec_repl.
+    /// Mainly, this is to check for unterminated grouping symbols.
+    pub fn is_ready_for_repl(&self, line: &str) -> bool {
+        match self.lex(line) {
+            Ok(_) => true,
+            Err(error) => match error.kind() {
+                LexErrorKind::UnmatchedOpeningSymbol => false,
+                _ => true,
+            },
+        }
+    }
+
+    pub fn run_repl<D: ReplDelegate + ?Sized>(self, delegate: &mut D) {
+        crate::run_repl(self, delegate)
+    }
+
     fn exec_module_with_ast(
         &mut self,
         name: RcStr,
@@ -739,6 +800,13 @@ impl Globals {
             .is_none());
         let expr = self.parse(name.clone(), &*code)?;
         self.exec_module_with_ast(name, filename, &expr)
+    }
+
+    /// Execute a snippet of code as though you were running them in the REPL.
+    /// There is one shared REPL scope per Globals instance.
+    pub fn exec_repl(&mut self, scope: &mut ReplScope, code: &str) -> EvalResult<Value> {
+        let expr = self.parse(crate::REPL_PSEUDO_MODULE_NAME.into(), code.into())?;
+        self.exec_repl_with_ast(scope, &expr)
     }
 
     pub fn lex<'a>(&self, s: &'a str) -> Result<(Vec<Token<'a>>, Vec<(usize, usize)>), LexError> {

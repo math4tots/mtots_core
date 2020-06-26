@@ -432,6 +432,50 @@ impl Frame {
         let module = Module::new(code.full_name.clone(), code.doc().clone(), module_map);
         Ok((frame, module))
     }
+
+    /// Creates a Frame for executing a repl.
+    /// This function also returns a Module instance "bound" to this Frame.
+    /// Executing the returned Frame will populate the associated Module.
+    pub fn for_repl(
+        symbol_registry: SymbolRegistryHandle,
+        code: &Code,
+        scope: &mut HashMap<RcStr, Rc<RefCell<Value>>>,
+    ) -> Result<Frame, FrameError> {
+        let mut cellvars = Vec::new();
+
+        // Get all the builtin values that the module needs
+        // and throw an error if the variable could not be found
+        for name in &code.freevars {
+            let name_rcstr = symbol_registry.rcstr(*name).clone();
+            if let Some(value) = scope.get(&name_rcstr) {
+                cellvars.push(value.clone());
+            } else {
+                match name.str() {
+                    "__name" => cellvars.push(Rc::new(RefCell::new(Value::String(code.full_name().clone())))),
+                    "__file" => cellvars.push(Rc::new(RefCell::new(Value::Nil))),
+                    _ => {
+                        let value = Rc::new(RefCell::new(Value::Uninitialized));
+                        cellvars.push(value.clone());
+                        scope.insert(name_rcstr, value);
+                    }
+                }
+            }
+        }
+
+        // use the appropriate shared owned-cell variables
+        for name in &code.ocellvars {
+            let name: RcStr = name.str().into();
+            let cell = if let Some(cell) = scope.get(&name) {
+                cell.clone()
+            } else {
+                Rc::new(RefCell::new(Value::Uninitialized))
+            };
+            cellvars.push(cell);
+        }
+
+        let frame = Self::new(code.locals.len(), cellvars);
+        Ok(frame)
+    }
 }
 
 #[derive(Debug)]

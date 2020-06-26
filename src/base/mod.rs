@@ -6,6 +6,7 @@ mod entry;
 mod eval;
 mod frontend;
 mod globals;
+mod repl;
 mod value;
 
 pub use ast::ArgumentList;
@@ -50,6 +51,9 @@ pub use globals::Globals;
 pub use globals::NativeFunctions;
 pub use globals::Stashable;
 pub use globals::SOURCE_FILE_EXTENSION;
+pub(crate) use repl::run_repl;
+pub use repl::ReplDelegate;
+pub use repl::ReplScope;
 pub use value::ArgumentError;
 pub use value::Class;
 pub use value::ClassKind;

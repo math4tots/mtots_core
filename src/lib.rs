@@ -2,6 +2,7 @@ mod base;
 mod util;
 
 use base::compile;
+use base::run_repl;
 use base::short_name_from_full_name;
 use base::ArgumentError;
 use base::ArgumentList;
@@ -57,6 +58,8 @@ pub use base::Opaque;
 pub use base::ParameterInfo;
 pub use base::ParameterKind;
 pub use base::ParseError;
+pub use base::ReplDelegate;
+pub use base::ReplScope;
 pub use base::Stashable;
 pub use base::Table;
 pub use base::VMap;
@@ -71,3 +74,6 @@ pub use util::RcPath;
 pub use util::RcStr;
 pub use util::Symbol;
 pub use util::SymbolRegistryHandle;
+
+/// When running in REPL mode, this is what we pretend the module name is
+pub const REPL_PSEUDO_MODULE_NAME: &'static str = "[repl]";

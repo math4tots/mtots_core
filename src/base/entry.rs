@@ -1,7 +1,8 @@
+use crate::ReplDelegate;
 use crate::Globals;
 use std::path::Path;
 
-pub fn main(mut globals: Globals) {
+pub fn main<D: ReplDelegate>(mut globals: Globals, repl_delegate: Option<D>) {
     match globals.add_roots_from_env() {
         Ok(()) => (),
         Err(std::env::VarError::NotPresent) => (),
@@ -32,6 +33,9 @@ pub fn main(mut globals: Globals) {
     globals.set_cli_args(program_args.into_iter().map(|s| s.into()).collect());
 
     match interpreter_args.as_slice() {
+        &[_] if repl_delegate.is_some() => {
+            run(globals, &[], RunTarget::Repl(&mut repl_delegate.unwrap()));
+        }
         &[_, path] => {
             run(globals, &[], RunTarget::Path(&path));
         }
@@ -54,20 +58,25 @@ pub fn main(mut globals: Globals) {
 enum RunTarget<'a> {
     Path(&'a str),
     Module(&'a str),
+    Repl(&'a mut dyn ReplDelegate),
 }
 
 fn run(mut globals: Globals, extra_sources: &[&str], target: RunTarget) {
     for source in extra_sources {
         add_source(&mut globals, source, None);
     }
-    let module_name = match target {
+    match target {
         RunTarget::Path(path) => {
             add_source(&mut globals, path, Some("__main"));
-            "__main"
+            globals.exit_on_error(|globals| globals.load_main("__main"));
         }
-        RunTarget::Module(module_name) => module_name,
+        RunTarget::Module(module_name) => {
+            globals.exit_on_error(|globals| globals.load_main(module_name));
+        }
+        RunTarget::Repl(delegate) => {
+            globals.run_repl(delegate);
+        }
     };
-    globals.exit_on_error(|globals| globals.load_main(module_name))
 }
 
 fn add_source(globals: &mut Globals, pathstr: &str, name: Option<&str>) {
