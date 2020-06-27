@@ -327,15 +327,32 @@ impl Eval {
         }
     }
 
-    pub fn expect_index(globals: &mut Globals, value: &Value, len: usize) -> EvalResult<usize> {
-        let mut i = Self::expect_int(globals, value)?;
-        if i < 0 {
-            i += len as i64;
+    /// Like expect_index, but returns an Option
+    pub fn try_index(value: &Value, len: usize) -> Option<usize> {
+        match value {
+            Value::Int(i) => {
+                let mut i = *i;
+                if i < 0 {
+                    i += len as i64;
+                }
+                if i < 0 || i >= (len as i64) {
+                    None
+                } else {
+                    Some(i as usize)
+                }
+            }
+            _ => None,
         }
-        if i < 0 || i >= (len as i64) {
-            globals.set_exc_str("Index out of bounds")
+    }
+
+    pub fn expect_index(globals: &mut Globals, value: &Value, len: usize) -> EvalResult<usize> {
+        if let Some(i) = Self::try_index(value, len) {
+            Ok(i)
         } else {
-            Ok(i as usize)
+            // check if it's an int
+            Self::expect_int(globals, value)?;
+            // if it is, then try_index must have failed because it is out of bounds
+            globals.set_exc_str("Index out of bounds")
         }
     }
 

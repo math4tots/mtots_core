@@ -101,4 +101,10 @@ def __test_remove() {
     assert_eq(list, @['b', 'c', 'd', 'e'])
     assert_eq(list.remove(1), 'c')
     assert_eq(list, @['b', 'd', 'e'])
+
+    assert_raises(RuntimeError, def = list.remove(1000))
+    assert_eq(list, @['b', 'd', 'e'])
+
+    assert_eq(list.remove(1000, 'some-default'), 'some-default')
+    assert_eq(list, @['b', 'd', 'e'])
 }
