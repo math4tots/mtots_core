@@ -70,7 +70,12 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         NativeFunction::sdnew(
             sr,
             "remove",
-            (&["self", "i"], &[("default", Value::Uninitialized)], None, None),
+            (
+                &["self", "i"],
+                &[("default", Value::Uninitialized)],
+                None,
+                None,
+            ),
             Some("Removes and returns the element at position i"),
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
