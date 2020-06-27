@@ -1,6 +1,6 @@
 extern crate mtots_core;
-use std::io::Write;
 use mtots_core::ReplDelegate;
+use std::io::Write;
 
 fn main() {
     let globals = mtots_core::Globals::new();
@@ -17,12 +17,18 @@ impl ReplDelegate for Delegate {
             print!(">> ");
         }
         match std::io::stdout().flush() {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(_) => return None,
         }
         let mut line = String::new();
         match std::io::stdin().read_line(&mut line) {
-            Ok(len) => if len == 0 { None } else { Some(line) },
+            Ok(len) => {
+                if len == 0 {
+                    None
+                } else {
+                    Some(line)
+                }
+            }
             Err(_) => None,
         }
     }

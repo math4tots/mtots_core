@@ -67,6 +67,17 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(Value::MutableList(RefCell::new(ret).into()))
         }),
+        NativeFunction::sdnew0(
+            sr,
+            "remove",
+            &["self", "i"],
+            Some("Removes and returns the element at position i"),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let i = Eval::expect_index(globals, &args[1], list.borrow().len())?;
+                Ok(list.borrow_mut().remove(i))
+            },
+        ),
         NativeFunction::simple0(sr, "pop", &["self"], |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             match list.borrow_mut().pop() {

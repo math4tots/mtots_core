@@ -92,3 +92,13 @@ def __test_slice() {
     assert_eq(@[1, 2, 3, 4][:-1], @[1, 2, 3])
     assert_eq(@[1, 2, 3, 4][-2:], @[3, 4])
 }
+
+def __test_remove() {
+    list = @['a', 'b', 'c', 'd', 'e', 'f']
+    assert_eq(list.remove(0), 'a')
+    assert_eq(list, @['b', 'c', 'd', 'e', 'f'])
+    assert_eq(list.remove(-1), 'f')
+    assert_eq(list, @['b', 'c', 'd', 'e'])
+    assert_eq(list.remove(1), 'c')
+    assert_eq(list, @['b', 'd', 'e'])
+}

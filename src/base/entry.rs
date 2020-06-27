@@ -1,5 +1,5 @@
-use crate::ReplDelegate;
 use crate::Globals;
+use crate::ReplDelegate;
 use std::path::Path;
 
 pub fn main<D: ReplDelegate>(mut globals: Globals, repl_delegate: Option<D>) {
