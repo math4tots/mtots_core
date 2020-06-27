@@ -46,3 +46,8 @@ def __test_set_add() {
     b = Set([3, 4, 5])
     assert_eq(a + b, Set([1, 2, 3, 4, 5]))
 }
+
+def __test_from_iter() {
+    set = ['a', 'b', 'c', 1, 2, 3].iter().set()
+    assert_eq(set, Set(['a', 'b', 'c', 1, 2, 3]))
+}

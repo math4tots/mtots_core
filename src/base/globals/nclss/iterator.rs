@@ -23,6 +23,9 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         NativeFunction::simple0(sr, "list", &["self"], |globals, args, _kwargs| {
             Ok(Eval::list_from_iterable(globals, &args[0])?)
         }),
+        NativeFunction::simple0(sr, "set", &["self"], |globals, args, _kwargs| {
+            Ok(Eval::set_from_iterable(globals, &args[0])?)
+        }),
         // This really should be two different functions,
         //   - map() => for building a map from an iterable of pairs
         //   - map(f) => for getting a new iterator with f applied to each element
