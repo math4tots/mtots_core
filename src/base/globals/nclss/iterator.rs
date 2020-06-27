@@ -55,6 +55,27 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+        NativeFunction::sdnew(
+            sr,
+            "enumerate",
+            (&["self"], &[("start", Value::Int(0))], None, None),
+            Some("converts each element x to [i, x] in this iterator"),
+            |globals, args, _kwargs| {
+                let iterator = args[0].clone();
+                let mut i = Eval::expect_int(globals, &args[1])?;
+                Ok(NativeIterator::new(move |globals, input_value| {
+                    match Eval::resume(globals, &iterator, input_value) {
+                        GeneratorResult::Yield(iterator_yield_value) => {
+                            let i_val = Value::Int(i);
+                            i += 1;
+                            GeneratorResult::Yield(vec![i_val, iterator_yield_value].into())
+                        }
+                        result => result,
+                    }
+                })
+                .into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
