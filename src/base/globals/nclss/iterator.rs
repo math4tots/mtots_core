@@ -10,6 +10,16 @@ use crate::Value;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+
+macro_rules! try_ {
+    ($eval_result:expr) => {
+        match $eval_result {
+            Ok(t) => t,
+            Err(_) => return GeneratorResult::Error,
+        }
+    };
+}
+
 // There are only two Iterator types, NativeIterator and GeneratorObject
 // TODO: Enforce this in the runtime (e.g. something like Scala's sealed traits)
 
@@ -53,6 +63,34 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                     })
                     .into())
                 }
+            },
+        ),
+        NativeFunction::sdnew0(
+            sr,
+            "filter",
+            &["self", "f"],
+            None,
+            |_globals, args, _kwargs| {
+                let owner = args[0].clone();
+                let f = args[1].clone();
+                let mut done = false;
+                Ok(NativeIterator::new(move |globals, _input_value| {
+                    if done {
+                        return GeneratorResult::Done(Value::Nil);
+                    }
+                    loop {
+                        if let Some(value) = try_!(Eval::next(globals, &owner)) {
+                            let f_result = try_!(Eval::call(globals, &f, vec![value.clone()]));
+                            if try_!(Eval::truthy(globals, &f_result)) {
+                                return GeneratorResult::Yield(value);
+                            }
+                        } else {
+                            done = true;
+                            return GeneratorResult::Done(Value::Nil);
+                        }
+                    }
+                })
+                .into())
             },
         ),
         NativeFunction::sdnew(
