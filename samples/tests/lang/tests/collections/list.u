@@ -148,3 +148,22 @@ def __test_splice() {
     assert_eq(list.splice(2, nil, [1, 2, 3]), ['c', 'd', 'e'])
     assert_eq(list, @['a', 'b', 1, 2, 3])
 }
+
+def __test_zip() {
+    assert_eq(
+        [1, 2, 3].zip(['a', 'b', 'c']),
+        [
+            [1, 'a'],
+            [2, 'b'],
+            [3, 'c'],
+        ],
+    )
+    assert_eq(
+        [1, 2, 3].zip(['a', 'b', 'c'], [:x, :y, :z, :xx, :yy, :zz]),
+        [
+            [1, 'a', :x],
+            [2, 'b', :y],
+            [3, 'c', :z],
+        ],
+    )
+}

@@ -80,7 +80,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             sr,
             "zip",
             (&["self"], &[], Some("iterables"), None),
-            Some("converts each element x to [i, x] in this iterator"),
+            None,
             |globals, args, _kwargs| {
                 let iterators = {
                     let mut vec = Vec::new();

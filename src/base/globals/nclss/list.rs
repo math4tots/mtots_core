@@ -41,6 +41,33 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
+        NativeFunction::sdnew(
+            sr,
+            "zip",
+            (&["self"], &[], Some("iterables"), None),
+            None,
+            |globals, args, _kwargs| {
+                let iterators = {
+                    let mut vec = Vec::new();
+                    for arg in args {
+                        vec.push(Eval::iter(globals, &arg)?);
+                    }
+                    vec
+                };
+                let mut ret = Vec::new();
+                loop {
+                    let mut current_batch = Vec::new();
+                    for iterator in &iterators {
+                        if let Some(value) = Eval::next(globals, iterator)? {
+                            current_batch.push(value);
+                        } else {
+                            return Ok(ret.into());
+                        }
+                    }
+                    ret.push(Value::List(current_batch.into()));
+                }
+            },
+        ),
         NativeFunction::snew(
             sr,
             "any",
