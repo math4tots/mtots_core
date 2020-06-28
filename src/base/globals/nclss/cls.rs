@@ -46,6 +46,34 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+        NativeFunction::sdnew0(
+            sr,
+            "keys",
+            &["self"],
+            Some("Returns method names as a List of Symbols"),
+            |globals, args, _kwargs| {
+                let cls = Eval::expect_class(globals, &args[0])?;
+                let mut names = Vec::new();
+                for key in cls.instance_keys() {
+                    names.push(Value::Symbol(key));
+                }
+                Ok(names.into())
+            }
+        ),
+        NativeFunction::sdnew0(
+            sr,
+            "static_keys",
+            &["self"],
+            Some("Returns static method names as a List of Symbols"),
+            |globals, args, _kwargs| {
+                let cls = Eval::expect_class(globals, &args[0])?;
+                let mut names = Vec::new();
+                for key in cls.static_keys() {
+                    names.push(Value::Symbol(key));
+                }
+                Ok(names.into())
+            }
+        ),
         NativeFunction::snew(
             sr,
             "doc",

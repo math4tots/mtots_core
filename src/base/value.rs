@@ -1327,6 +1327,18 @@ impl Class {
         &self.doc
     }
 
+    pub fn instance_keys(&self) -> Vec<Symbol> {
+        let mut keys: Vec<_> = self.map.keys().map(|key| *key).collect();
+        keys.sort();
+        keys
+    }
+
+    pub fn static_keys(&self) -> Vec<Symbol> {
+        let mut keys: Vec<_> = self.static_map.keys().map(|key| *key).collect();
+        keys.sort();
+        keys
+    }
+
     pub fn get_from_instance_map<K>(&self, name: &K) -> Option<&Value>
     where
         Symbol: std::borrow::Borrow<K>,
