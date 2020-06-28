@@ -108,3 +108,43 @@ def __test_remove() {
     assert_eq(list.remove(1000, 'some-default'), 'some-default')
     assert_eq(list, @['b', 'd', 'e'])
 }
+
+def __test_insert() {
+    list = @['a', 'b', 'c', 'd', 'e']
+    list.insert(0, 55)
+    assert_eq(list, @[55, 'a', 'b', 'c', 'd', 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    list.insert(-1, 55)
+    assert_eq(list, @['a', 'b', 'c', 'd', 55, 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    list.insert(3, 55)
+    assert_eq(list, @['a', 'b', 'c', 55, 'd', 'e'])
+}
+
+def __test_splice() {
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(1, 2, [1, 2, 3]), ['b'])
+    assert_eq(list, @['a', 1, 2, 3, 'c', 'd', 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(0, 2, [1, 2, 3]), ['a', 'b'])
+    assert_eq(list, @[1, 2, 3, 'c', 'd', 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(0, 0, [1, 2, 3]), [])
+    assert_eq(list, @[1, 2, 3, 'a', 'b', 'c', 'd', 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(0, 4, [1, 2, 3]), ['a', 'b', 'c', 'd'])
+    assert_eq(list, @[1, 2, 3, 'e'])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(1, 5, [1, 2, 3]), ['b', 'c', 'd', 'e'])
+    assert_eq(list, @['a', 1, 2, 3])
+
+    list = @['a', 'b', 'c', 'd', 'e']
+    assert_eq(list.splice(2, nil, [1, 2, 3]), ['c', 'd', 'e'])
+    assert_eq(list, @['a', 'b', 1, 2, 3])
+}

@@ -93,6 +93,34 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
+        NativeFunction::sdnew0(
+            sr,
+            "insert",
+            &["self", "i", "value"],
+            Some("Removes and returns the element at position i"),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let len = list.borrow().len();
+                let i = Eval::expect_index(globals, &args[1], len)?;
+                list.borrow_mut().insert(i, args[2].clone());
+                Ok(Value::Nil)
+            },
+        ),
+        NativeFunction::sdnew0(
+            sr,
+            "splice",
+            &["self", "start", "end", "iterable"],
+            Some("Removes and returns the element at position i"),
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let len = list.borrow().len();
+                let (start, end) =
+                    Eval::expect_range_indices(globals, &args[1], &args[2], len)?;
+                let vec = Eval::iterable_to_vec(globals, &args[3])?;
+                let ret: Vec<_> = list.borrow_mut().splice(start..end, vec).collect();
+                Ok(ret.into())
+            },
+        ),
         NativeFunction::simple0(sr, "pop", &["self"], |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             match list.borrow_mut().pop() {
