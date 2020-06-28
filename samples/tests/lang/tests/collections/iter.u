@@ -36,3 +36,14 @@ def __test_enumerate() {
         def = ['a', 'b', 'c'].iter().enumerate(1.1).list(),
     )
 }
+
+def __test_zip() {
+    assert_eq(
+        [1, 2, 3].iter().zip(['a', 'b', 'c']).list(),
+        [[1, 'a'], [2, 'b'], [3, 'c']],
+    )
+    assert_eq(
+        [1, 2, 3].iter().zip(['a', 'b', 'c'], ['d', 'e', 'f']).list(),
+        [[1, 'a', 'd'], [2, 'b', 'e'], [3, 'c', 'f']],
+    )
+}

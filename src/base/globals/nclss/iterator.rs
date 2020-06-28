@@ -76,6 +76,46 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 .into())
             },
         ),
+        NativeFunction::sdnew(
+            sr,
+            "zip",
+            (&["self"], &[], Some("iterables"), None),
+            Some("converts each element x to [i, x] in this iterator"),
+            |globals, args, _kwargs| {
+                let iterators = {
+                    let mut vec = Vec::new();
+                    for arg in args {
+                        vec.push(Eval::iter(globals, &arg)?);
+                    }
+                    vec
+                };
+                let mut done = false;
+                Ok(NativeIterator::new(move |globals, _input_value| {
+                    if done {
+                        return GeneratorResult::Done(Value::Nil);
+                    }
+                    let mut current_batch = Vec::new();
+                    for iterator in &iterators {
+                        match Eval::next(globals, &iterator) {
+                            Ok(Some(iterator_yield_value)) => {
+                                current_batch.push(iterator_yield_value);
+                            }
+                            Ok(None) => {
+                                done = true;
+                                return GeneratorResult::Done(Value::Nil);
+                            }
+                            Err(_) => {
+                                // Let's say if we hit an error, we're done
+                                done = true;
+                                return GeneratorResult::Error
+                            }
+                        }
+                    }
+                    GeneratorResult::Yield(current_batch.into())
+                })
+                .into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
