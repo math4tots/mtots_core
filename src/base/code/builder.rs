@@ -37,7 +37,7 @@ enum PseudoOpcode {
     LoadDunderNew,
     LoadClassForNew,
     Nonlocal(RcStr),
-    Unpack(usize),
+    Unpack(usize, usize),
     MakeMutableString(usize),
     MakeList(usize),
     MakeTable(usize),
@@ -299,7 +299,7 @@ impl CodeBuilder {
     }
 
     pub fn unpack(&mut self, n: usize) {
-        self.code.push(PseudoOpcode::Unpack(n));
+        self.code.push(PseudoOpcode::Unpack(self.current_lineno, n));
     }
 
     pub fn make_list(&mut self, argc: usize) {
@@ -685,8 +685,8 @@ impl CodeBuilder {
                         // variable as being nonlocal, which is handled
                         // before the code-generation here
                     }
-                    PseudoOpcode::Unpack(n) => {
-                        state.add(opc::UNPACK_SEQUENCE, &[n]);
+                    PseudoOpcode::Unpack(lineno, n) => {
+                        state.add(opc::UNPACK_SEQUENCE, &[lineno, n]);
                     }
                     PseudoOpcode::MakeMutableString(namei) => {
                         state.add(opc::MAKE_MUTABLE_STRING, &[namei]);

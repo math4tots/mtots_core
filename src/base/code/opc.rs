@@ -320,7 +320,7 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         }
     }
 
-    UNPACK_SEQUENCE(n: Int) [+ 1 n] {
+    UNPACK_SEQUENCE(lineno: LineNumber, n: Int) [+ 1 n] {
         // Unpacks TOS into count individual values,
         // which are put onto the stack right-to-left
         match frame.stack.pop().unwrap() {
@@ -337,17 +337,18 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
                 frame.stack.extend(list.iter().rev().map(|v| v.clone()));
             }
             iterable => {
+                globals.trace_push(code.module_name.clone(), lineno);
+
                 let items = Eval::iterable_to_vec(globals, &iterable)?;
                 if items.len() != n {
                     let err = EvalError::UnpackSize {
                         expected: n,
                         but_got: items.len(),
                     };
-                    let lineno = code.find_lineno_for_opcode_at(frame.i - 1 - ARGC);
-                    globals.trace_push(code.module_name.clone(), lineno);
                     return globals.set_exc_legacy(err.into())?;
                 }
                 frame.stack.extend(items.into_iter().rev());
+                globals.trace_pop();
             }
         }
     }
