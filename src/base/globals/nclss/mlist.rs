@@ -139,6 +139,11 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             Eval::extend_from_iterable(globals, &mut list.borrow_mut(), &args[1])?;
             Ok(Value::Nil)
         }),
+        NativeFunction::simple0(sr, "reverse", &["self"], |globals, args, _kwargs| {
+            let list = Eval::expect_mutable_list(globals, &args[0])?;
+            list.borrow_mut().reverse();
+            Ok(Value::Nil)
+        }),
         NativeFunction::simple0(
             sr,
             "resize",

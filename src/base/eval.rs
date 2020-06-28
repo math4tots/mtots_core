@@ -511,6 +511,17 @@ impl Eval {
         }
     }
 
+    pub fn move_or_clone_list(globals: &mut Globals, value: Value) -> EvalResult<Vec<Value>> {
+        if let Value::List(rc) = value {
+            match Rc::try_unwrap(rc) {
+                Ok(list) => Ok(list),
+                Err(list_rc) => Ok((*list_rc).clone()),
+            }
+        } else {
+            globals.set_kind_error(ValueKind::List, value.kind())
+        }
+    }
+
     pub fn expect_table<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a Table> {
         if let Some(table) = value.table() {
             Ok(table)

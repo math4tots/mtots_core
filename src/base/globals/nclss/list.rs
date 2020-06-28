@@ -41,6 +41,11 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
+        NativeFunction::simple0(sr, "reversed", &["self"], |globals, args, _kwargs| {
+            let mut list = Eval::move_or_clone_list(globals, args.into_iter().next().unwrap())?;
+            list.reverse();
+            Ok(list.into())
+        }),
         NativeFunction::sdnew(
             sr,
             "zip",
