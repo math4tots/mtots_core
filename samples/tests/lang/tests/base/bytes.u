@@ -95,6 +95,9 @@ def __test_iter() {
         [44, [55, 77], 66].to(Bytes),
         Bytes([44, 55, 77, 66]),
     )
+
+    list = Bytes([66, 77, 88]).to(List)
+    assert_eq(list, [66, 77, 88])
 }
 
 def __test_slice_and_getitem() {

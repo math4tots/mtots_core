@@ -121,7 +121,7 @@ impl Globals {
         let Float = flt::mkcls(symbol_registry, Object.clone());
         let Symbol = sym::mkcls(symbol_registry, Object.clone());
         let String = strcls::mkcls(symbol_registry, Object.clone());
-        let Bytes = bytes::mkcls(symbol_registry, Object.clone());
+        let Bytes = bytes::mkcls(symbol_registry, Iterable.clone());
         let Path = path::mkcls(symbol_registry, Object.clone());
         let List = list::mkcls(symbol_registry, Iterable.clone());
         let Table = table::mkcls(symbol_registry, Object.clone());
