@@ -185,6 +185,7 @@ impl Eval {
             Value::Module(_) => &globals.builtin_classes().Module,
             Value::Opaque(_) => &globals.builtin_classes().Opaque,
             Value::MutableString(_) => &globals.builtin_classes().MutableString,
+            Value::MutableBytes(_) => &globals.builtin_classes().MutableBytes,
             Value::MutableList(_) => &globals.builtin_classes().MutableList,
             Value::MutableSet(_) => &globals.builtin_classes().MutableSet,
             Value::MutableMap(_) => &globals.builtin_classes().MutableMap,
@@ -438,6 +439,10 @@ impl Eval {
                 }
                 Ok(())
             }
+            Value::MutableBytes(bb) => {
+                bytes.extend(bb.borrow().as_slice());
+                Ok(())
+            }
             _ => globals.set_kind_error(ValueKind::Bytes, value.kind()),
         }
     }
@@ -667,6 +672,14 @@ impl Eval {
         }
     }
 
+    pub fn expect_mutable_bytes<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a Rc<RefCell<Vec<u8>>>> {
+        if let Value::MutableBytes(bytes) = value {
+            Ok(bytes)
+        } else {
+            globals.set_kind_error(ValueKind::MutableBytes, value.kind())
+        }
+    }
+
     pub fn expect_mutable_list<'a>(
         globals: &mut Globals,
         value: &'a Value,
@@ -813,6 +826,7 @@ impl Eval {
             Value::Module(_) => true,
             Value::Opaque(_) => true,
             Value::MutableString(x) => !x.borrow().is_empty(),
+            Value::MutableBytes(x) => !x.borrow().is_empty(),
             Value::MutableList(x) => !x.borrow().is_empty(),
             Value::MutableSet(x) => !x.borrow().is_empty(),
             Value::MutableMap(x) => !x.borrow().is_empty(),
@@ -874,6 +888,7 @@ impl Eval {
                     })?
             }
             (Value::MutableString(a), Value::MutableString(b)) => a == b,
+            (Value::MutableBytes(a), Value::MutableBytes(b)) => a == b,
             (Value::MutableList(a), Value::MutableList(b)) => {
                 eq_list(globals, &a.borrow(), &b.borrow(), debuginfo)?
             }
@@ -957,6 +972,7 @@ impl Eval {
             (Value::Float(a), Value::Int(b)) => *a < (*b as f64),
             (Value::Symbol(a), Value::Symbol(b)) => a < b,
             (Value::String(a), Value::String(b)) => a < b,
+            (Value::Bytes(a), Value::Bytes(b)) => a < b,
             (Value::Path(a), Value::Path(b)) => a < b,
             (Value::UserObject(_), _) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
                 let name = globals.symbol_dunder_lt();
@@ -1077,6 +1093,11 @@ impl Eval {
                 let mut ab = RcStr::unwrap_or_clone(a);
                 ab.push_str(b.str());
                 Value::String(ab.into())
+            }
+            (Value::Bytes(a), Value::Bytes(b)) => {
+                let mut ab = unwrap_or_clone_rc(a);
+                ab.extend(b.iter());
+                Value::Bytes(ab.into())
             }
             (Value::List(a), Value::List(b)) => {
                 let mut ab = unwrap_or_clone_rc(a);
@@ -1528,6 +1549,7 @@ impl Eval {
             Value::Module(m) => format!("{:?}", m).into(),
             Value::Opaque(opq) => format!("{:?}", opq).into(),
             Value::MutableString(x) => format!("@{}", reprstr(&x.borrow())).into(),
+            Value::MutableBytes(x) => format!("MutableBytes({:?})", &x.borrow()).into(),
             Value::MutableList(x) => format!("@{}", list2str(globals, &x.borrow())?).into(),
             Value::MutableSet(x) => set2str(globals, "MutableSet", &x.borrow())?.into(),
             Value::MutableMap(x) => format!("@{}", map2str(globals, &x.borrow())?).into(),

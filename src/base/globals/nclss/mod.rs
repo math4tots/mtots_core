@@ -22,6 +22,7 @@ mod iterator;
 mod list;
 mod m;
 mod map;
+mod mbytes;
 mod mlist;
 mod mmap;
 mod mset;
@@ -74,6 +75,7 @@ pub struct BuiltinClasses {
     pub Module: Rc<Class>,
     pub Opaque: Rc<Class>,
     pub MutableString: Rc<Class>,
+    pub MutableBytes: Rc<Class>,
     pub MutableList: Rc<Class>,
     pub MutableSet: Rc<Class>,
     pub MutableMap: Rc<Class>,
@@ -101,6 +103,7 @@ impl BuiltinClasses {
             &self.Class,
             &self.Module,
             &self.MutableString,
+            &self.MutableBytes,
             &self.MutableList,
             &self.MutableSet,
             &self.MutableMap,
@@ -139,6 +142,7 @@ impl Globals {
         let Module = m::mkcls(symbol_registry, Object.clone());
         let Opaque = opq::mkcls(symbol_registry, Object.clone());
         let MutableString = mstr::mkcls(symbol_registry, Object.clone());
+        let MutableBytes = mbytes::mkcls(symbol_registry, Object.clone());
         let MutableList = mlist::mkcls(symbol_registry, Object.clone());
         let MutableSet = mset::mkcls(symbol_registry, Object.clone());
         let MutableMap = mmap::mkcls(symbol_registry, Object.clone());
@@ -171,6 +175,7 @@ impl Globals {
             Module,
             Opaque,
             MutableString,
+            MutableBytes,
             MutableList,
             MutableSet,
             MutableMap,

@@ -57,6 +57,7 @@ pub enum Value {
 
     // mutable values
     MutableString(Rc<RefCell<String>>),   // @".."
+    MutableBytes(Rc<RefCell<Vec<u8>>>),  // MutableBytes([..])
     MutableList(Rc<RefCell<Vec<Value>>>), // @[x, ..]
     MutableSet(Rc<RefCell<VSet>>),        // MutableSet([x, ..])
     MutableMap(Rc<RefCell<VMap>>),        // @[k:v, ..]
@@ -98,6 +99,7 @@ impl Value {
             (Value::Module(a), Value::Module(b)) => ptr(a) == ptr(b),
             (Value::Opaque(a), Value::Opaque(b)) => ptr(a) == ptr(b),
             (Value::MutableString(a), Value::MutableString(b)) => ptr(a) == ptr(b),
+            (Value::MutableBytes(a), Value::MutableBytes(b)) => ptr(a) == ptr(b),
             (Value::MutableList(a), Value::MutableList(b)) => ptr(a) == ptr(b),
             (Value::MutableSet(a), Value::MutableSet(b)) => ptr(a) == ptr(b),
             (Value::MutableMap(a), Value::MutableMap(b)) => ptr(a) == ptr(b),
@@ -285,6 +287,7 @@ impl Value {
             Value::NativeIterator(..) => ValueKind::NativeIterator,
             Value::GeneratorObject(..) => ValueKind::GeneratorObject,
             Value::MutableString(..) => ValueKind::MutableString,
+            Value::MutableBytes(..) => ValueKind::MutableBytes,
             Value::MutableList(..) => ValueKind::MutableList,
             Value::MutableSet(..) => ValueKind::MutableSet,
             Value::MutableMap(..) => ValueKind::MutableMap,
@@ -359,6 +362,7 @@ pub enum ValueKind {
     Module,
     Opaque,
     MutableString,
+    MutableBytes,
     MutableList,
     MutableSet,
     MutableMap,
