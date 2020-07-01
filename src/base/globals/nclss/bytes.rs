@@ -35,6 +35,125 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let i = Eval::expect_index(globals, &args[1], bytes.len())?;
             Ok((bytes[i] as i64).into())
         }),
+        NativeFunction::sdnew(
+            sr,
+            "int",
+            (
+                &["self", "nbytes", "i"],
+                &[("endian", Value::Nil)],
+                None,
+                None,
+            ),
+            None,
+            |globals, args, _kwargs| {
+                use std::convert::TryInto;
+                let bytes = Eval::expect_bytes(globals, &args[0])?;
+                let nbytes = Eval::expect_usize(globals, &args[1])?;
+                let i = Eval::expect_usize(globals, &args[2])?;
+                if bytes.len() < i + nbytes {
+                    return globals.set_exc_str(&format!(
+                        "Tried to read {} bytes from {}, but entire buffer is only {} bytes",
+                        nbytes,
+                        i,
+                        bytes.len(),
+                    ));
+                }
+                let endian = if let Value::Nil = &args[3] {
+                    Endian::Little
+                } else {
+                    let symbol = Eval::expect_symbol(globals, &args[3])?;
+                    if symbol == globals.symbol_little() {
+                        Endian::Little
+                    } else if symbol == globals.symbol_big() {
+                        Endian::Big
+                    } else {
+                        return globals.set_exc_str("endianness must be :big or :little");
+                    }
+                };
+                match (nbytes, endian) {
+                    (1, _) => Ok((bytes[i] as i8 as i64).into()),
+                    (2, Endian::Little) => {
+                        Ok((i16::from_le_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
+                    }
+                    (2, Endian::Big) => {
+                        Ok((i16::from_be_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
+                    }
+                    (4, Endian::Little) => {
+                        Ok((i32::from_le_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
+                    }
+                    (4, Endian::Big) => {
+                        Ok((i32::from_be_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
+                    }
+                    (8, Endian::Little) => {
+                        Ok((i64::from_le_bytes(bytes[i..i + 8].try_into().unwrap()) as i64).into())
+                    }
+                    (8, Endian::Big) => {
+                        Ok((i64::from_be_bytes(bytes[i..i + 8].try_into().unwrap()) as i64).into())
+                    }
+                    _ => globals.set_exc_str(&format!(
+                        "nbytes for int must be 1, 2, 4 or 8 but got {}",
+                        nbytes
+                    )),
+                }
+            },
+        ),
+        NativeFunction::sdnew(
+            sr,
+            "uint",
+            (
+                &["self", "nbytes", "i"],
+                &[("endian", Value::Nil)],
+                None,
+                None,
+            ),
+            None,
+            |globals, args, _kwargs| {
+                use std::convert::TryInto;
+                let bytes = Eval::expect_bytes(globals, &args[0])?;
+                let nbytes = Eval::expect_usize(globals, &args[1])?;
+                let i = Eval::expect_usize(globals, &args[2])?;
+                if bytes.len() < i + nbytes {
+                    return globals.set_exc_str(&format!(
+                        "Tried to read {} bytes from {}, but entire buffer is only {} bytes",
+                        nbytes,
+                        i,
+                        bytes.len(),
+                    ));
+                }
+                let endian = if let Value::Nil = &args[3] {
+                    Endian::Little
+                } else {
+                    let symbol = Eval::expect_symbol(globals, &args[3])?;
+                    if symbol == globals.symbol_little() {
+                        Endian::Little
+                    } else if symbol == globals.symbol_big() {
+                        Endian::Big
+                    } else {
+                        return globals.set_exc_str("endianness must be :big or :little");
+                    }
+                };
+                // nbytes = 8 for uint may not fit in i64
+                match (nbytes, endian) {
+                    (1, _) => Ok((bytes[i] as i64).into()),
+                    (2, Endian::Little) => {
+                        Ok((u16::from_le_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
+                    }
+                    (2, Endian::Big) => {
+                        Ok((u16::from_be_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
+                    }
+                    (4, Endian::Little) => {
+                        Ok((u32::from_le_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
+                    }
+                    (4, Endian::Big) => {
+                        Ok((u32::from_be_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
+                    }
+                    _ => globals.set_exc_str(&format!(
+                        "nbytes for uint must be 1, 2 or 4 but got {}",
+                        nbytes
+                    )),
+                }
+            },
+        ),
         NativeFunction::sdnew0(
             sr,
             "__slice",
@@ -203,4 +322,9 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         static_methods,
     )
     .into()
+}
+
+enum Endian {
+    Little,
+    Big,
 }

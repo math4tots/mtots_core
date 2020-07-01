@@ -58,7 +58,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                     names.push(Value::Symbol(key));
                 }
                 Ok(names.into())
-            }
+            },
         ),
         NativeFunction::sdnew0(
             sr,
@@ -72,7 +72,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                     names.push(Value::Symbol(key));
                 }
                 Ok(names.into())
-            }
+            },
         ),
         NativeFunction::snew(
             sr,

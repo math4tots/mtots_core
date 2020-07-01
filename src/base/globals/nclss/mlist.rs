@@ -114,8 +114,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let len = list.borrow().len();
-                let (start, end) =
-                    Eval::expect_range_indices(globals, &args[1], &args[2], len)?;
+                let (start, end) = Eval::expect_range_indices(globals, &args[1], &args[2], len)?;
                 let vec = Eval::iterable_to_vec(globals, &args[3])?;
                 let ret: Vec<_> = list.borrow_mut().splice(start..end, vec).collect();
                 Ok(ret.into())

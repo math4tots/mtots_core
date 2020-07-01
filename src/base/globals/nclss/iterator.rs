@@ -10,7 +10,6 @@ use crate::Value;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-
 macro_rules! try_ {
     ($eval_result:expr) => {
         match $eval_result {
@@ -93,6 +92,21 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 .into())
             },
         ),
+        NativeFunction::sdnew0(
+            sr,
+            "fold",
+            &["self", "acc", "f"],
+            None,
+            |globals, args, _kwargs| {
+                let owner = &args[0];
+                let mut acc = args[1].clone();
+                let f = &args[2];
+                while let Some(x) = Eval::next(globals, owner)? {
+                    acc = Eval::call(globals, f, vec![acc, x])?;
+                }
+                Ok(acc)
+            },
+        ),
         NativeFunction::sdnew(
             sr,
             "enumerate",
@@ -145,7 +159,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                             Err(_) => {
                                 // Let's say if we hit an error, we're done
                                 done = true;
-                                return GeneratorResult::Error
+                                return GeneratorResult::Error;
                             }
                         }
                     }

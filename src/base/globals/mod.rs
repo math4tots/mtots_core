@@ -95,6 +95,8 @@ pub struct Globals {
     symbol_dunder_rem: Symbol,
     symbol_dunder_eq: Symbol,
     symbol_dunder_lt: Symbol,
+    symbol_little: Symbol,
+    symbol_big: Symbol,
     char_cache: Vec<Value>,
 }
 
@@ -114,6 +116,8 @@ impl Globals {
         let symbol_dunder_rem = symbol_registry.intern_str("__rem");
         let symbol_dunder_eq = symbol_registry.intern_str("__eq");
         let symbol_dunder_lt = symbol_registry.intern_str("__lt");
+        let symbol_little = symbol_registry.intern_str("little");
+        let symbol_big = symbol_registry.intern_str("big");
         let char_cache = {
             let mut cache = Vec::<Value>::new();
             for i in 0..128 {
@@ -153,6 +157,8 @@ impl Globals {
             symbol_dunder_rem,
             symbol_dunder_eq,
             symbol_dunder_lt,
+            symbol_little,
+            symbol_big,
             char_cache,
         };
         globals.add_builtin_native_modules();
@@ -206,6 +212,14 @@ impl Globals {
 
     pub fn symbol_dunder_lt(&self) -> Symbol {
         self.symbol_dunder_lt
+    }
+
+    pub fn symbol_little(&self) -> Symbol {
+        self.symbol_little
+    }
+
+    pub fn symbol_big(&self) -> Symbol {
+        self.symbol_big
     }
 
     pub(crate) fn trace_push(&mut self, module_name: RcStr, lineno: usize) {
