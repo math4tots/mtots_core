@@ -772,6 +772,34 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                 ExpressionData::If(pairs, other),
             ))
         }),
+        (&["switch"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            state.gettok();
+            let target = state.expr(0)?;
+            state.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
+            let mut pairs = Vec::new();
+            let mut other = None;
+            state.skip_delim();
+            while !state.consume(TokenKind::Punctuator(Punctuator::RBrace)) {
+                if state.consume(TokenKind::Punctuator(Punctuator::Arrow)) {
+                    other = Some(state.expr(0)?.into());
+                    state.expect_delim()?;
+                    state.expect(TokenKind::Punctuator(Punctuator::RBrace))?;
+                    break;
+                } else {
+                    let match_ = state.expr(0)?;
+                    state.expect(TokenKind::Punctuator(Punctuator::Arrow))?;
+                    let body = state.expr(0)?;
+                    pairs.push((match_, body));
+                    state.expect_delim()?;
+                }
+            }
+            Ok(Expression::new(offset, lineno, ExpressionData::Switch(
+                target.into(),
+                pairs,
+                other,
+            )))
+        }),
         (&["for"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
             state.gettok();

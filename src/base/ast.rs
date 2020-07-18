@@ -57,6 +57,15 @@ impl Expression {
                     .collect(),
                 other.iter_mut().map(|other| &mut **other).collect(),
             ]),
+            ExpressionData::Switch(item, pairs, other) => join_mut_refs(vec![
+                vec![&mut *item],
+                pairs
+                    .iter_mut()
+                    .map(|(c, b)| vec![c, b])
+                    .flatten()
+                    .collect(),
+                other.iter_mut().map(|other| &mut **other).collect(),
+            ]),
             ExpressionData::For(target, iterable, body) => {
                 vec![&mut *target, &mut *iterable, &mut *body]
             }
@@ -129,6 +138,7 @@ impl Expression {
             ExpressionData::AugAssign(..) => ExpressionKind::AugAssign,
             ExpressionData::AssignWithDoc(..) => ExpressionKind::AssignWithDoc,
             ExpressionData::If(..) => ExpressionKind::If,
+            ExpressionData::Switch(..) => ExpressionKind::Switch,
             ExpressionData::For(..) => ExpressionKind::For,
             ExpressionData::While(..) => ExpressionKind::While,
             ExpressionData::Unop(..) => ExpressionKind::Unop,
@@ -307,6 +317,14 @@ pub enum ExpressionData {
         )>,
         Option<Box<Expression>>, // other/else
     ),
+    Switch(
+        Box<Expression>,
+        Vec<(
+            Expression, // match value
+            Expression, // body
+        )>,
+        Option<Box<Expression>>, // default
+    ),
     For(
         Box<Expression>, // target
         Box<Expression>, // iterable
@@ -382,6 +400,7 @@ pub enum ExpressionKind {
     AugAssign,
     AssignWithDoc,
     If,
+    Switch,
     For,
     While,
     Unop,

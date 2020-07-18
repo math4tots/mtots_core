@@ -215,6 +215,7 @@ define_punctuators! {
     Or "or",
     Return "return",
     Static "static",
+    Switch "switch",
     Trait "trait",
     True "true",
     Try "try",
@@ -222,6 +223,7 @@ define_punctuators! {
     Yield "yield",
 
     // operators and delimiters
+    Arrow "=>",
     At "@",
     Dot ".",
     Scope "::",

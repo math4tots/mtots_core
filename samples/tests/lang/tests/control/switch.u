@@ -1,0 +1,35 @@
+def __test_switch() {
+    assert_eq(
+        switch 1 {
+            1 => 'one'
+            2 => 'two'
+            10 => 'ten'
+        },
+        'one',
+    )
+    assert_eq(
+        switch 10 {
+            1 => 'one'
+            2 => 'two'
+            10 => 'ten'
+        },
+        'ten',
+    )
+    assert_eq(
+        switch 5 {
+            1 => 'one'
+            2 => 'two'
+            10 => 'ten'
+        },
+        nil,
+    )
+    assert_eq(
+        switch 5 {
+            1 => 'one'
+            2 => 'two'
+            10 => 'ten'
+            => 'other'
+        },
+        'other',
+    )
+}

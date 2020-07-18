@@ -279,6 +279,39 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
 
             builder.label(end);
         }
+        ExpressionData::Switch(item, pairs, other) => {
+            let end = builder.new_label();
+
+            rec(builder, item, true)?;
+
+            for (match_, body) in pairs {
+                let next = builder.new_label();
+
+                builder.dup_top();
+                rec(builder, match_, true)?;
+                builder.binop(Binop::Eq);
+                builder.pop_jump_if_false(next);
+
+                rec(builder, body, used)?;
+                builder.jump(end);
+
+                builder.label(next);
+            }
+
+            if let Some(other) = other {
+                rec(builder, other, used)?;
+            } else if used {
+                builder.load_const(());
+            }
+
+            builder.label(end);
+
+            // pop the original item
+            if used {
+                builder.rot_two();
+            }
+            builder.pop();
+        }
         ExpressionData::For(target, iterable, body) => {
             let start = builder.new_label();
             let end = builder.new_label();
