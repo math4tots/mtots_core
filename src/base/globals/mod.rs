@@ -167,7 +167,7 @@ impl Globals {
     }
 
     pub fn char_to_val(&self, ch: char) -> Value {
-        if (ch as u8) < 128 {
+        if ch < (128 as char) {
             self.char_cache[ch as usize].clone()
         } else {
             format!("{}", ch).into()
