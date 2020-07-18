@@ -672,7 +672,10 @@ impl Eval {
         }
     }
 
-    pub fn expect_mutable_bytes<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<&'a Rc<RefCell<Vec<u8>>>> {
+    pub fn expect_mutable_bytes<'a>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<&'a Rc<RefCell<Vec<u8>>>> {
         if let Value::MutableBytes(bytes) = value {
             Ok(bytes)
         } else {

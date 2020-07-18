@@ -52,7 +52,7 @@ pub fn main<D: ReplDelegate>(mut globals: Globals, mut repl_delegate: Option<D>)
                 _ => {
                     sources.push(arg);
                 }
-            }
+            },
             ArgState::Module => {
                 target = RunTarget::Module(arg);
                 state = ArgState::Normal;

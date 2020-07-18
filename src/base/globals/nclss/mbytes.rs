@@ -4,8 +4,8 @@ use crate::Eval;
 use crate::NativeFunction;
 use crate::SymbolRegistryHandle;
 use crate::Value;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
@@ -18,12 +18,17 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             let i = Eval::expect_index(globals, &args[1], bytes.borrow().len())?;
             Ok((bytes.borrow()[i] as i64).into())
         }),
-        NativeFunction::simple0(sr, "extend", &["self", "other"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
-            let other = Eval::expect_bytes_from_pattern(globals, &args[1])?;
-            bytes.borrow_mut().extend(other);
-            Ok(Value::Nil)
-        }),
+        NativeFunction::simple0(
+            sr,
+            "extend",
+            &["self", "other"],
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
+                let other = Eval::expect_bytes_from_pattern(globals, &args[1])?;
+                bytes.borrow_mut().extend(other);
+                Ok(Value::Nil)
+            },
+        ),
         NativeFunction::simple0(sr, "move", &["self"], |globals, args, _kwargs| {
             let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
             let bytes = bytes.replace(vec![]);

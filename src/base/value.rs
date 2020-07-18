@@ -57,7 +57,7 @@ pub enum Value {
 
     // mutable values
     MutableString(Rc<RefCell<String>>),   // @".."
-    MutableBytes(Rc<RefCell<Vec<u8>>>),  // MutableBytes([..])
+    MutableBytes(Rc<RefCell<Vec<u8>>>),   // MutableBytes([..])
     MutableList(Rc<RefCell<Vec<Value>>>), // @[x, ..]
     MutableSet(Rc<RefCell<VSet>>),        // MutableSet([x, ..])
     MutableMap(Rc<RefCell<VMap>>),        // @[k:v, ..]
