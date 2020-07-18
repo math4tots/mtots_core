@@ -85,8 +85,8 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
 
     let static_methods = vec![NativeFunction::simple0(
         sr,
-        "new",
-        &["__call"],
+        "__call",
+        &["x"],
         |globals, args, _kwargs| Eval::mutable_map_from_iterable(globals, &args[0]),
     )]
     .into_iter()

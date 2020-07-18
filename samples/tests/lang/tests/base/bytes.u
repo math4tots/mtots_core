@@ -116,7 +116,7 @@ def __test_reading_ints() {
     def be(n) = range(n).map(def(i) = (n - i) * 2 ** (8 * i)).fold(0, def(a, b) = a + b)
 
     # endiannes omitted (implies :little)
-    print(range(8).map(def(i) = (i + 1) * 8 ** i).list())
+    # print(range(8).map(def(i) = (i + 1) * 8 ** i).list())
     assert_eq(bytes.int(8, 0), le(8))
     assert_eq(bytes.int(4, 0), le(4))
     assert_eq(bytes.int(2, 0), le(2))

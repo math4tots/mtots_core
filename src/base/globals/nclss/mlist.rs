@@ -209,7 +209,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     .collect();
 
     let static_methods = vec![
-        NativeFunction::simple0(sr, "new", &["x"], |globals, args, _kwargs| {
+        NativeFunction::simple0(sr, "__call", &["x"], |globals, args, _kwargs| {
             Eval::mutable_list_from_iterable(globals, &args[0])
         }),
         NativeFunction::simple0(sr, "from_iterable", &["x"], |globals, args, _kwargs| {
