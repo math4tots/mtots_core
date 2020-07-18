@@ -2,7 +2,7 @@ use crate::Globals;
 use crate::ReplDelegate;
 use std::path::Path;
 
-pub fn main<D: ReplDelegate>(mut globals: Globals, repl_delegate: Option<D>) {
+pub fn main<D: ReplDelegate>(mut globals: Globals, mut repl_delegate: Option<D>) {
     match globals.add_roots_from_env() {
         Ok(()) => (),
         Err(std::env::VarError::NotPresent) => (),
@@ -32,33 +32,73 @@ pub fn main<D: ReplDelegate>(mut globals: Globals, repl_delegate: Option<D>) {
 
     globals.set_cli_args(program_args.into_iter().map(|s| s.into()).collect());
 
-    match interpreter_args.as_slice() {
-        &[_] if repl_delegate.is_some() => {
-            run(globals, &[], RunTarget::Repl(&mut repl_delegate.unwrap()));
-        }
-        &[_, path] => {
-            run(globals, &[], RunTarget::Path(&path));
-        }
-        &[_, extra_source, "-m", module_name] => {
-            run(globals, &[extra_source], RunTarget::Module(module_name));
-        }
-        &[_, "-m", module_name] => {
-            run(globals, &[], RunTarget::Module(module_name));
-        }
-        &[_, extra_source, path] => {
-            run(globals, &[extra_source], RunTarget::Path(&path));
-        }
-        _ => {
-            eprintln!("<path-to-script> [-- args...]");
-            std::process::exit(1)
+    // parse the interpreter args
+    let mut target = RunTarget::Unspecified;
+    let mut state = ArgState::Normal;
+    let mut sources = Vec::new();
+    let mut repl_requested = false;
+    for arg in interpreter_args.into_iter().skip(1) {
+        match state {
+            ArgState::Normal => match arg {
+                "-m" => {
+                    state = ArgState::Module;
+                }
+                "-r" => {
+                    repl_requested = true;
+                }
+                "-h" => {
+                    print_help_and_exit(0);
+                }
+                _ => {
+                    sources.push(arg);
+                }
+            }
+            ArgState::Module => {
+                target = RunTarget::Module(arg);
+                state = ArgState::Normal;
+            }
         }
     }
+    if let RunTarget::Unspecified = target {
+        if repl_requested {
+            if let Some(delegate) = &mut repl_delegate {
+                target = RunTarget::Repl(delegate);
+            } else {
+                eprintln!("The REPL is not available in this environment");
+                std::process::exit(1);
+            }
+        } else if let Some(last_source) = sources.pop() {
+            target = RunTarget::Path(last_source);
+        } else if let Some(delegate) = &mut repl_delegate {
+            target = RunTarget::Repl(delegate);
+        } else if repl_requested {
+            print_help_and_exit(1);
+        }
+    }
+
+    run(globals, &sources, target);
+}
+
+fn print_help_and_exit(code: i32) {
+    eprintln!("Usage:");
+    eprintln!("  [options..] [sources..] [-- script-args..]");
+    eprintln!("");
+    eprintln!("options:");
+    eprintln!("    -r                request repl (default if no sources are specified)");
+    eprintln!("    -m <module-name>  run the specified module");
+    std::process::exit(code);
+}
+
+enum ArgState {
+    Normal,
+    Module,
 }
 
 enum RunTarget<'a> {
     Path(&'a str),
     Module(&'a str),
     Repl(&'a mut dyn ReplDelegate),
+    Unspecified,
 }
 
 fn run(mut globals: Globals, extra_sources: &[&str], target: RunTarget) {
@@ -75,6 +115,9 @@ fn run(mut globals: Globals, extra_sources: &[&str], target: RunTarget) {
         }
         RunTarget::Repl(delegate) => {
             globals.run_repl(delegate);
+        }
+        RunTarget::Unspecified => {
+            print_help_and_exit(1);
         }
     };
 }
