@@ -56,4 +56,11 @@ def __test_switch_str() {
         },
         2,
     )
+    assert_eq(
+        switch ('a' + 'b') {
+            'ab' => 1
+            'b' => 2
+        },
+        1,
+    )
 }
