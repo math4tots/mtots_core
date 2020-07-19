@@ -214,6 +214,21 @@ impl Eval {
         }
     }
 
+    pub fn expect_i32(globals: &mut Globals, value: &Value) -> EvalResult<i32> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_i32(globals, x)
+    }
+
+    pub fn expect_i16(globals: &mut Globals, value: &Value) -> EvalResult<i16> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_i16(globals, x)
+    }
+
+    pub fn expect_i8(globals: &mut Globals, value: &Value) -> EvalResult<i8> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_i8(globals, x)
+    }
+
     pub fn expect_u32(globals: &mut Globals, value: &Value) -> EvalResult<u32> {
         let x = Self::expect_int(globals, value)?;
         Self::check_u32(globals, x)
