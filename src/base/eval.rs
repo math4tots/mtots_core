@@ -214,6 +214,21 @@ impl Eval {
         }
     }
 
+    pub fn expect_u32(globals: &mut Globals, value: &Value) -> EvalResult<u32> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_u32(globals, x)
+    }
+
+    pub fn expect_u16(globals: &mut Globals, value: &Value) -> EvalResult<u16> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_u16(globals, x)
+    }
+
+    pub fn expect_u8(globals: &mut Globals, value: &Value) -> EvalResult<u8> {
+        let x = Self::expect_int(globals, value)?;
+        Self::check_u8(globals, x)
+    }
+
     pub fn check_u8(globals: &mut Globals, x: i64) -> EvalResult<u8> {
         if x < 0 || x > u8::MAX as i64 {
             globals.set_exc_str(&format!("Expected u8 but got {}", x))
