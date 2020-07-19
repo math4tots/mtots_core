@@ -33,3 +33,27 @@ def __test_switch() {
         'other',
     )
 }
+
+def __test_switch_str() {
+    assert_eq(
+        switch 'a' {
+            'a' => 1
+            'b' => 2
+        },
+        1,
+    )
+    assert_eq(
+        switch 'abc' {
+            'a' => 1
+            'b' => 2
+        },
+        nil,
+    )
+    assert_eq(
+        switch 'b' {
+            'a' => 1
+            'b' => 2
+        },
+        2,
+    )
+}
