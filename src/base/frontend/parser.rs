@@ -794,11 +794,11 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseErr
                     state.expect_delim()?;
                 }
             }
-            Ok(Expression::new(offset, lineno, ExpressionData::Switch(
-                target.into(),
-                pairs,
-                other,
-            )))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Switch(target.into(), pairs, other),
+            ))
         }),
         (&["for"], |state: &mut ParserState| {
             let (offset, lineno) = state.pos();
