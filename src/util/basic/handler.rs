@@ -1,7 +1,7 @@
 use super::Scope;
 use super::Val;
 
-/// Interface into the outside world
+/// Interface to the outside world
 pub trait Handler {
     fn print(&mut self, scope: &mut Scope, val: Val) -> Result<(), Val>;
 }
