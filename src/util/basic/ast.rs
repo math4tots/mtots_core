@@ -1,12 +1,19 @@
 use super::VarScope;
 use std::rc::Rc;
+use std::fmt;
 
 pub struct Source {
     pub name: Rc<String>,
     pub data: Rc<String>,
 }
 
-#[derive(Clone)]
+impl fmt::Debug for Source {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Source({})", self.name)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Mark {
     pub source: Rc<Source>,
     pub pos: usize,
