@@ -31,7 +31,7 @@ impl File {
 #[derive(Clone)]
 pub struct Var {
     pub mark: Mark,
-    pub name: Rc<String>,
+    pub name: Rc<String>, // unique in the scope it is declared
     pub vscope: VarScope,
     pub index: u32,
 }

@@ -1,7 +1,7 @@
 use super::ast::*;
 use super::BasicError;
-use super::Code;
 use super::Binop;
+use super::Code;
 use super::Opcode;
 use super::VarScope;
 use std::collections::HashMap;
@@ -208,7 +208,7 @@ fn translate_expr(code: &mut Code, scope: &mut Scope, expr: &Expr) -> Result<(),
                 ExprDesc::GetVar(owner_name) => match scope.rget(owner_name) {
                     Some(Item::Import(imp)) => Some(imp),
                     _ => None,
-                }
+                },
                 _ => None,
             };
             if let Some(imp) = imp {
