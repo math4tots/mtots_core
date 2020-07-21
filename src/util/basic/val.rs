@@ -38,6 +38,20 @@ impl Val {
             Err(Val::String("Expected number".to_owned().into()))
         }
     }
+    pub fn list(&self) -> Option<&Rc<RefCell<Vec<Val>>>> {
+        if let Self::List(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+    pub fn expect_list(&self) -> Result<&Rc<RefCell<Vec<Val>>>, Val> {
+        if let Some(x) = self.list() {
+            Ok(x)
+        } else {
+            Err(Val::String("Expected list".to_owned().into()))
+        }
+    }
     pub fn func(&self) -> Option<Rc<Code>> {
         if let Self::Func(x) = self {
             Some(x.0.clone())

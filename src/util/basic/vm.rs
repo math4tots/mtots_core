@@ -4,6 +4,7 @@ use super::Func;
 use super::Handler;
 use super::Opcode;
 use super::Val;
+use super::Var;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -21,6 +22,9 @@ impl<H: Handler> Vm<H> {
         }
     }
     pub fn exec(&mut self, code: &Code) -> Result<(), Val> {
+        for var in &code.vars {
+            self.scope.globals.insert(var.name.clone(), Val::Nil);
+        }
         exec(&mut self.scope, &mut self.handler, code)?;
         Ok(())
     }
@@ -37,7 +41,7 @@ pub fn callfunc<H: Handler>(
             format!("Expected {} args but got {}", func.nparams, args.len()).into(),
         ));
     }
-    scope.push(&func.locals);
+    scope.push(&func.vars);
     for (i, arg) in args.into_iter().enumerate() {
         scope.set(VarScope::Local, i as u32, arg);
     }
@@ -54,8 +58,8 @@ pub fn exec<H: Handler>(scope: &mut Scope, handler: &mut H, code: &Code) -> Resu
             return Ok(ret);
         }
     }
-    assert_eq!(stack.len(), 1);
-    Ok(stack.pop().unwrap())
+    assert!(stack.is_empty());
+    Ok(Val::Nil)
 }
 
 pub fn step<H: Handler>(
@@ -85,6 +89,9 @@ pub fn step<H: Handler>(
         }
         Opcode::NewFunc(code) => {
             stack.push(Val::Func(Func(code.clone())));
+        }
+        Opcode::Pop => {
+            stack.pop().unwrap();
         }
         Opcode::Get(vscope, index) => {
             let val = scope.get(*vscope, *index).clone();
@@ -128,6 +135,11 @@ pub fn step<H: Handler>(
             let lhs = stack.pop().unwrap();
             let ret = match op {
                 Binop::Add => Val::Number(lhs.expect_number()? + rhs.expect_number()?),
+                Binop::Append => {
+                    let list = lhs.expect_list()?;
+                    list.borrow_mut().push(rhs);
+                    lhs
+                }
                 _ => panic!("TODO: Binop {:?}", op),
             };
             stack.push(ret);
@@ -172,10 +184,11 @@ impl Scope {
             VarScope::Local => self.locals.last_mut().unwrap().values[index as usize] = val,
         }
     }
-    pub fn push(&mut self, locals: &Vec<Rc<String>>) {
+    pub fn push(&mut self, locals: &Vec<Var>) {
         let mut map = IndexedMap::new();
-        for name in locals {
-            map.insert(name.clone(), Val::Nil);
+        for var in locals {
+            let index = map.insert(var.name.clone(), Val::Nil);
+            assert_eq!(index, var.index);
         }
         self.locals.push(map);
     }

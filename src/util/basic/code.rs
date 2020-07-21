@@ -1,3 +1,5 @@
+use super::Mark;
+use super::Var;
 use super::VarScope;
 use std::rc::Rc;
 
@@ -9,6 +11,9 @@ pub enum Opcode {
     String(Rc<String>),
     NewList,
     NewFunc(Rc<Code>),
+
+    // stack manipulation
+    Pop,
 
     // variable access
     Get(VarScope, u32),
@@ -24,17 +29,30 @@ pub enum Opcode {
 
 #[derive(Debug)]
 pub enum Binop {
+    // arithmetic
     Add,
     Subtract,
     Multiply,
     Divide,
     TruncDivide,
     Remainder,
+
+    // list
+    Append,
 }
 
 pub struct Code {
     pub name: Rc<String>,
     pub nparams: usize,
-    pub locals: Vec<Rc<String>>,
+    pub vars: Vec<Var>,
     pub ops: Vec<Opcode>,
+    pub marks: Vec<Mark>,
+}
+
+impl Code {
+    pub fn add(&mut self, op: Opcode, mark: Mark) {
+        self.ops.push(op);
+        self.marks.push(mark);
+        assert_eq!(self.ops.len(), self.marks.len());
+    }
 }
