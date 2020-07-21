@@ -108,3 +108,13 @@ impl cmp::PartialEq for Func {
         Rc::as_ptr(&self.0) == Rc::as_ptr(&other.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn val_size() {
+        assert_eq!(std::mem::size_of::<Val>(), 2 * std::mem::size_of::<usize>());
+    }
+}
