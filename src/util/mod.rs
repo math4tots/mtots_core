@@ -7,8 +7,6 @@ mod rcstr;
 mod symbol;
 mod uhasher;
 
-pub mod basic;
-pub mod mini;
 pub(crate) use dm::divmod;
 pub use gmap::FailableEq;
 pub use gmap::FailableHash;
