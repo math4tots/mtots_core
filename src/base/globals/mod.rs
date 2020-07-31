@@ -69,7 +69,11 @@ pub struct Globals {
     cli_args: Vec<RcStr>,
     main_module_name: Option<RcStr>,
 
-    trampoline_callback: Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>>,
+    /// NOTE: the callback doesn't return an EvalResult, because the Globals
+    /// is consumed anyway, and so there's no nice way to dump the error anyway.
+    /// In fact, ideally, I would return a '!' type here, it's currently the '!'
+    /// type is considered unstable here.
+    trampoline_callback: Option<Box<dyn FnOnce(Globals)>>,
 
     /// Used by 'new' to determine what class to instantiate.
     /// The usize value records the length of trace when the corresponding
@@ -596,10 +600,7 @@ impl Globals {
                 let error = self.exc_move();
                 if let Some(trampoline_callback) = self.move_trampoline_callback() {
                     assert_eq!(error.kind(), &self.builtin_exceptions().EscapeToTrampoline);
-
-                    // The Globals object is consumed, so there's not much we can do besides
-                    // just unwrap if an error is returned here
-                    trampoline_callback(self).unwrap();
+                    trampoline_callback(self);
                 } else {
                     eprint!("{}\n{}", error, self.trace_fmt());
                     std::process::exit(1);
@@ -640,7 +641,7 @@ impl Globals {
     ///
     pub fn escape_to_trampoline<R, F>(&mut self, f: F) -> EvalResult<R>
     where
-        F: FnOnce(Globals) -> EvalResult<()> + 'static,
+        F: FnOnce(Globals) + 'static,
     {
         self.trampoline_callback = Some(Box::new(f));
         self.set_escape_to_trampoline_exc()
@@ -652,7 +653,7 @@ impl Globals {
     /// mechanism may not work
     pub fn move_trampoline_callback(
         &mut self,
-    ) -> Option<Box<dyn FnOnce(Globals) -> EvalResult<()>>> {
+    ) -> Option<Box<dyn FnOnce(Globals)>> {
         std::mem::replace(&mut self.trampoline_callback, None)
     }
 
