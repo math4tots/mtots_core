@@ -3,8 +3,8 @@ use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
 use crate::RcStr;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -14,15 +14,11 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             let s = Eval::expect_mutable_string(globals, &args[0])?;
             Ok(Value::Int(s.borrow().len() as i64))
         }),
-        NativeFunction::simple0(
-            "extend",
-            &["self", "other"],
-            |globals, args, _kwargs| {
-                let s = Eval::expect_mutable_string(globals, &args[0])?;
-                Eval::extend_str(globals, &mut s.borrow_mut(), &args[1])?;
-                Ok(Value::Nil)
-            },
-        ),
+        NativeFunction::simple0("extend", &["self", "other"], |globals, args, _kwargs| {
+            let s = Eval::expect_mutable_string(globals, &args[0])?;
+            Eval::extend_str(globals, &mut s.borrow_mut(), &args[1])?;
+            Ok(Value::Nil)
+        }),
         NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
             let mstr = Eval::expect_mutable_string(globals, &args[0])?;
             let contents = mstr.replace(String::new());

@@ -8,22 +8,18 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(
-            "decode",
-            &["self", "encoding"],
-            |globals, args, _kwargs| {
-                let bytes = Eval::expect_bytes(globals, &args[0])?;
-                let encoding = Eval::expect_symbol(globals, &args[1])?;
-                if encoding == Symbol::UTF8 {
-                    match std::str::from_utf8(bytes) {
-                        Ok(s) => Ok(s.into()),
-                        Err(error) => globals.set_utf8_error(error),
-                    }
-                } else {
-                    globals.set_exc_str(&format!("Unrecognized encoding {:?}", encoding,))
+        NativeFunction::simple0("decode", &["self", "encoding"], |globals, args, _kwargs| {
+            let bytes = Eval::expect_bytes(globals, &args[0])?;
+            let encoding = Eval::expect_symbol(globals, &args[1])?;
+            if encoding == Symbol::UTF8 {
+                match std::str::from_utf8(bytes) {
+                    Ok(s) => Ok(s.into()),
+                    Err(error) => globals.set_utf8_error(error),
                 }
-            },
-        ),
+            } else {
+                globals.set_exc_str(&format!("Unrecognized encoding {:?}", encoding,))
+            }
+        }),
         NativeFunction::sdnew0("len", &["self"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_bytes(globals, &args[0])?;
             Ok((bytes.len() as i64).into())
@@ -295,11 +291,9 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::simple0(
-            "from_iterable",
-            &["iterable"],
-            |globals, args, _kwargs| Eval::bytes_from_iterable(globals, &args[0]),
-        ),
+        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
+            Eval::bytes_from_iterable(globals, &args[0])
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

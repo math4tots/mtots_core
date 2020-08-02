@@ -189,22 +189,19 @@ pub(super) fn new() -> NativeFunctions {
     })
     .into();
 
-    let assert_eq =
-        NativeFunction::simple0("assert_eq", &["a", "b"], |globals, args, _kwargs| {
-            if !Eval::eq(globals, &args[0], &args[1])? {
-                let str1 = Eval::repr(globals, &args[0])?;
-                let str2 = Eval::repr(globals, &args[1])?;
-                return globals
-                    .set_assert_error(&format!("Expected {} to equal {}", str1, str2).into());
-            }
-            Ok(Value::Nil)
-        })
-        .into();
+    let assert_eq = NativeFunction::simple0("assert_eq", &["a", "b"], |globals, args, _kwargs| {
+        if !Eval::eq(globals, &args[0], &args[1])? {
+            let str1 = Eval::repr(globals, &args[0])?;
+            let str2 = Eval::repr(globals, &args[1])?;
+            return globals
+                .set_assert_error(&format!("Expected {} to equal {}", str1, str2).into());
+        }
+        Ok(Value::Nil)
+    })
+    .into();
 
-    let assert_raises = NativeFunction::simple0(
-        "assert_raises",
-        &["exck", "f"],
-        |globals, args, _kwargs| {
+    let assert_raises =
+        NativeFunction::simple0("assert_raises", &["exck", "f"], |globals, args, _kwargs| {
             let exception_kind = Eval::expect_exception_kind(globals, &args[0])?;
             let trace_len = globals.trace_len();
             match Eval::call(globals, &args[1], vec![]) {
@@ -223,29 +220,24 @@ pub(super) fn new() -> NativeFunctions {
                     }
                 }
             }
-        },
-    )
-    .into();
-
-    let dunder_import =
-        NativeFunction::simple0("__import", &["name"], |globals, args, _kwargs| {
-            let name = Eval::expect_symbollike(globals, &args[0])?;
-            let module = globals.load_by_symbol(name)?;
-            Ok(Value::Module(module))
         })
         .into();
 
-    let dunder_malloc = NativeFunction::simple0(
-        "__malloc",
-        &["cls", "fields"],
-        |globals, args, _kwargs| {
+    let dunder_import = NativeFunction::simple0("__import", &["name"], |globals, args, _kwargs| {
+        let name = Eval::expect_symbollike(globals, &args[0])?;
+        let module = globals.load_by_symbol(name)?;
+        Ok(Value::Module(module))
+    })
+    .into();
+
+    let dunder_malloc =
+        NativeFunction::simple0("__malloc", &["cls", "fields"], |globals, args, _kwargs| {
             let cls = Eval::expect_class(globals, &args[0])?;
             let fields = Eval::expect_list(globals, &args[1])?;
             let obj = Class::instantiate(cls, globals, fields.clone(), None)?;
             Ok(obj.into())
-        },
-    )
-    .into();
+        })
+        .into();
 
     let dunder_new = NativeFunction::sdnew(
         "__new",
@@ -278,20 +270,20 @@ pub(super) fn new() -> NativeFunctions {
     })
     .into();
 
-    let dunder_main = NativeFunction::simple0("__main", &[], |globals, _args, _kwargs| {
-        match globals.main_module_name() {
-            Some(main_module_name) => Ok(main_module_name.clone().into()),
-            None => Ok(Value::Nil),
-        }
-    })
-    .into();
-
-    let dunder_raise =
-        NativeFunction::simple0("__raise", &["exc"], |globals, args, _kwargs| {
-            let exc = Eval::move_exc(globals, args.into_iter().next().unwrap())?;
-            globals.set_exc(exc)
+    let dunder_main =
+        NativeFunction::simple0("__main", &[], |globals, _args, _kwargs| {
+            match globals.main_module_name() {
+                Some(main_module_name) => Ok(main_module_name.clone().into()),
+                None => Ok(Value::Nil),
+            }
         })
         .into();
+
+    let dunder_raise = NativeFunction::simple0("__raise", &["exc"], |globals, args, _kwargs| {
+        let exc = Eval::move_exc(globals, args.into_iter().next().unwrap())?;
+        globals.set_exc(exc)
+    })
+    .into();
 
     let dunder_try = NativeFunction::snew(
         "__try",
@@ -362,11 +354,10 @@ pub(super) fn new() -> NativeFunctions {
     )
     .into();
 
-    let dunder_iter =
-        NativeFunction::simple0("__iter", &["iterable"], |globals, args, _kwargs| {
-            Eval::iter(globals, &args[0])
-        })
-        .into();
+    let dunder_iter = NativeFunction::simple0("__iter", &["iterable"], |globals, args, _kwargs| {
+        Eval::iter(globals, &args[0])
+    })
+    .into();
 
     NativeFunctions {
         print,

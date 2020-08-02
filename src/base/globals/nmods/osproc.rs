@@ -2,7 +2,6 @@ use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
-use crate::Handle;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Symbol;
@@ -14,8 +13,12 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a._os.proc";
 
-pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
+pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
+
+    let pcls = globals.new_class0("Child", vec![
+    ])?;
+    globals.set_handle_class::<Child>(pcls)?;
 
     map.extend(
         vec![
@@ -87,7 +90,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                         Err(error) => return globals.set_io_error(error),
                     };
 
-                    Ok(Handle::new(child).into())
+                    Ok(globals.new_handle(child)?.into())
                 },
             ),
             NativeFunction::snew(

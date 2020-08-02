@@ -1045,11 +1045,7 @@ impl NativeFunction {
     ) -> NativeFunction {
         Self::sdnew(name, (params, &[], None, None), doc, body)
     }
-    pub fn simple0(
-        name: &str,
-        params: &[&str],
-        body: NativeFunctionBody,
-    ) -> NativeFunction {
+    pub fn simple0(name: &str, params: &[&str], body: NativeFunctionBody) -> NativeFunction {
         Self::new(
             name.into(),
             ParameterInfo::snew(params, &[], None, None),
@@ -1637,6 +1633,7 @@ impl fmt::Debug for Module {
 
 pub struct HandleData {
     type_name: &'static str,
+    cls: Rc<Class>,
     value: RefCell<Box<dyn Any>>,
 }
 
@@ -1646,13 +1643,23 @@ impl fmt::Debug for HandleData {
     }
 }
 
+impl HandleData {
+    pub fn type_name(&self) -> &'static str {
+        self.type_name
+    }
+    pub fn cls(&self) -> &Rc<Class> {
+        &self.cls
+    }
+}
+
 pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
 
 impl<T: Any> Handle<T> {
-    pub fn new(t: T) -> Self {
+    pub(crate) fn new(t: T, cls: Rc<Class>) -> Self {
         Self(
             Rc::new(HandleData {
                 type_name: std::any::type_name::<T>(),
+                cls,
                 value: RefCell::new(Box::new(t)),
             }),
             PhantomData,
@@ -1660,6 +1667,9 @@ impl<T: Any> Handle<T> {
     }
     pub fn type_name(&self) -> &'static str {
         self.0.type_name
+    }
+    pub fn cls(&self) -> &Rc<Class> {
+        &self.0.cls
     }
     pub fn borrow(&self) -> Ref<T> {
         Ref::map(self.0.value.borrow(), |bx| bx.downcast_ref().unwrap())

@@ -2,8 +2,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 
 use std::fs;
 use std::path::Path;
@@ -38,30 +38,26 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(path.into())
             },
         ),
-        NativeFunction::simple0(
-            "relpath",
-            &["self", "start"],
-            |globals, args, _kwargs| {
-                // returns the relative path version of self, when starting from 'start'
-                // NOTE: this is purely a string manipulation and doesn't take into
-                // account, e.g. symlinks
-                // returns self unchanged if the two paths share no common ancestor
-                let path = Eval::expect_path(globals, &args[0])?;
-                let start = Eval::expect_pathlike(globals, &args[1])?;
-                if let Some(common) = common_path(path, start) {
-                    let mut ret = PathBuf::new();
-                    for _ in 0..start.strip_prefix(common).unwrap().iter().count() {
-                        ret.push("..");
-                    }
-                    ret.push(path.strip_prefix(common).unwrap());
-                    Ok(ret.into())
-                } else {
-                    // If there's no common ancestor, there's no way to get
-                    // from one to the other, so just return itself
-                    Ok(args[0].clone())
+        NativeFunction::simple0("relpath", &["self", "start"], |globals, args, _kwargs| {
+            // returns the relative path version of self, when starting from 'start'
+            // NOTE: this is purely a string manipulation and doesn't take into
+            // account, e.g. symlinks
+            // returns self unchanged if the two paths share no common ancestor
+            let path = Eval::expect_path(globals, &args[0])?;
+            let start = Eval::expect_pathlike(globals, &args[1])?;
+            if let Some(common) = common_path(path, start) {
+                let mut ret = PathBuf::new();
+                for _ in 0..start.strip_prefix(common).unwrap().iter().count() {
+                    ret.push("..");
                 }
-            },
-        ),
+                ret.push(path.strip_prefix(common).unwrap());
+                Ok(ret.into())
+            } else {
+                // If there's no common ancestor, there's no way to get
+                // from one to the other, so just return itself
+                Ok(args[0].clone())
+            }
+        }),
         // ## Methods that touch the file system ##
         NativeFunction::simple0("is_file", &["self"], |globals, args, _kwargs| {
             let path = Eval::expect_path(globals, &args[0])?;

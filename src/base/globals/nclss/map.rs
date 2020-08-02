@@ -2,8 +2,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 
 use std::rc::Rc;
 
@@ -36,22 +36,18 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
-        NativeFunction::simple0(
-            "__getitem",
-            &["self", "key"],
-            |globals, args, _kwargs| {
-                let map = Eval::expect_map(globals, &args[0])?;
-                let val = map.s_get(globals, &args[1])?.cloned();
-                if let Some(val) = val {
-                    Ok(val)
-                } else {
-                    let keystr = Eval::repr(globals, &args[1])?;
-                    globals.set_key_error(
-                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
-                    )
-                }
-            },
-        ),
+        NativeFunction::simple0("__getitem", &["self", "key"], |globals, args, _kwargs| {
+            let map = Eval::expect_map(globals, &args[0])?;
+            let val = map.s_get(globals, &args[1])?.cloned();
+            if let Some(val) = val {
+                Ok(val)
+            } else {
+                let keystr = Eval::repr(globals, &args[1])?;
+                globals.set_key_error(
+                    &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                )
+            }
+        }),
         NativeFunction::snew(
             "get",
             (
@@ -89,11 +85,9 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
         NativeFunction::simple0("__call", &["pairs"], |globals, args, _kwargs| {
             Eval::map_from_iterable(globals, &args[0])
         }),
-        NativeFunction::simple0(
-            "from_iterable",
-            &["iterable"],
-            |globals, args, _kwargs| Eval::map_from_iterable(globals, &args[0]),
-        ),
+        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
+            Eval::map_from_iterable(globals, &args[0])
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

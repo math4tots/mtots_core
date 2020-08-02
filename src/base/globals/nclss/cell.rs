@@ -2,8 +2,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 use std::cell::RefCell;
 use std::rc::Rc;
 

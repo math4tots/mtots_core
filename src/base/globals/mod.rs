@@ -1,11 +1,14 @@
+use crate::NativeFunction;
 use crate::compile;
 use crate::Class;
+use crate::ClassKind;
 use crate::EvalError;
 use crate::EvalResult;
 use crate::Expression;
 use crate::Frame;
 use crate::FrameError;
 use crate::HMap;
+use crate::Handle;
 use crate::LexError;
 use crate::LexErrorKind;
 use crate::Lexer;
@@ -84,6 +87,9 @@ pub struct Globals {
     /// Stash for storing arbitrary global values.
     stash: HashMap<TypeId, Rc<dyn Any>>,
 
+    /// Sets
+    handle_class_map: HashMap<TypeId, Rc<Class>>,
+
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
 
@@ -145,6 +151,7 @@ impl Globals {
             trampoline_callback: None,
             new_stack: Vec::new(),
             stash: HashMap::new(),
+            handle_class_map: HashMap::new(),
             exception_registry,
             builtin_exceptions,
             symbol_dunder_repr,
@@ -711,10 +718,7 @@ impl Globals {
         scope: &mut ReplScope,
         expr: &Expression,
     ) -> EvalResult<Value> {
-        let code = match compile(
-            crate::REPL_PSEUDO_MODULE_NAME.into(),
-            expr,
-        ) {
+        let code = match compile(crate::REPL_PSEUDO_MODULE_NAME.into(), expr) {
             Ok(code) => code,
             Err(error) => {
                 let (name, lineno, kind) = error.move_();
@@ -768,11 +772,7 @@ impl Globals {
                 return self.set_exc_legacy(EvalError::CompileError(kind));
             }
         };
-        let (mut frame, module) = match Frame::for_module(
-            &code,
-            filename,
-            self.builtins(),
-        ) {
+        let (mut frame, module) = match Frame::for_module(&code, filename, self.builtins()) {
             Ok(x) => x,
             Err(FrameError::MissingBuiltin {
                 name: varname,
@@ -841,5 +841,73 @@ impl Globals {
                 return self.set_exc_legacy(error);
             }
         }
+    }
+
+    pub fn set_handle_class<T: Any>(&mut self, cls: Rc<Class>) -> EvalResult<()> {
+        let key = TypeId::of::<T>();
+        match self.handle_class_map.entry(key) {
+            std::collections::hash_map::Entry::Occupied(_) => self.set_exc_str(&format!(
+                "Class for conversion to native type {:?} already set",
+                std::any::type_name::<T>()
+            )),
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                entry.insert(cls);
+                Ok(())
+            }
+        }
+    }
+
+    pub fn get_handle_class<T: Any>(&self) -> Option<&Rc<Class>> {
+        self.handle_class_map.get(&TypeId::of::<T>())
+    }
+
+    pub fn new_handle<T: Any>(&mut self, t: T) -> EvalResult<Handle<T>> {
+        if let Some(cls) = self.get_handle_class::<T>() {
+            Ok(Handle::new(t, cls.clone()))
+        } else {
+            self.set_exc_str(&format!(
+                "Class for conversion from native type {:?} not set",
+                std::any::type_name::<T>()
+            ))
+        }
+    }
+
+    /// Convenience method for creating a new native class for use
+    /// with a Handle.
+    pub fn new_class<N>(
+        &mut self,
+        name: N,
+        bases: Vec<Rc<Class>>,
+        map: HashMap<Symbol, Value>,
+        static_map: HashMap<Symbol, Value>,
+    ) -> EvalResult<Rc<Class>>
+    where
+        N: Into<RcStr>,
+    {
+        Ok(Class::new(
+            self,
+            ClassKind::NativeClass,
+            name.into(),
+            bases,
+            None,
+            None,
+            map,
+            static_map,
+        )?)
+    }
+
+    /// Convenience wrapper around the 'new_class' method
+    pub fn new_class0<N>(
+        &mut self,
+        name: N,
+        methods: Vec<NativeFunction>,
+    ) -> EvalResult<Rc<Class>>
+    where N: Into<RcStr> {
+        let mut map = HashMap::new();
+        for method in methods {
+            let name = Symbol::from(method.name());
+            map.insert(name, method.into());
+        }
+        self.new_class(name, vec![], map, HashMap::new())
     }
 }

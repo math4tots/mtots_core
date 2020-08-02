@@ -3,8 +3,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
@@ -19,15 +19,11 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(a / b))
         }),
-        NativeFunction::simple0(
-            "divrem",
-            &["self", "other"],
-            |globals, args, _kwargs| {
-                let a = Eval::expect_int(globals, &args[0])?;
-                let b = Eval::expect_int(globals, &args[1])?;
-                Ok(vec![Value::Int(a / b), Value::Int(a % b)].into())
-            },
-        ),
+        NativeFunction::simple0("divrem", &["self", "other"], |globals, args, _kwargs| {
+            let a = Eval::expect_int(globals, &args[0])?;
+            let b = Eval::expect_int(globals, &args[1])?;
+            Ok(vec![Value::Int(a / b), Value::Int(a % b)].into())
+        }),
         NativeFunction::simple0("mod", &["self", "other"], |globals, args, _kwargs| {
             let a = Eval::expect_int(globals, &args[0])?;
             let b = Eval::expect_int(globals, &args[1])?;
@@ -38,16 +34,12 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(divmod(a, b).0))
         }),
-        NativeFunction::simple0(
-            "divmod",
-            &["self", "other"],
-            |globals, args, _kwargs| {
-                let a = Eval::expect_int(globals, &args[0])?;
-                let b = Eval::expect_int(globals, &args[1])?;
-                let (d, m) = divmod(a, b);
-                Ok(vec![Value::Int(d), Value::Int(m)].into())
-            },
-        ),
+        NativeFunction::simple0("divmod", &["self", "other"], |globals, args, _kwargs| {
+            let a = Eval::expect_int(globals, &args[0])?;
+            let b = Eval::expect_int(globals, &args[1])?;
+            let (d, m) = divmod(a, b);
+            Ok(vec![Value::Int(d), Value::Int(m)].into())
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

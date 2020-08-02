@@ -1,6 +1,6 @@
-use crate::Symbol;
 use crate::ParameterInfo;
 use crate::RcStr;
+use crate::Symbol;
 use crate::Value;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -43,12 +43,7 @@ impl ExceptionRegistry {
                 }
                 ParameterInfo::new(names_as_symbols, vec![], None, None)
             }
-            None => ParameterInfo::snew(
-                &[],
-                &[("optarg", Value::Uninitialized)],
-                None,
-                None,
-            ),
+            None => ParameterInfo::snew(&[], &[("optarg", Value::Uninitialized)], None, None),
         };
         let rc = Rc::new(ExceptionKind {
             id,

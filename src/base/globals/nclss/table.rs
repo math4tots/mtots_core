@@ -2,9 +2,9 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::Symbol;
 use crate::Table;
 use crate::Value;
-use crate::Symbol;
 
 use std::rc::Rc;
 

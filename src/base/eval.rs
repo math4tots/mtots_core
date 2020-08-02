@@ -185,7 +185,7 @@ impl Eval {
             Value::NativeIterator(_) => &globals.builtin_classes().NativeIterator,
             Value::GeneratorObject(_) => &globals.builtin_classes().GeneratorObject,
             Value::Module(_) => &globals.builtin_classes().Module,
-            Value::Handle(_) => &globals.builtin_classes().Handle,
+            Value::Handle(handle) => handle.cls(),
             Value::MutableString(_) => &globals.builtin_classes().MutableString,
             Value::MutableBytes(_) => &globals.builtin_classes().MutableBytes,
             Value::MutableList(_) => &globals.builtin_classes().MutableList,

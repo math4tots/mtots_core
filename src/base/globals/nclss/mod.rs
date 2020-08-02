@@ -15,7 +15,6 @@ mod exc;
 mod flt;
 mod func;
 mod gobj;
-mod hnd;
 mod int;
 mod iterable;
 mod iterator;
@@ -74,7 +73,6 @@ pub struct BuiltinClasses {
     pub GeneratorObject: Rc<Class>,
     pub Module: Rc<Class>,
     pub Opaque: Rc<Class>,
-    pub Handle: Rc<Class>,
     pub MutableString: Rc<Class>,
     pub MutableBytes: Rc<Class>,
     pub MutableList: Rc<Class>,
@@ -142,7 +140,6 @@ impl Globals {
         let GeneratorObject = gobj::mkcls(Iterator.clone());
         let Module = m::mkcls(Object.clone());
         let Opaque = opq::mkcls(Object.clone());
-        let Handle = hnd::mkcls(Object.clone());
         let MutableString = mstr::mkcls(Object.clone());
         let MutableBytes = mbytes::mkcls(Object.clone());
         let MutableList = mlist::mkcls(Object.clone());
@@ -176,7 +173,6 @@ impl Globals {
             GeneratorObject,
             Module,
             Opaque,
-            Handle,
             MutableString,
             MutableBytes,
             MutableList,

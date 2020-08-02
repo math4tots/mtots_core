@@ -4,8 +4,8 @@ use crate::Eval;
 use crate::GeneratorResult;
 use crate::NativeFunction;
 use crate::NativeIterator;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -63,33 +63,28 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
-            "filter",
-            &["self", "f"],
-            None,
-            |_globals, args, _kwargs| {
-                let owner = args[0].clone();
-                let f = args[1].clone();
-                let mut done = false;
-                Ok(NativeIterator::new(move |globals, _input_value| {
-                    if done {
+        NativeFunction::sdnew0("filter", &["self", "f"], None, |_globals, args, _kwargs| {
+            let owner = args[0].clone();
+            let f = args[1].clone();
+            let mut done = false;
+            Ok(NativeIterator::new(move |globals, _input_value| {
+                if done {
+                    return GeneratorResult::Done(Value::Nil);
+                }
+                loop {
+                    if let Some(value) = try_!(Eval::next(globals, &owner)) {
+                        let f_result = try_!(Eval::call(globals, &f, vec![value.clone()]));
+                        if try_!(Eval::truthy(globals, &f_result)) {
+                            return GeneratorResult::Yield(value);
+                        }
+                    } else {
+                        done = true;
                         return GeneratorResult::Done(Value::Nil);
                     }
-                    loop {
-                        if let Some(value) = try_!(Eval::next(globals, &owner)) {
-                            let f_result = try_!(Eval::call(globals, &f, vec![value.clone()]));
-                            if try_!(Eval::truthy(globals, &f_result)) {
-                                return GeneratorResult::Yield(value);
-                            }
-                        } else {
-                            done = true;
-                            return GeneratorResult::Done(Value::Nil);
-                        }
-                    }
-                })
-                .into())
-            },
-        ),
+                }
+            })
+            .into())
+        }),
         NativeFunction::sdnew0(
             "fold",
             &["self", "acc", "f"],

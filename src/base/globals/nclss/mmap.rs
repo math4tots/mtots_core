@@ -2,9 +2,9 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::Symbol;
 use crate::VMap;
 use crate::Value;
-use crate::Symbol;
 use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
@@ -18,22 +18,18 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             Ok(Value::Int(map.borrow().len() as i64))
         }),
-        NativeFunction::simple0(
-            "__getitem",
-            &["self", "key"],
-            |globals, args, _kwargs| {
-                let map = Eval::expect_mutable_map(globals, &args[0])?;
-                let val = map.borrow().s_get(globals, &args[1])?.cloned();
-                if let Some(val) = val {
-                    Ok(val)
-                } else {
-                    let keystr = Eval::repr(globals, &args[1])?;
-                    globals.set_key_error(
-                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
-                    )
-                }
-            },
-        ),
+        NativeFunction::simple0("__getitem", &["self", "key"], |globals, args, _kwargs| {
+            let map = Eval::expect_mutable_map(globals, &args[0])?;
+            let val = map.borrow().s_get(globals, &args[1])?.cloned();
+            if let Some(val) = val {
+                Ok(val)
+            } else {
+                let keystr = Eval::repr(globals, &args[1])?;
+                globals.set_key_error(
+                    &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                )
+            }
+        }),
         NativeFunction::snew(
             "get",
             (

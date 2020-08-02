@@ -6,8 +6,8 @@ use crate::Globals;
 use crate::NativeFunction;
 use crate::NativeIterator;
 use crate::RcStr;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -38,40 +38,32 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(s.ends_with(suffix).into())
             },
         ),
-        NativeFunction::simple0(
-            "lstrip",
-            &["self", "prefix"],
-            |globals, args, _kwargs| {
-                // If self starts with prefix, returns self with prefix removed
-                // Otherwise returns self unchanged
-                let s = Eval::expect_string(globals, &args[0])?;
-                let prefix = Eval::expect_string(globals, &args[1])?;
-                let prefix: &str = prefix;
-                if s.starts_with(prefix) {
-                    let stripped = &s[prefix.len()..];
-                    Ok(stripped.into())
-                } else {
-                    Ok(args[0].clone())
-                }
-            },
-        ),
-        NativeFunction::simple0(
-            "rstrip",
-            &["self", "suffix"],
-            |globals, args, _kwargs| {
-                // If self ends with suffix, returns self with suffix removed
-                // Otherwise returns self unchanged
-                let s = Eval::expect_string(globals, &args[0])?;
-                let suffix = Eval::expect_string(globals, &args[1])?;
-                let suffix: &str = suffix;
-                if s.ends_with(suffix) {
-                    let stripped = &s[..s.len() - suffix.len()];
-                    Ok(stripped.into())
-                } else {
-                    Ok(args[0].clone())
-                }
-            },
-        ),
+        NativeFunction::simple0("lstrip", &["self", "prefix"], |globals, args, _kwargs| {
+            // If self starts with prefix, returns self with prefix removed
+            // Otherwise returns self unchanged
+            let s = Eval::expect_string(globals, &args[0])?;
+            let prefix = Eval::expect_string(globals, &args[1])?;
+            let prefix: &str = prefix;
+            if s.starts_with(prefix) {
+                let stripped = &s[prefix.len()..];
+                Ok(stripped.into())
+            } else {
+                Ok(args[0].clone())
+            }
+        }),
+        NativeFunction::simple0("rstrip", &["self", "suffix"], |globals, args, _kwargs| {
+            // If self ends with suffix, returns self with suffix removed
+            // Otherwise returns self unchanged
+            let s = Eval::expect_string(globals, &args[0])?;
+            let suffix = Eval::expect_string(globals, &args[1])?;
+            let suffix: &str = suffix;
+            if s.ends_with(suffix) {
+                let stripped = &s[..s.len() - suffix.len()];
+                Ok(stripped.into())
+            } else {
+                Ok(args[0].clone())
+            }
+        }),
         NativeFunction::sdnew0(
             "chars",
             &["self"],

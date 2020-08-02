@@ -94,8 +94,7 @@ mod tests {
         use crate::RcStr;
 
         let mut globals = Globals::new();
-        let mut builder =
-            CodeBuilder::for_module("<test>".into(), None);
+        let mut builder = CodeBuilder::for_module("<test>".into(), None);
         let message: RcStr = "hello world!".into();
 
         builder.load_const(message.clone());
@@ -107,12 +106,7 @@ mod tests {
         // builder.call_func(1);
 
         let code = builder.build().unwrap();
-        let (mut frame, module) = Frame::for_module(
-            &code,
-            None,
-            globals.builtins(),
-        )
-        .unwrap();
+        let (mut frame, module) = Frame::for_module(&code, None, globals.builtins()).unwrap();
         code.run(&mut globals, &mut frame).unwrap();
 
         let key = Symbol::from("foo");

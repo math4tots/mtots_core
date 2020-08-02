@@ -2,8 +2,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 
 use std::rc::Rc;
 
@@ -145,11 +145,9 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
         NativeFunction::simple0("__call", &["iterable"], |globals, args, _kwargs| {
             Eval::list_from_iterable(globals, &args[0])
         }),
-        NativeFunction::simple0(
-            "from_iterable",
-            &["iterable"],
-            |globals, args, _kwargs| Eval::list_from_iterable(globals, &args[0]),
-        ),
+        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
+            Eval::list_from_iterable(globals, &args[0])
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

@@ -2,8 +2,8 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -138,23 +138,19 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             list.borrow_mut().reverse();
             Ok(Value::Nil)
         }),
-        NativeFunction::simple0(
-            "resize",
-            &["self", "new_size"],
-            |globals, args, _kwargs| {
-                let list = Eval::expect_mutable_list(globals, &args[0])?;
-                let mut list = list.borrow_mut();
-                let new_size = Eval::expect_usize(globals, &args[1])?;
-                if list.len() < new_size {
-                    for _ in list.len()..new_size {
-                        list.push(Value::Nil);
-                    }
-                } else {
-                    list.truncate(new_size);
+        NativeFunction::simple0("resize", &["self", "new_size"], |globals, args, _kwargs| {
+            let list = Eval::expect_mutable_list(globals, &args[0])?;
+            let mut list = list.borrow_mut();
+            let new_size = Eval::expect_usize(globals, &args[1])?;
+            if list.len() < new_size {
+                for _ in list.len()..new_size {
+                    list.push(Value::Nil);
                 }
-                Ok(Value::Nil)
-            },
-        ),
+            } else {
+                list.truncate(new_size);
+            }
+            Ok(Value::Nil)
+        }),
         NativeFunction::snew(
             "any",
             (&["self"], &[("f", Value::Nil)], None, None),

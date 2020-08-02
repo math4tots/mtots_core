@@ -1,4 +1,3 @@
-use crate::Symbol;
 use crate::ArgumentList;
 use crate::Binop;
 use crate::ClassKind;
@@ -12,6 +11,7 @@ use crate::ExpressionData;
 use crate::ExpressionKind;
 use crate::ParameterInfo;
 use crate::RcStr;
+use crate::Symbol;
 use crate::Unop;
 use crate::Value;
 use std::fmt;
@@ -83,10 +83,7 @@ impl From<CodeBuilderError> for Error {
     }
 }
 
-pub fn compile(
-    name: RcStr,
-    expr: &Expression,
-) -> Result<Code, CompileError> {
+pub fn compile(name: RcStr, expr: &Expression) -> Result<Code, CompileError> {
     let doc = if let ExpressionData::Block(exprs) = expr.data() {
         if let Some(ExpressionData::String(s)) = exprs.get(0).map(|e| e.data()) {
             Some(s.clone())

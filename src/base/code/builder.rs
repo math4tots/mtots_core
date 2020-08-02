@@ -135,10 +135,7 @@ impl CodeBuilder {
         &self.full_name
     }
 
-    pub fn for_module(
-        name: RcStr,
-        doc: Option<RcStr>,
-    ) -> CodeBuilder {
+    pub fn for_module(name: RcStr, doc: Option<RcStr>) -> CodeBuilder {
         Self::new(
             CodeKind::Module,
             ParameterInfo::empty(),
@@ -624,10 +621,7 @@ impl CodeBuilder {
                     PseudoOpcode::LoadConst(i) => {
                         state.add(opc::LOAD_CONST, &[i]);
                     }
-                    PseudoOpcode::LoadVar(name) => match varmap
-                        .get(&name.into())
-                        .unwrap()
-                    {
+                    PseudoOpcode::LoadVar(name) => match varmap.get(&name.into()).unwrap() {
                         VariableLocation::Local(i) => {
                             state.add(opc::LOAD_LOCAL, &[*i]);
                         }
@@ -635,10 +629,7 @@ impl CodeBuilder {
                             state.add(opc::LOAD_DEREF, &[*i]);
                         }
                     },
-                    PseudoOpcode::StoreVar(name) => match varmap
-                        .get(&name.into())
-                        .unwrap()
-                    {
+                    PseudoOpcode::StoreVar(name) => match varmap.get(&name.into()).unwrap() {
                         VariableLocation::Local(i) => {
                             state.add(opc::STORE_LOCAL, &[*i]);
                         }
@@ -646,10 +637,7 @@ impl CodeBuilder {
                             state.add(opc::STORE_DEREF, &[*i]);
                         }
                     },
-                    PseudoOpcode::LoadCell(name) => match varmap
-                        .get(&name.into())
-                        .unwrap()
-                    {
+                    PseudoOpcode::LoadCell(name) => match varmap.get(&name.into()).unwrap() {
                         VariableLocation::Cell(i) => {
                             state.add(opc::LOAD_CELL, &[*i]);
                         }
