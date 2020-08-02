@@ -32,6 +32,7 @@ mod ni;
 mod nil;
 mod obj;
 mod opq;
+mod hnd;
 mod path;
 mod set;
 mod strcls;
@@ -74,6 +75,7 @@ pub struct BuiltinClasses {
     pub GeneratorObject: Rc<Class>,
     pub Module: Rc<Class>,
     pub Opaque: Rc<Class>,
+    pub Handle: Rc<Class>,
     pub MutableString: Rc<Class>,
     pub MutableBytes: Rc<Class>,
     pub MutableList: Rc<Class>,
@@ -141,6 +143,7 @@ impl Globals {
         let GeneratorObject = gobj::mkcls(symbol_registry, Iterator.clone());
         let Module = m::mkcls(symbol_registry, Object.clone());
         let Opaque = opq::mkcls(symbol_registry, Object.clone());
+        let Handle = hnd::mkcls(symbol_registry, Object.clone());
         let MutableString = mstr::mkcls(symbol_registry, Object.clone());
         let MutableBytes = mbytes::mkcls(symbol_registry, Object.clone());
         let MutableList = mlist::mkcls(symbol_registry, Object.clone());
@@ -174,6 +177,7 @@ impl Globals {
             GeneratorObject,
             Module,
             Opaque,
+            Handle,
             MutableString,
             MutableBytes,
             MutableList,

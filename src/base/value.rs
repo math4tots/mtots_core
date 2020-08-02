@@ -24,6 +24,7 @@ use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -53,6 +54,7 @@ pub enum Value {
     NativeIterator(Rc<RefCell<NativeIterator>>),
     GeneratorObject(Rc<RefCell<GeneratorObject>>),
     Module(Rc<Module>),
+    Handle(Rc<HandleData>),
     Opaque(Rc<Opaque>),
 
     // mutable values
@@ -98,6 +100,7 @@ impl Value {
             (Value::GeneratorObject(a), Value::GeneratorObject(b)) => ptr(a) == ptr(b),
             (Value::Module(a), Value::Module(b)) => ptr(a) == ptr(b),
             (Value::Opaque(a), Value::Opaque(b)) => ptr(a) == ptr(b),
+            (Value::Handle(a), Value::Handle(b)) => ptr(a) == ptr(b),
             (Value::MutableString(a), Value::MutableString(b)) => ptr(a) == ptr(b),
             (Value::MutableBytes(a), Value::MutableBytes(b)) => ptr(a) == ptr(b),
             (Value::MutableList(a), Value::MutableList(b)) => ptr(a) == ptr(b),
@@ -259,6 +262,30 @@ impl Value {
         }
     }
 
+    pub fn handle<T: Any>(&self) -> Option<Handle<T>> {
+        if let Value::Handle(data) = self {
+            if data.value.borrow().is::<T>() {
+                Some(Handle(data.clone(), PhantomData))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn into_handle<T: Any>(self) -> std::result::Result<Handle<T>, Self> {
+        if let Value::Handle(data) = self {
+            if data.value.borrow().is::<T>() {
+                Ok(Handle(data, PhantomData))
+            } else {
+                Err(Value::Handle(data))
+            }
+        } else {
+            Err(self)
+        }
+    }
+
     pub fn kind(&self) -> ValueKind {
         match self {
             Value::Uninitialized => ValueKind::Uninitialized,
@@ -280,6 +307,7 @@ impl Value {
             Value::NativeClosure(..) => ValueKind::NativeClosure,
             Value::Module(..) => ValueKind::Module,
             Value::Opaque(..) => ValueKind::Opaque,
+            Value::Handle(handle) => ValueKind::Handle(handle.type_name),
             Value::Code(..) => ValueKind::Code,
             Value::Function(..) => ValueKind::Function,
             Value::Class(..) => ValueKind::Class,
@@ -329,6 +357,7 @@ impl fmt::Display for Value {
             Value::Class(cls) => write!(f, "{:?}", cls),
             Value::Module(m) => write!(f, "{:?}", m),
             Value::Opaque(opq) => write!(f, "{:?}", opq),
+            Value::Handle(handle) => write!(f, "{:?}", handle),
             _ => fmt::Debug::fmt(self, f),
         }
     }
@@ -361,6 +390,7 @@ pub enum ValueKind {
     GeneratorObject,
     Module,
     Opaque,
+    Handle(&'static str),
     MutableString,
     MutableBytes,
     MutableList,
@@ -1554,6 +1584,52 @@ impl Module {
 impl fmt::Debug for Module {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<module {}>", self.name)
+    }
+}
+
+pub struct HandleData {
+    type_name: &'static str,
+    value: RefCell<Box<dyn Any>>,
+}
+
+impl fmt::Debug for HandleData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<handle {}>", self.type_name)
+    }
+}
+
+pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
+
+impl<T: Any> Handle<T> {
+    pub fn new(t: T) -> Self {
+        Self(Rc::new(HandleData {
+            type_name: std::any::type_name::<T>(),
+            value: RefCell::new(Box::new(t)),
+        }), PhantomData)
+    }
+    pub fn type_name(&self) -> &'static str {
+        self.0.type_name
+    }
+    pub fn borrow(&self) -> Ref<T> {
+        Ref::map(self.0.value.borrow(), |bx| bx.downcast_ref().unwrap())
+    }
+    pub fn borrow_mut(&self) -> RefMut<T> {
+        RefMut::map(self.0.value.borrow_mut(), |bx| bx.downcast_mut().unwrap())
+    }
+    pub fn try_unwrap(self) -> std::result::Result<T, Self> {
+        match Rc::try_unwrap(self.0) {
+            Ok(data) => Ok(*data.value.into_inner().downcast().unwrap()),
+            Err(ptr) => Err(Self(ptr, PhantomData)),
+        }
+    }
+}
+
+impl<T: Any + Clone> Handle<T> {
+    pub fn unwrap_or_clone(self) -> T {
+        match self.try_unwrap() {
+            Ok(t) => t,
+            Err(handle) => handle.borrow().clone(),
+        }
     }
 }
 

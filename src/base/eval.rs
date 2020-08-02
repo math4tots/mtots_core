@@ -28,6 +28,7 @@ use crate::Table;
 use crate::UnorderedHasher;
 use crate::Value;
 use crate::ValueKind;
+use crate::Handle;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
@@ -39,6 +40,7 @@ use std::hash::Hasher;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::any::Any;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -184,6 +186,7 @@ impl Eval {
             Value::GeneratorObject(_) => &globals.builtin_classes().GeneratorObject,
             Value::Module(_) => &globals.builtin_classes().Module,
             Value::Opaque(_) => &globals.builtin_classes().Opaque,
+            Value::Handle(_) => &globals.builtin_classes().Handle,
             Value::MutableString(_) => &globals.builtin_classes().MutableString,
             Value::MutableBytes(_) => &globals.builtin_classes().MutableBytes,
             Value::MutableList(_) => &globals.builtin_classes().MutableList,
@@ -691,6 +694,25 @@ impl Eval {
         }
     }
 
+    pub fn expect_handle<T: Any>(globals: &mut Globals, value: &Value) -> EvalResult<Handle<T>> {
+        if let Some(handle) = value.handle() {
+            Ok(handle)
+        } else {
+            globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
+        }
+    }
+
+    pub fn unwrap_handle<T: Any>(globals: &mut Globals, value: Value) -> EvalResult<Handle<T>> {
+        match value.into_handle() {
+            Ok(handle) => Ok(handle),
+            Err(value) => if value.handle::<T>().is_some() {
+                globals.set_exc_str("Could not unwrap handle; more references still exist")
+            } else {
+                globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
+            }
+        }
+    }
+
     pub fn expect_mutable_string<'a>(
         globals: &mut Globals,
         value: &'a Value,
@@ -858,6 +880,7 @@ impl Eval {
             Value::GeneratorObject(_) => true,
             Value::Module(_) => true,
             Value::Opaque(_) => true,
+            Value::Handle(_) => true,
             Value::MutableString(x) => !x.borrow().is_empty(),
             Value::MutableBytes(x) => !x.borrow().is_empty(),
             Value::MutableList(x) => !x.borrow().is_empty(),
@@ -1581,6 +1604,7 @@ impl Eval {
             Value::GeneratorObject(obj) => format!("{:?}", obj.borrow()).into(),
             Value::Module(m) => format!("{:?}", m).into(),
             Value::Opaque(opq) => format!("{:?}", opq).into(),
+            Value::Handle(handle) => format!("{:?}", handle).into(),
             Value::MutableString(x) => format!("@{}", reprstr(&x.borrow())).into(),
             Value::MutableBytes(x) => format!("MutableBytes({:?})", &x.borrow()).into(),
             Value::MutableList(x) => format!("@{}", list2str(globals, &x.borrow())?).into(),
