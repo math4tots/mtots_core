@@ -3,24 +3,23 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::Value;
+use crate::Symbol;
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(sr, "rem", &["self", "other"], |globals, args, _kwargs| {
+        NativeFunction::simple0("rem", &["self", "other"], |globals, args, _kwargs| {
             let a = Eval::expect_int(globals, &args[0])?;
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(a % b))
         }),
-        NativeFunction::simple0(sr, "tdiv", &["self", "other"], |globals, args, _kwargs| {
+        NativeFunction::simple0("tdiv", &["self", "other"], |globals, args, _kwargs| {
             let a = Eval::expect_int(globals, &args[0])?;
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(a / b))
         }),
         NativeFunction::simple0(
-            sr,
             "divrem",
             &["self", "other"],
             |globals, args, _kwargs| {
@@ -29,18 +28,17 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(vec![Value::Int(a / b), Value::Int(a % b)].into())
             },
         ),
-        NativeFunction::simple0(sr, "mod", &["self", "other"], |globals, args, _kwargs| {
+        NativeFunction::simple0("mod", &["self", "other"], |globals, args, _kwargs| {
             let a = Eval::expect_int(globals, &args[0])?;
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(divmod(a, b).1))
         }),
-        NativeFunction::simple0(sr, "fdiv", &["self", "other"], |globals, args, _kwargs| {
+        NativeFunction::simple0("fdiv", &["self", "other"], |globals, args, _kwargs| {
             let a = Eval::expect_int(globals, &args[0])?;
             let b = Eval::expect_int(globals, &args[1])?;
             Ok(Value::Int(divmod(a, b).0))
         }),
         NativeFunction::simple0(
-            sr,
             "divmod",
             &["self", "other"],
             |globals, args, _kwargs| {
@@ -52,11 +50,10 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     let static_methods = vec![NativeFunction::sdnew0(
-        sr,
         "__call",
         &["x"],
         Some("Converts a value to an Int"),
@@ -73,7 +70,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         },
     )]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     Class::new0(

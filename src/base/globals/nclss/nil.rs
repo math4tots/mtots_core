@@ -2,14 +2,14 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::Value;
+use crate::Symbol;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(sr, "map", &["self", "x", "f"], |globals, args, _kwargs| {
+        NativeFunction::simple0("map", &["self", "x", "f"], |globals, args, _kwargs| {
             // Returns nil if x is nil, otherwise f(x)
             if let Value::Nil = &args[1] {
                 Ok(Value::Nil)
@@ -18,7 +18,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             }
         }),
         NativeFunction::simple0(
-            sr,
             "vmap",
             &["self", "x", "y"],
             |_globals, args, _kwargs| {
@@ -30,7 +29,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::simple0(sr, "get", &["self", "x", "y"], |_globals, args, _kwargs| {
+        NativeFunction::simple0("get", &["self", "x", "y"], |_globals, args, _kwargs| {
             // Returns x if x is not nil, and y if x is nil
             if let Value::Nil = &args[1] {
                 Ok(args[2].clone())
@@ -38,7 +37,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(args[1].clone())
             }
         }),
-        NativeFunction::simple0(sr, "fget", &["self", "x", "f"], |globals, args, _kwargs| {
+        NativeFunction::simple0("fget", &["self", "x", "f"], |globals, args, _kwargs| {
             // Returns x if x is not nil, and f() if x is nil
             if let Value::Nil = &args[1] {
                 Eval::call(globals, &args[2], vec![])
@@ -48,7 +47,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         }),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     Class::new0(

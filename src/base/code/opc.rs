@@ -510,7 +510,7 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         //   TOS3: docstr (or nil if not present)
         //   TOS4: List of traits
         let kind = ClassKind::from_usize(class_kind).unwrap();
-        let full_name = globals.symbol_rcstr(code.names[full_name]).clone();
+        let full_name = RcStr::from(code.names[full_name]).clone();
         let len = frame.stack.len();
         let cls = new_class(globals, kind, full_name, &frame.stack[len - 5..])?;
         frame.stack.truncate(len - 5);
@@ -522,7 +522,7 @@ define_opcodes! { globals = globals, frame = frame, code = code, ip = ip, ARGC =
         //   TOS : exception message template (as String)
         //   TOS1: field names (as List of Symbols or nil if none)
         //   TOS2: base exception kind (or nil for Exception)
-        let full_name = globals.symbol_rcstr(code.names[namei]).clone();
+        let full_name = RcStr::from(code.names[namei]).clone();
         let len = frame.stack.len();
         let exckind = new_exc_kind(globals, full_name, &frame.stack[len - 3..])?;
         frame.stack.truncate(len - 3);
@@ -782,7 +782,7 @@ fn new_exc_kind(
         let mut fields = Vec::new();
         for field in Eval::expect_list(globals, &args[1])?.iter() {
             let field = Eval::expect_symbol(globals, field)?;
-            let field = globals.symbol_rcstr(field);
+            let field = RcStr::from(field);
             fields.push(field);
         }
         Some(fields)

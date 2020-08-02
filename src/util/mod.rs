@@ -16,5 +16,4 @@ pub use gsort::gsort;
 pub use rcpath::RcPath;
 pub use rcstr::RcStr;
 pub use symbol::Symbol;
-pub use symbol::SymbolRegistryHandle;
 pub use uhasher::UnorderedHasher;

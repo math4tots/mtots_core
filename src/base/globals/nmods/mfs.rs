@@ -15,19 +15,18 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a._fs";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "copy_file", &["source", "dest"], |globals, args, _| {
+            NativeFunction::simple0("copy_file", &["source", "dest"], |globals, args, _| {
                 let source = Eval::expect_pathlike(globals, &args[0])?;
                 let dest = Eval::expect_pathlike(globals, &args[1])?;
                 Eval::try_(globals, fs::copy(source, dest))?;
                 Ok(Value::Nil)
             }),
-            NativeFunction::simple0(sr, "copy", &["source", "dest"], |globals, args, _| {
+            NativeFunction::simple0("copy", &["source", "dest"], |globals, args, _| {
                 let source = Eval::expect_pathlike(globals, &args[0])?;
                 let dest = Eval::expect_pathlike(globals, &args[1])?;
                 copy_tree(globals, source, dest)?;

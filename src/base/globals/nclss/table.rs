@@ -2,20 +2,19 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::Table;
 use crate::Value;
+use crate::Symbol;
 
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(sr, "len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
             let s = Eval::expect_table(globals, &args[0])?;
             Ok(Value::Int(s.len() as i64))
         }),
         NativeFunction::snew(
-            sr,
             "keys",
             (&["self"], &[], None, None),
             |globals, args, _kwargs| {
@@ -36,7 +35,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "get",
             (
                 &["self", "key"],
@@ -61,7 +59,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "add",
             (&["self"], &[], None, Some("kwargs")),
             |globals, args, kwargs| {
@@ -75,7 +72,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "merge",
             (&["self"], &[], Some("args"), None),
             |globals, args, _kwargs| {
@@ -90,7 +86,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew(
-            sr,
             "minus",
             (&["self"], &[], Some("keys"), None),
             Some("Returns a new Table with all given keys removed"),
@@ -107,24 +102,22 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
     let static_methods = vec![
         NativeFunction::snew(
-            sr,
             "__call",
             (&[], &[], None, Some("kwargs")),
             |_globals, _args, kwargs| Ok(Value::Table(Table::new(kwargs.unwrap()).into())),
         ),
         NativeFunction::snew(
-            sr,
             "from_iterable",
             (&["iterable"], &[], None, None),
             |globals, args, _kwargs| Eval::table_from_iterable(globals, &args[0]),
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     Class::new0(

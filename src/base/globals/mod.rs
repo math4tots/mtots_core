@@ -17,7 +17,6 @@ use crate::ReplDelegate;
 use crate::ReplScope;
 use crate::SourceName;
 use crate::Symbol;
-use crate::SymbolRegistryHandle;
 use crate::Token;
 use crate::Value;
 use crate::ValueKind;
@@ -88,7 +87,6 @@ pub struct Globals {
     exception_registry: ExceptionRegistry,
     builtin_exceptions: BuiltinExceptions,
 
-    symbol_registry: SymbolRegistryHandle,
     symbol_dunder_str: Symbol,
     symbol_dunder_repr: Symbol,
     symbol_dunder_add: Symbol,
@@ -106,22 +104,21 @@ pub struct Globals {
 
 impl Globals {
     pub fn new() -> Globals {
-        let symbol_registry = SymbolRegistryHandle::new();
-        let (exception_registry, builtin_exceptions) = exc::new(&symbol_registry);
-        let builtin_classes = Self::new_builtin_classes(&symbol_registry);
-        let builtin_functions = bfuncs::new(&symbol_registry);
-        let symbol_dunder_str = symbol_registry.intern_str("__str");
-        let symbol_dunder_repr = symbol_registry.intern_str("__repr");
-        let symbol_dunder_add = symbol_registry.intern_str("__add");
-        let symbol_dunder_sub = symbol_registry.intern_str("__sub");
-        let symbol_dunder_mul = symbol_registry.intern_str("__mul");
-        let symbol_dunder_div = symbol_registry.intern_str("__div");
-        let symbol_dunder_truncdiv = symbol_registry.intern_str("__truncdiv");
-        let symbol_dunder_rem = symbol_registry.intern_str("__rem");
-        let symbol_dunder_eq = symbol_registry.intern_str("__eq");
-        let symbol_dunder_lt = symbol_registry.intern_str("__lt");
-        let symbol_little = symbol_registry.intern_str("little");
-        let symbol_big = symbol_registry.intern_str("big");
+        let (exception_registry, builtin_exceptions) = exc::new();
+        let builtin_classes = Self::new_builtin_classes();
+        let builtin_functions = bfuncs::new();
+        let symbol_dunder_str = Symbol::from("__str");
+        let symbol_dunder_repr = Symbol::from("__repr");
+        let symbol_dunder_add = Symbol::from("__add");
+        let symbol_dunder_sub = Symbol::from("__sub");
+        let symbol_dunder_mul = Symbol::from("__mul");
+        let symbol_dunder_div = Symbol::from("__div");
+        let symbol_dunder_truncdiv = Symbol::from("__truncdiv");
+        let symbol_dunder_rem = Symbol::from("__rem");
+        let symbol_dunder_eq = Symbol::from("__eq");
+        let symbol_dunder_lt = Symbol::from("__lt");
+        let symbol_little = Symbol::from("little");
+        let symbol_big = Symbol::from("big");
         let char_cache = {
             let mut cache = Vec::<Value>::new();
             for i in 0..128 {
@@ -142,7 +139,7 @@ impl Globals {
             source_registry: HashMap::new(),
             finder: SourceFinder::new(),
             lexer: Lexer::new(),
-            parser: Parser::new(symbol_registry.clone()),
+            parser: Parser::new(),
             cli_args: Vec::new(),
             main_module_name: None,
             trampoline_callback: None,
@@ -150,7 +147,6 @@ impl Globals {
             stash: HashMap::new(),
             exception_registry,
             builtin_exceptions,
-            symbol_registry,
             symbol_dunder_repr,
             symbol_dunder_str,
             symbol_dunder_add,
@@ -517,7 +513,7 @@ impl Globals {
     }
 
     pub fn load_by_symbol(&mut self, symbol: Symbol) -> EvalResult<Rc<Module>> {
-        let name = self.symbol_rcstr(symbol);
+        let name = RcStr::from(symbol);
         self.load(&name)
     }
 
@@ -543,7 +539,7 @@ impl Globals {
                 }
                 Ok(SourceItem::Native { body }) => {
                     let map = body(self)?;
-                    let map = self.symbol_registry.translate_hmap(map);
+                    let map = Symbol::translate_hmap(map);
                     let module = Module::new(name.clone(), None, map);
                     self.module_registry.insert(name.clone(), module);
                 }
@@ -567,7 +563,7 @@ impl Globals {
     fn load_prelude(&mut self) -> EvalResult<()> {
         let module = self.load_by_str("__prelude")?;
         for (key_symbol, value) in module.map_clone() {
-            let name = self.symbol_rcstr(key_symbol);
+            let name = RcStr::from(key_symbol);
             self.builtins.insert(name, value);
         }
         Ok(())
@@ -716,7 +712,6 @@ impl Globals {
         expr: &Expression,
     ) -> EvalResult<Value> {
         let code = match compile(
-            self.symbol_registry.clone(),
             crate::REPL_PSEUDO_MODULE_NAME.into(),
             expr,
         ) {
@@ -728,7 +723,7 @@ impl Globals {
             }
         };
 
-        let mut frame = match Frame::for_repl(self.symbol_registry.clone(), &code, scope) {
+        let mut frame = match Frame::for_repl(&code, scope) {
             Ok(x) => x,
             Err(FrameError::MissingBuiltin {
                 name: varname,
@@ -765,7 +760,7 @@ impl Globals {
         filename: Option<RcPath>,
         expr: &Expression,
     ) -> EvalResult<Rc<Module>> {
-        let code = match compile(self.symbol_registry.clone(), name.clone(), expr) {
+        let code = match compile(name.clone(), expr) {
             Ok(code) => code,
             Err(error) => {
                 let (name, lineno, kind) = error.move_();
@@ -774,7 +769,6 @@ impl Globals {
             }
         };
         let (mut frame, module) = match Frame::for_module(
-            self.symbol_registry.clone(),
             &code,
             filename,
             self.builtins(),
@@ -847,21 +841,5 @@ impl Globals {
                 return self.set_exc_legacy(error);
             }
         }
-    }
-
-    pub fn symbol_registry(&self) -> &SymbolRegistryHandle {
-        &self.symbol_registry
-    }
-
-    pub fn intern_rcstr(&mut self, s: &RcStr) -> Symbol {
-        self.symbol_registry.intern_rcstr(s)
-    }
-
-    pub fn intern_str(&mut self, s: &str) -> Symbol {
-        self.symbol_registry.intern_str(s)
-    }
-
-    pub fn symbol_rcstr(&self, s: Symbol) -> RcStr {
-        self.symbol_registry.rcstr(s).clone()
     }
 }

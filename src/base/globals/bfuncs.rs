@@ -1,7 +1,6 @@
 use crate::Class;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::Value;
 
 use std::rc::Rc;
@@ -61,30 +60,30 @@ impl NativeFunctions {
     }
 }
 
-pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
-    let print = NativeFunction::simple0(sr, "print", &["x"], |globals, args, _kwargs| {
+pub(super) fn new() -> NativeFunctions {
+    let print = NativeFunction::simple0("print", &["x"], |globals, args, _kwargs| {
         let s = Eval::str(globals, &args[0])?;
         println!("{}", s);
         Ok(Value::Nil)
     })
     .into();
 
-    let str_ = NativeFunction::simple0(sr, "str", &["x"], |globals, args, _kwargs| {
+    let str_ = NativeFunction::simple0("str", &["x"], |globals, args, _kwargs| {
         Ok(Value::String(Eval::str(globals, &args[0])?))
     })
     .into();
 
-    let repr = NativeFunction::simple0(sr, "repr", &["x"], |globals, args, _kwargs| {
+    let repr = NativeFunction::simple0("repr", &["x"], |globals, args, _kwargs| {
         Ok(Value::String(Eval::repr(globals, &args[0])?))
     })
     .into();
 
-    let type_ = NativeFunction::simple0(sr, "type", &["x"], |globals, args, _kwargs| {
+    let type_ = NativeFunction::simple0("type", &["x"], |globals, args, _kwargs| {
         Ok(Eval::classof(globals, &args[0])?.clone().into())
     })
     .into();
 
-    let sorted = NativeFunction::simple0(sr, "sorted", &["xs"], |globals, args, _kwargs| {
+    let sorted = NativeFunction::simple0("sorted", &["xs"], |globals, args, _kwargs| {
         let mut vec = Eval::iterable_to_vec(globals, &args[0])?;
         Eval::sort(globals, &mut vec)?;
         Ok(vec.into())
@@ -92,7 +91,6 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let min = NativeFunction::sdnew(
-        sr,
         "min",
         (&["xs"], &[], Some("varargs"), None),
         Some(concat!(
@@ -124,7 +122,6 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let max = NativeFunction::sdnew(
-        sr,
         "max",
         (&["xs"], &[], Some("varargs"), None),
         Some(concat!(
@@ -155,7 +152,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     )
     .into();
 
-    let ord = NativeFunction::simple0(sr, "ord", &["ch"], |globals, args, _kwargs| {
+    let ord = NativeFunction::simple0("ord", &["ch"], |globals, args, _kwargs| {
         let chstr = Eval::expect_string(globals, &args[0])?;
         let chars: Vec<_> = chstr.chars().collect();
         if chars.len() != 1 {
@@ -168,7 +165,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     })
     .into();
 
-    let chr = NativeFunction::simple0(sr, "chr", &["i"], |globals, args, _kwargs| {
+    let chr = NativeFunction::simple0("chr", &["i"], |globals, args, _kwargs| {
         let i = Eval::expect_int(globals, &args[0])?;
         let i = Eval::check_u32(globals, i)?;
         match std::char::from_u32(i) {
@@ -178,13 +175,13 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     })
     .into();
 
-    let hash = NativeFunction::simple0(sr, "hash", &["x"], |globals, args, _kwargs| {
+    let hash = NativeFunction::simple0("hash", &["x"], |globals, args, _kwargs| {
         let hash = Eval::hash(globals, &args[0])?;
         Ok((hash as i64).into())
     })
     .into();
 
-    let assert = NativeFunction::simple0(sr, "assert", &["x"], |globals, args, _kwargs| {
+    let assert = NativeFunction::simple0("assert", &["x"], |globals, args, _kwargs| {
         if !Eval::truthy(globals, &args[0])? {
             return globals.set_assert_error(&format!("Assertion failed").into());
         }
@@ -193,7 +190,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let assert_eq =
-        NativeFunction::simple0(sr, "assert_eq", &["a", "b"], |globals, args, _kwargs| {
+        NativeFunction::simple0("assert_eq", &["a", "b"], |globals, args, _kwargs| {
             if !Eval::eq(globals, &args[0], &args[1])? {
                 let str1 = Eval::repr(globals, &args[0])?;
                 let str2 = Eval::repr(globals, &args[1])?;
@@ -205,7 +202,6 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         .into();
 
     let assert_raises = NativeFunction::simple0(
-        sr,
         "assert_raises",
         &["exck", "f"],
         |globals, args, _kwargs| {
@@ -232,7 +228,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let dunder_import =
-        NativeFunction::simple0(sr, "__import", &["name"], |globals, args, _kwargs| {
+        NativeFunction::simple0("__import", &["name"], |globals, args, _kwargs| {
             let name = Eval::expect_symbollike(globals, &args[0])?;
             let module = globals.load_by_symbol(name)?;
             Ok(Value::Module(module))
@@ -240,7 +236,6 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
         .into();
 
     let dunder_malloc = NativeFunction::simple0(
-        sr,
         "__malloc",
         &["cls", "fields"],
         |globals, args, _kwargs| {
@@ -253,7 +248,6 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let dunder_new = NativeFunction::sdnew(
-        sr,
         "__new",
         (&["class"], &[], Some("args"), Some("kwargs")),
         Some(concat!(
@@ -275,7 +269,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     )
     .into();
 
-    let dunder_args = NativeFunction::simple0(sr, "__args", &[], |globals, _args, _kwargs| {
+    let dunder_args = NativeFunction::simple0("__args", &[], |globals, _args, _kwargs| {
         let mut ret: Vec<Value> = Vec::new();
         for arg in globals.cli_args() {
             ret.push(arg.clone().into());
@@ -284,7 +278,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     })
     .into();
 
-    let dunder_main = NativeFunction::simple0(sr, "__main", &[], |globals, _args, _kwargs| {
+    let dunder_main = NativeFunction::simple0("__main", &[], |globals, _args, _kwargs| {
         match globals.main_module_name() {
             Some(main_module_name) => Ok(main_module_name.clone().into()),
             None => Ok(Value::Nil),
@@ -293,14 +287,13 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let dunder_raise =
-        NativeFunction::simple0(sr, "__raise", &["exc"], |globals, args, _kwargs| {
+        NativeFunction::simple0("__raise", &["exc"], |globals, args, _kwargs| {
             let exc = Eval::move_exc(globals, args.into_iter().next().unwrap())?;
             globals.set_exc(exc)
         })
         .into();
 
     let dunder_try = NativeFunction::snew(
-        sr,
         "__try",
         (&["main"], &[], Some("rest"), None),
         |globals, mut args, _kwargs| {
@@ -370,7 +363,7 @@ pub(super) fn new(sr: &SymbolRegistryHandle) -> NativeFunctions {
     .into();
 
     let dunder_iter =
-        NativeFunction::simple0(sr, "__iter", &["iterable"], |globals, args, _kwargs| {
+        NativeFunction::simple0("__iter", &["iterable"], |globals, args, _kwargs| {
             Eval::iter(globals, &args[0])
         })
         .into();

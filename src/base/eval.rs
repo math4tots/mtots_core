@@ -413,7 +413,7 @@ impl Eval {
     pub fn expect_symbollike(globals: &mut Globals, value: &Value) -> EvalResult<Symbol> {
         match value {
             Value::Symbol(s) => Ok(*s),
-            Value::String(s) => Ok(globals.intern_rcstr(s)),
+            Value::String(s) => Ok(Symbol::from(s)),
             _ => globals.set_kind_error(ValueKind::Symbol, value.kind()),
         }
     }
@@ -1478,7 +1478,7 @@ impl Eval {
             Some(method) => Ok(method.clone()),
             None => {
                 let cls = cls.clone();
-                let name = globals.symbol_rcstr(name);
+                let name = RcStr::from(name);
                 globals.set_exc_legacy(EvalError::NoSuchMethod(name, cls))
             }
         }
@@ -1490,7 +1490,7 @@ impl Eval {
 
     pub fn str(globals: &mut Globals, value: &Value) -> EvalResult<RcStr> {
         Ok(match value {
-            Value::Symbol(x) => globals.symbol_rcstr(*x),
+            Value::Symbol(x) => RcStr::from(*x),
             Value::String(x) => x.clone(),
             Value::Path(x) => match x.to_str() {
                 Some(s) => s.into(),

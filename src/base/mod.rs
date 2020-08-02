@@ -87,6 +87,7 @@ pub fn short_name_from_full_name(full_name: &RcStr) -> RcStr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Symbol;
 
     #[test]
     fn print_through_bytecode() {
@@ -94,7 +95,7 @@ mod tests {
 
         let mut globals = Globals::new();
         let mut builder =
-            CodeBuilder::for_module(globals.symbol_registry().clone(), "<test>".into(), None);
+            CodeBuilder::for_module("<test>".into(), None);
         let message: RcStr = "hello world!".into();
 
         builder.load_const(message.clone());
@@ -107,7 +108,6 @@ mod tests {
 
         let code = builder.build().unwrap();
         let (mut frame, module) = Frame::for_module(
-            globals.symbol_registry().clone(),
             &code,
             None,
             globals.builtins(),
@@ -115,7 +115,7 @@ mod tests {
         .unwrap();
         code.run(&mut globals, &mut frame).unwrap();
 
-        let key = globals.intern_str("foo");
+        let key = Symbol::from("foo");
         assert_eq!(
             &**module.get(&key).unwrap().string().unwrap(),
             "hello world!",
@@ -150,7 +150,7 @@ mod tests {
         "###,
             )
             .unwrap();
-        let code = compile(globals.symbol_registry().clone(), "<test>".into(), &expr).unwrap();
+        let code = compile("<test>".into(), &expr).unwrap();
         let dstr = code.debugstr0();
         assert_eq!(
             dstr,

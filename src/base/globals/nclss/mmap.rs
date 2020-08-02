@@ -2,24 +2,23 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::VMap;
 use crate::Value;
+use crate::Symbol;
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(sr, "move", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             let map = map.replace(VMap::new());
             Ok(Value::Map(map.into()))
         }),
-        NativeFunction::simple0(sr, "len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             Ok(Value::Int(map.borrow().len() as i64))
         }),
         NativeFunction::simple0(
-            sr,
             "__getitem",
             &["self", "key"],
             |globals, args, _kwargs| {
@@ -36,7 +35,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "get",
             (
                 &["self", "key"],
@@ -60,7 +58,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::simple0(
-            sr,
             "__setitem",
             &["self", "key", "val"],
             |globals, args, _kwargs| {
@@ -73,24 +70,23 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
-        NativeFunction::simple0(sr, "has_key", &["self", "key"], |globals, args, _kwargs| {
+        NativeFunction::simple0("has_key", &["self", "key"], |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             let has_key = map.borrow().s_get(globals, &args[1])?.is_some();
             Ok(has_key.into())
         }),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     let static_methods = vec![NativeFunction::simple0(
-        sr,
         "__call",
         &["x"],
         |globals, args, _kwargs| Eval::mutable_map_from_iterable(globals, &args[0]),
     )]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     Class::new0(

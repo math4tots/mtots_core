@@ -12,18 +12,17 @@ use std::time::SystemTime;
 
 pub const NAME: &str = "a.time";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "now", &[], |_globals, _args, _kwargs| {
+            NativeFunction::simple0("now", &[], |_globals, _args, _kwargs| {
                 // Returns the current time as a float -- secs since UNIX EPOCH
                 let ts = diff_system_times(SystemTime::UNIX_EPOCH, SystemTime::now());
                 Ok(ts.into())
             }),
-            NativeFunction::simple0(sr, "sleep", &["sec"], |globals, args, _kwargs| {
+            NativeFunction::simple0("sleep", &["sec"], |globals, args, _kwargs| {
                 // Sleeps for given number of secs (expects int or float)
                 let sec = Eval::expect_floatlike(globals, &args[0])?;
                 std::thread::sleep(std::time::Duration::from_secs_f64(sec));

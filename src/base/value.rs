@@ -12,7 +12,6 @@ use crate::HMap;
 use crate::RcPath;
 use crate::RcStr;
 use crate::Symbol;
-use crate::SymbolRegistryHandle;
 use crate::VMap;
 use crate::VSet;
 use std::any::Any;
@@ -802,19 +801,18 @@ impl ParameterInfo {
     }
     /// Like new, but accepts &str values
     pub fn snew(
-        sr: &SymbolRegistryHandle,
         req: &[&str],
         opt: &[(&str, Value)],
         var: Option<&str>,
         key: Option<&str>,
     ) -> ParameterInfo {
-        let req = req.iter().map(|s| sr.intern_str(s)).collect();
+        let req = req.iter().map(Symbol::from).collect();
         let opt = opt
             .iter()
-            .map(|(s, v)| (sr.intern_str(s), v.clone()))
+            .map(|(s, v)| (Symbol::from(s), v.clone()))
             .collect();
-        let var = var.map(|s| sr.intern_str(s));
-        let key = key.map(|s| sr.intern_str(s));
+        let var = var.map(Symbol::from);
+        let key = key.map(Symbol::from);
         Self::new(req, opt, var, key)
     }
     pub fn empty() -> ParameterInfo {
@@ -976,15 +974,13 @@ impl NativeFunction {
         }
     }
     pub fn snew(
-        sr: &SymbolRegistryHandle,
         name: &str,
         parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
         body: NativeFunctionBody,
     ) -> NativeFunction {
-        Self::sdnew(sr, name, parameter_info, None, body)
+        Self::sdnew(name, parameter_info, None, body)
     }
     pub fn sdnew(
-        sr: &SymbolRegistryHandle,
         name: &str,
         parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
         doc: Option<&str>,
@@ -993,7 +989,6 @@ impl NativeFunction {
         Self::new(
             name.into(),
             ParameterInfo::snew(
-                sr,
                 parameter_info.0,
                 parameter_info.1,
                 parameter_info.2,
@@ -1004,23 +999,21 @@ impl NativeFunction {
         )
     }
     pub fn sdnew0(
-        sr: &SymbolRegistryHandle,
         name: &str,
         params: &[&str],
         doc: Option<&str>,
         body: NativeFunctionBody,
     ) -> NativeFunction {
-        Self::sdnew(sr, name, (params, &[], None, None), doc, body)
+        Self::sdnew(name, (params, &[], None, None), doc, body)
     }
     pub fn simple0(
-        symbol_registry: &SymbolRegistryHandle,
         name: &str,
         params: &[&str],
         body: NativeFunctionBody,
     ) -> NativeFunction {
         let params = params
             .iter()
-            .map(|s| symbol_registry.intern_str(s))
+            .map(|s| s.into())
             .collect();
         Self::new(
             name.into(),
@@ -1101,7 +1094,6 @@ impl NativeClosure {
         }
     }
     pub fn sdnew(
-        sr: &SymbolRegistryHandle,
         name: &str,
         parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
         doc: Option<&str>,
@@ -1110,7 +1102,6 @@ impl NativeClosure {
         Self::new(
             name.into(),
             ParameterInfo::snew(
-                sr,
                 parameter_info.0,
                 parameter_info.1,
                 parameter_info.2,
@@ -1121,13 +1112,12 @@ impl NativeClosure {
         )
     }
     pub fn sdnew0(
-        sr: &SymbolRegistryHandle,
         name: &str,
         params: &[&str],
         doc: Option<&str>,
         body: NativeFunctionBody,
     ) -> Self {
-        Self::sdnew(sr, name, (params, &[], None, None), doc, body)
+        Self::sdnew(name, (params, &[], None, None), doc, body)
     }
     pub fn name(&self) -> &RcStr {
         &self.name
@@ -1571,7 +1561,7 @@ impl Module {
     /// otherwise, if the value itself is a function or class, the documentation
     /// associated with the function or class with be returned
     pub fn member_doc(&self, globals: &mut Globals, name: Symbol) -> EvalResult<Option<RcStr>> {
-        let doc_name = globals.intern_str(&format!("__doc_{}", name));
+        let doc_name = Symbol::from(&format!("__doc_{}", name));
         if let Some(doc) = self.get(&doc_name) {
             let doc = crate::Eval::expect_string(globals, &doc)?.clone();
             Ok(Some(doc))

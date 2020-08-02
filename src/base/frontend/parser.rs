@@ -7,7 +7,6 @@ use crate::ExpressionKind;
 use crate::Punctuator;
 use crate::RcStr;
 use crate::Symbol;
-use crate::SymbolRegistryHandle;
 use crate::Token;
 use crate::TokenKind;
 use crate::Unop;
@@ -91,17 +90,15 @@ pub struct Parser {
     prefix_table: Vec<Option<for<'a> fn(&mut ParserState<'a>) -> Result<Expression, ParseError>>>,
     infix_table:
         Vec<Option<fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>>>,
-    symbol_registry: SymbolRegistryHandle,
 }
 
 impl Parser {
-    pub(crate) fn new(symbol_registry: SymbolRegistryHandle) -> Parser {
+    pub(crate) fn new() -> Parser {
         let (infix_table, prectable) = geninfix();
         Parser {
             prectable,
             prefix_table: genprefix(),
             infix_table,
-            symbol_registry,
         }
     }
 
@@ -117,7 +114,6 @@ impl Parser {
             prectable: &self.prectable,
             prefix_table: &self.prefix_table,
             infix_table: &self.infix_table,
-            symbol_registry: self.symbol_registry.clone(),
         };
         state.parse()
     }
@@ -133,7 +129,6 @@ struct ParserState<'a> {
     prefix_table: &'a Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseError>>>,
     infix_table:
         &'a Vec<Option<fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>>>,
-    symbol_registry: SymbolRegistryHandle,
 }
 
 impl<'a> ParserState<'a> {
@@ -215,12 +210,12 @@ impl<'a> ParserState<'a> {
 
     fn expect_name_as_symbol(&mut self) -> Result<Symbol, ParseError> {
         let rcstr: RcStr = self.expect_name()?.into();
-        Ok(self.symbol_registry.intern_rcstr(&rcstr))
+        Ok(Symbol::from(rcstr))
     }
 
     fn expect_symbol_as_symbol(&mut self) -> Result<Symbol, ParseError> {
         let rcstr: RcStr = self.expect_symbol()?.into();
-        Ok(self.symbol_registry.intern_rcstr(&rcstr))
+        Ok(Symbol::from(rcstr))
     }
 
     fn expect_delim(&mut self) -> Result<(), ParseError> {

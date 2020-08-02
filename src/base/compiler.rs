@@ -1,3 +1,4 @@
+use crate::Symbol;
 use crate::ArgumentList;
 use crate::Binop;
 use crate::ClassKind;
@@ -11,7 +12,6 @@ use crate::ExpressionData;
 use crate::ExpressionKind;
 use crate::ParameterInfo;
 use crate::RcStr;
-use crate::SymbolRegistryHandle;
 use crate::Unop;
 use crate::Value;
 use std::fmt;
@@ -84,7 +84,6 @@ impl From<CodeBuilderError> for Error {
 }
 
 pub fn compile(
-    symbol_registry: SymbolRegistryHandle,
     name: RcStr,
     expr: &Expression,
 ) -> Result<Code, CompileError> {
@@ -97,7 +96,7 @@ pub fn compile(
     } else {
         None
     };
-    let mut builder = CodeBuilder::for_module(symbol_registry, name.clone(), doc);
+    let mut builder = CodeBuilder::for_module(name.clone(), doc);
     let result = (|| -> Result<Code, Error> {
         rec(&mut builder, expr, true)?;
         Ok(builder.build()?)
@@ -494,27 +493,25 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             }
         }
         ExpressionData::FunctionDisplay(is_generator, short_name, req, opt, var, kw, doc, body) => {
-            let sr = builder.symbol_registry().clone();
             let short_name = match short_name {
                 Some(short_name) => short_name.clone(),
                 None => "<lambda>".into(),
             };
             let lineno = expr.lineno();
-            let req = req.iter().map(|s| builder.intern_rcstr(s)).collect();
+            let req = req.iter().map(Symbol::from).collect();
             let opt = {
                 let mut pairs = Vec::new();
                 for (name, expr) in opt {
-                    pairs.push((builder.intern_rcstr(name), Value::from(consteval(expr)?)));
+                    pairs.push((Symbol::from(name), Value::from(consteval(expr)?)));
                 }
                 pairs
             };
-            let var = var.as_ref().map(|s| builder.intern_rcstr(s));
-            let kw = kw.as_ref().map(|s| builder.intern_rcstr(s));
+            let var = var.as_ref().map(Symbol::from);
+            let kw = kw.as_ref().map(Symbol::from);
             let parameter_info = ParameterInfo::new(req, opt, var, kw);
             let full_func_name = format!("{}.{}", builder.full_name(), short_name);
             let mut func_builder = if *is_generator {
                 CodeBuilder::for_generator(
-                    builder.symbol_registry().clone(),
                     parameter_info,
                     builder.module_name().clone(),
                     full_func_name.into(),
@@ -523,7 +520,6 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
                 )
             } else {
                 CodeBuilder::for_func(
-                    builder.symbol_registry().clone(),
                     parameter_info,
                     builder.module_name().clone(),
                     full_func_name.into(),
@@ -535,7 +531,7 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             let func_code = func_builder.build()?;
 
             for freevar in func_code.freevars() {
-                builder.load_cell(sr.rcstr(*freevar).clone());
+                builder.load_cell(RcStr::from(freevar));
             }
             builder.make_list(func_code.freevars().len());
 
@@ -582,14 +578,14 @@ fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), E
             builder.make_list(fields.len());
 
             for (keystr, method) in methods {
-                let key = builder.intern_rcstr(keystr);
+                let key = Symbol::from(keystr);
                 builder.load_const(key);
                 rec(builder, method, true)?;
             }
             builder.make_table(methods.len());
 
             for (keystr, method) in static_methods {
-                let key = builder.intern_rcstr(keystr);
+                let key = Symbol::from(keystr);
                 builder.load_const(key);
                 rec(builder, method, true)?;
             }
@@ -822,7 +818,7 @@ fn finish_call(
 
         // keyword args
         for (keystr, arg) in kwargs {
-            let key = builder.intern_rcstr(keystr);
+            let key = Symbol::from(keystr);
             builder.load_const(key);
             rec(builder, arg, true)?;
         }

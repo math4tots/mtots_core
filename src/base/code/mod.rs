@@ -12,7 +12,6 @@ use crate::ParameterInfo;
 use crate::RcPath;
 use crate::RcStr;
 use crate::Symbol;
-use crate::SymbolRegistryHandle;
 use crate::Table;
 use crate::Value;
 use opc::OpcodeArgumentType;
@@ -390,7 +389,6 @@ impl Frame {
     /// This function also returns a Module instance "bound" to this Frame.
     /// Executing the returned Frame will populate the associated Module.
     pub fn for_module(
-        symbol_registry: SymbolRegistryHandle,
         code: &Code,
         filename: Option<RcPath>,
         builtins: &HashMap<RcStr, Value>,
@@ -400,7 +398,7 @@ impl Frame {
         // Get all the builtin values that the module needs
         // and throw an error if the variable could not be found
         for name in &code.freevars {
-            let name_rcstr = symbol_registry.rcstr(*name).clone();
+            let name_rcstr = RcStr::from(name);
             if let Some(value) = builtins.get(&name_rcstr) {
                 cellvars.push(Rc::new(RefCell::new(value.clone())));
             } else {
@@ -437,7 +435,6 @@ impl Frame {
     /// This function also returns a Module instance "bound" to this Frame.
     /// Executing the returned Frame will populate the associated Module.
     pub fn for_repl(
-        symbol_registry: SymbolRegistryHandle,
         code: &Code,
         scope: &mut HashMap<RcStr, Rc<RefCell<Value>>>,
     ) -> Result<Frame, FrameError> {
@@ -446,7 +443,7 @@ impl Frame {
         // Get all the builtin values that the module needs
         // and throw an error if the variable could not be found
         for name in &code.freevars {
-            let name_rcstr = symbol_registry.rcstr(*name).clone();
+            let name_rcstr = RcStr::from(name);
             if let Some(value) = scope.get(&name_rcstr) {
                 cellvars.push(value.clone());
             } else {

@@ -14,14 +14,12 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a._os.proc";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
             NativeFunction::snew(
-                sr,
                 "spawn",
                 (
                     &[
@@ -93,7 +91,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::snew(
-                sr,
                 "wait",
                 (&["child_proc"], &[], None, None),
                 |globals, args, _kwargs| {

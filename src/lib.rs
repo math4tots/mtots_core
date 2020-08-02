@@ -42,7 +42,6 @@ pub use util::HMap;
 pub use util::RcPath;
 pub use util::RcStr;
 pub use util::Symbol;
-pub use util::SymbolRegistryHandle;
 
 /// When running in REPL mode, this is what we pretend the module name is
 pub const REPL_PSEUDO_MODULE_NAME: &'static str = "[repl]";

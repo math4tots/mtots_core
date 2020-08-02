@@ -6,20 +6,19 @@ use crate::Globals;
 use crate::NativeFunction;
 use crate::NativeIterator;
 use crate::RcStr;
-use crate::SymbolRegistryHandle;
 use crate::Value;
+use crate::Symbol;
 
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0(sr, "len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
             Ok(Value::Int(s.charlen() as i64))
         }),
         NativeFunction::simple0(
-            sr,
             "starts_with",
             &["self", "prefix"],
             |globals, args, _kwargs| {
@@ -30,7 +29,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::simple0(
-            sr,
             "ends_with",
             &["self", "suffix"],
             |globals, args, _kwargs| {
@@ -41,7 +39,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::simple0(
-            sr,
             "lstrip",
             &["self", "prefix"],
             |globals, args, _kwargs| {
@@ -59,7 +56,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::simple0(
-            sr,
             "rstrip",
             &["self", "suffix"],
             |globals, args, _kwargs| {
@@ -77,7 +73,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew0(
-            sr,
             "chars",
             &["self"],
             Some("Returns a list of chars of this String"),
@@ -90,12 +85,11 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(ret.into())
             },
         ),
-        NativeFunction::simple0(sr, "trim", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("trim", &["self"], |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
             Ok(s.trim().into())
         }),
         NativeFunction::simple0(
-            sr,
             "replace",
             &["self", "old", "new"],
             |globals, args, _kwargs| {
@@ -106,25 +100,25 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
                 Ok(s.replace(old, new).into())
             },
         ),
-        NativeFunction::simple0(sr, "split", &["self", "sep"], |globals, args, _kwargs| {
+        NativeFunction::simple0("split", &["self", "sep"], |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             let sep = Eval::expect_string(globals, &args[1])?.clone();
             Ok(split_by_str(globals, string, sep))
         }),
-        NativeFunction::simple0(sr, "words", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("words", &["self"], |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             Ok(split_by_ws(globals, string))
         }),
-        NativeFunction::simple0(sr, "lines", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("lines", &["self"], |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             Ok(split_by_str(globals, string, "\n".into()))
         }),
-        NativeFunction::simple0(sr, "has", &["self", "pattern"], |globals, args, _kwargs| {
+        NativeFunction::simple0("has", &["self", "pattern"], |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?;
             let pattern = Eval::expect_string(globals, &args[1])?;
             Ok(string.contains(pattern.str()).into())
         }),
-        NativeFunction::simple0(sr, "join", &["self", "parts"], |globals, args, _kwargs| {
+        NativeFunction::simple0("join", &["self", "parts"], |globals, args, _kwargs| {
             let mut ret = String::new();
             let sep = Eval::expect_string(globals, &args[0])?;
             let mut first = true;
@@ -138,7 +132,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             Ok(ret.into())
         }),
         NativeFunction::snew(
-            sr,
             "slice",
             (&["self", "start"], &[("end", Value::Nil)], None, None),
             |globals, args, _kwargs| {
@@ -148,7 +141,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "__slice",
             (&["self", "start", "end"], &[], None, None),
             |globals, args, _kwargs| {
@@ -158,7 +150,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "find",
             (
                 &["self", "pattern"],
@@ -176,7 +167,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "rfind",
             (
                 &["self", "pattern"],
@@ -195,7 +185,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     let static_methods = HashMap::new();

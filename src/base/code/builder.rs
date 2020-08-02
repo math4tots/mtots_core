@@ -10,7 +10,6 @@ use crate::CodeKind;
 use crate::ConstValue;
 use crate::ParameterInfo;
 use crate::RcStr;
-use crate::SymbolRegistryHandle;
 use crate::Unop;
 use crate::Value;
 use std::collections::HashMap;
@@ -71,7 +70,6 @@ enum PseudoOpcode {
 }
 
 pub struct CodeBuilder {
-    symbol_registry: SymbolRegistryHandle,
     kind: CodeKind,
     parameter_info: ParameterInfo,
     module_name: RcStr,
@@ -93,7 +91,6 @@ pub type CodeBuilderResult<T> = Result<T, CodeBuilderError>;
 pub enum CodeBuilderError {}
 impl CodeBuilder {
     pub fn new(
-        symbol_registry: SymbolRegistryHandle,
         kind: CodeKind,
         parameter_info: ParameterInfo,
         module_name: RcStr,
@@ -102,7 +99,6 @@ impl CodeBuilder {
         doc: Option<RcStr>,
     ) -> CodeBuilder {
         let mut cb = CodeBuilder {
-            symbol_registry,
             kind,
             parameter_info,
             module_name,
@@ -131,14 +127,6 @@ impl CodeBuilder {
         self.kind
     }
 
-    pub fn symbol_registry(&self) -> &SymbolRegistryHandle {
-        &self.symbol_registry
-    }
-
-    pub fn intern_rcstr(&self, s: &RcStr) -> Symbol {
-        self.symbol_registry.intern_rcstr(s)
-    }
-
     pub fn module_name(&self) -> &RcStr {
         &self.module_name
     }
@@ -148,12 +136,10 @@ impl CodeBuilder {
     }
 
     pub fn for_module(
-        symbol_registry: SymbolRegistryHandle,
         name: RcStr,
         doc: Option<RcStr>,
     ) -> CodeBuilder {
         Self::new(
-            symbol_registry,
             CodeKind::Module,
             ParameterInfo::empty(),
             name.clone(),
@@ -164,7 +150,6 @@ impl CodeBuilder {
     }
 
     pub fn for_func(
-        symbol_registry: SymbolRegistryHandle,
         parameter_info: ParameterInfo,
         module_name: RcStr,
         full_name: RcStr,
@@ -172,7 +157,6 @@ impl CodeBuilder {
         doc: Option<RcStr>,
     ) -> CodeBuilder {
         Self::new(
-            symbol_registry,
             CodeKind::Function,
             parameter_info,
             module_name,
@@ -183,7 +167,6 @@ impl CodeBuilder {
     }
 
     pub fn for_generator(
-        symbol_registry: SymbolRegistryHandle,
         parameter_info: ParameterInfo,
         module_name: RcStr,
         full_name: RcStr,
@@ -191,7 +174,6 @@ impl CodeBuilder {
         doc: Option<RcStr>,
     ) -> CodeBuilder {
         Self::new(
-            symbol_registry,
             CodeKind::Generator,
             parameter_info,
             module_name,
@@ -496,16 +478,16 @@ impl CodeBuilder {
             for opcode in &self.code {
                 match opcode {
                     PseudoOpcode::StoreVar(name) => {
-                        state.write(self.intern_rcstr(name));
+                        state.write(name.into());
                     }
                     PseudoOpcode::LoadVar(name) => {
-                        state.read(self.intern_rcstr(name));
+                        state.read(name.into());
                     }
                     PseudoOpcode::LoadCell(name) => {
-                        state.inner_freevar(self.intern_rcstr(name));
+                        state.inner_freevar(name.into());
                     }
                     PseudoOpcode::Nonlocal(name) => {
-                        state.nonlocal(self.intern_rcstr(name));
+                        state.nonlocal(name.into());
                     }
                     _ => (),
                 }
@@ -643,7 +625,7 @@ impl CodeBuilder {
                         state.add(opc::LOAD_CONST, &[i]);
                     }
                     PseudoOpcode::LoadVar(name) => match varmap
-                        .get(&self.symbol_registry.intern_rcstr(&name))
+                        .get(&name.into())
                         .unwrap()
                     {
                         VariableLocation::Local(i) => {
@@ -654,7 +636,7 @@ impl CodeBuilder {
                         }
                     },
                     PseudoOpcode::StoreVar(name) => match varmap
-                        .get(&self.symbol_registry.intern_rcstr(&name))
+                        .get(&name.into())
                         .unwrap()
                     {
                         VariableLocation::Local(i) => {
@@ -665,7 +647,7 @@ impl CodeBuilder {
                         }
                     },
                     PseudoOpcode::LoadCell(name) => match varmap
-                        .get(&self.symbol_registry.intern_rcstr(&name))
+                        .get(&name.into())
                         .unwrap()
                     {
                         VariableLocation::Cell(i) => {
@@ -830,7 +812,7 @@ impl CodeBuilder {
         Ok(Code {
             kind: self.kind,
             code,
-            names: self.symbol_registry.translate_vec(self.names),
+            names: Symbol::translate_vec(self.names),
             constants: self.constants,
             children: self.children,
             locals,

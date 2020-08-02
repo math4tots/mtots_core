@@ -4,8 +4,8 @@ use crate::Eval;
 use crate::GeneratorResult;
 use crate::NativeFunction;
 use crate::NativeIterator;
-use crate::SymbolRegistryHandle;
 use crate::Value;
+use crate::Symbol;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -22,17 +22,17 @@ macro_rules! try_ {
 // There are only two Iterator types, NativeIterator and GeneratorObject
 // TODO: Enforce this in the runtime (e.g. something like Scala's sealed traits)
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     // While I'm hesitant to add many methods to Iterable because various
     // user classes may implement them, Iterator should have exactly two descendants
     // both of which are builtins. So I'm not really worried about method name conflicts
     // in this case
 
     let methods = vec![
-        NativeFunction::simple0(sr, "list", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("list", &["self"], |globals, args, _kwargs| {
             Ok(Eval::list_from_iterable(globals, &args[0])?)
         }),
-        NativeFunction::simple0(sr, "set", &["self"], |globals, args, _kwargs| {
+        NativeFunction::simple0("set", &["self"], |globals, args, _kwargs| {
             Ok(Eval::set_from_iterable(globals, &args[0])?)
         }),
         // This really should be two different functions,
@@ -40,7 +40,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         //   - map(f) => for getting a new iterator with f applied to each element
         // TODO: Consider whether this is evil
         NativeFunction::snew(
-            sr,
             "map",
             (&["self"], &[("f", Value::Uninitialized)], None, None),
             |globals, args, _kwargs| {
@@ -65,7 +64,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew0(
-            sr,
             "filter",
             &["self", "f"],
             None,
@@ -93,7 +91,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew0(
-            sr,
             "fold",
             &["self", "acc", "f"],
             None,
@@ -108,7 +105,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew(
-            sr,
             "enumerate",
             (&["self"], &[("start", Value::Int(0))], None, None),
             Some("converts each element x to [i, x] in this iterator"),
@@ -129,7 +125,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew(
-            sr,
             "zip",
             (&["self"], &[], Some("iterables"), None),
             None,
@@ -170,7 +165,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
     let static_methods = HashMap::new();
     Class::new0(

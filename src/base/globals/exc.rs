@@ -1,6 +1,6 @@
+use crate::Symbol;
 use crate::ParameterInfo;
 use crate::RcStr;
-use crate::SymbolRegistryHandle;
 use crate::Value;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -10,7 +10,6 @@ use std::rc::Rc;
 pub struct ExceptionRegistry {
     by_id: Vec<Rc<ExceptionKind>>,
     children: Vec<Vec<usize>>,
-    sr: SymbolRegistryHandle,
 }
 
 impl ExceptionRegistry {
@@ -40,12 +39,11 @@ impl ExceptionRegistry {
             Some(fields) => {
                 let mut names_as_symbols = Vec::new();
                 for field in fields {
-                    names_as_symbols.push(self.sr.intern_rcstr(field));
+                    names_as_symbols.push(Symbol::from(field));
                 }
                 ParameterInfo::new(names_as_symbols, vec![], None, None)
             }
             None => ParameterInfo::snew(
-                &self.sr,
                 &[],
                 &[("optarg", Value::Uninitialized)],
                 None,
@@ -240,11 +238,10 @@ impl BuiltinExceptions {
 }
 
 #[allow(non_snake_case)]
-pub(super) fn new(sr: &SymbolRegistryHandle) -> (ExceptionRegistry, BuiltinExceptions) {
+pub(super) fn new() -> (ExceptionRegistry, BuiltinExceptions) {
     let mut registry = ExceptionRegistry {
         by_id: Vec::new(),
         children: Vec::new(),
-        sr: sr.clone(),
     };
 
     let BaseException = registry.add_without_base("BaseException".into(), "".into());

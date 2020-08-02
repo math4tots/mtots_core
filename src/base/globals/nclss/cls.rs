@@ -2,15 +2,14 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::SymbolRegistryHandle;
 use crate::Value;
+use crate::Symbol;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
+pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::snew(
-            sr,
             "is_trait",
             (&["self"], &[], None, None),
             |globals, args, _kwargs| {
@@ -19,7 +18,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "get_method",
             (
                 &["self", "name"],
@@ -47,7 +45,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew0(
-            sr,
             "keys",
             &["self"],
             Some("Returns method names as a List of Symbols"),
@@ -61,7 +58,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::sdnew0(
-            sr,
             "static_keys",
             &["self"],
             Some("Returns static method names as a List of Symbols"),
@@ -75,7 +71,6 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
             },
         ),
         NativeFunction::snew(
-            sr,
             "doc",
             (&["self"], &[], None, None),
             |globals, args, _kwargs| {
@@ -88,7 +83,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
         ),
     ]
     .into_iter()
-    .map(|f| (sr.intern_rcstr(f.name()), Value::from(f)))
+    .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
     Class::new0(

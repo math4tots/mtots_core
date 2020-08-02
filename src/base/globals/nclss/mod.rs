@@ -1,7 +1,6 @@
 /// Builtin native classes
 use crate::Class;
 use crate::Globals;
-use crate::SymbolRegistryHandle;
 
 use std::rc::Rc;
 
@@ -116,40 +115,40 @@ impl BuiltinClasses {
 
 impl Globals {
     #[allow(non_snake_case)]
-    pub(super) fn new_builtin_classes(symbol_registry: &SymbolRegistryHandle) -> BuiltinClasses {
-        let Object = obj::mkcls(symbol_registry);
-        let Iterable = iterable::mkcls(symbol_registry, Object.clone());
-        let Iterator = iterator::mkcls(symbol_registry, Iterable.clone());
-        let Nil = nil::mkcls(symbol_registry, Object.clone());
-        let Bool = bewl::mkcls(symbol_registry, Object.clone());
-        let Int = int::mkcls(symbol_registry, Object.clone());
-        let Float = flt::mkcls(symbol_registry, Object.clone());
-        let Symbol = sym::mkcls(symbol_registry, Object.clone());
-        let String = strcls::mkcls(symbol_registry, Object.clone());
-        let Bytes = bytes::mkcls(symbol_registry, Iterable.clone());
-        let Path = path::mkcls(symbol_registry, Object.clone());
-        let List = list::mkcls(symbol_registry, Iterable.clone());
-        let Table = table::mkcls(symbol_registry, Object.clone());
-        let Set = set::mkcls(symbol_registry, Iterable.clone());
-        let Map = map::mkcls(symbol_registry, Iterable.clone());
-        let Exception = exc::mkcls(symbol_registry, Object.clone());
-        let NativeFunction = bf::mkcls(symbol_registry, Object.clone());
-        let NativeClosure = nc::mkcls(symbol_registry, Object.clone());
-        let Code = code::mkcls(symbol_registry, Object.clone());
-        let Function = func::mkcls(symbol_registry, Object.clone());
-        let Class = cls::mkcls(symbol_registry, Object.clone());
-        let ExceptionKind = ek::mkcls(symbol_registry, Object.clone());
-        let NativeIterator = ni::mkcls(symbol_registry, Iterator.clone());
-        let GeneratorObject = gobj::mkcls(symbol_registry, Iterator.clone());
-        let Module = m::mkcls(symbol_registry, Object.clone());
-        let Opaque = opq::mkcls(symbol_registry, Object.clone());
-        let Handle = hnd::mkcls(symbol_registry, Object.clone());
-        let MutableString = mstr::mkcls(symbol_registry, Object.clone());
-        let MutableBytes = mbytes::mkcls(symbol_registry, Object.clone());
-        let MutableList = mlist::mkcls(symbol_registry, Object.clone());
-        let MutableSet = mset::mkcls(symbol_registry, Object.clone());
-        let MutableMap = mmap::mkcls(symbol_registry, Object.clone());
-        let Cell = cell::mkcls(symbol_registry, Object.clone());
+    pub(super) fn new_builtin_classes() -> BuiltinClasses {
+        let Object = obj::mkcls();
+        let Iterable = iterable::mkcls(Object.clone());
+        let Iterator = iterator::mkcls(Iterable.clone());
+        let Nil = nil::mkcls(Object.clone());
+        let Bool = bewl::mkcls(Object.clone());
+        let Int = int::mkcls(Object.clone());
+        let Float = flt::mkcls(Object.clone());
+        let Symbol = sym::mkcls(Object.clone());
+        let String = strcls::mkcls(Object.clone());
+        let Bytes = bytes::mkcls(Iterable.clone());
+        let Path = path::mkcls(Object.clone());
+        let List = list::mkcls(Iterable.clone());
+        let Table = table::mkcls(Object.clone());
+        let Set = set::mkcls(Iterable.clone());
+        let Map = map::mkcls(Iterable.clone());
+        let Exception = exc::mkcls(Object.clone());
+        let NativeFunction = bf::mkcls(Object.clone());
+        let NativeClosure = nc::mkcls(Object.clone());
+        let Code = code::mkcls(Object.clone());
+        let Function = func::mkcls(Object.clone());
+        let Class = cls::mkcls(Object.clone());
+        let ExceptionKind = ek::mkcls(Object.clone());
+        let NativeIterator = ni::mkcls(Iterator.clone());
+        let GeneratorObject = gobj::mkcls(Iterator.clone());
+        let Module = m::mkcls(Object.clone());
+        let Opaque = opq::mkcls(Object.clone());
+        let Handle = hnd::mkcls(Object.clone());
+        let MutableString = mstr::mkcls(Object.clone());
+        let MutableBytes = mbytes::mkcls(Object.clone());
+        let MutableList = mlist::mkcls(Object.clone());
+        let MutableSet = mset::mkcls(Object.clone());
+        let MutableMap = mmap::mkcls(Object.clone());
+        let Cell = cell::mkcls(Object.clone());
         BuiltinClasses {
             Object,
             Iterable,

@@ -1,12 +1,10 @@
 use crate::HMap;
 use crate::RcStr;
-use std::cell::Ref;
 use std::cell::RefCell;
 use std::cmp;
 use std::collections::HashMap;
 use std::fmt;
 use std::hash;
-use std::rc::Rc;
 
 // Borrow<str> is not implemented for Symbol by design
 // The contract of Borrow would requrie that Eq, Ord and Hash
@@ -14,6 +12,10 @@ use std::rc::Rc;
 // This would mean that all of those operations would need to
 // be against the &str value rather than against just the id
 assert_not_impl!(Symbol, std::borrow::Borrow<str>);
+
+thread_local! {
+    static REGISTRY: RefCell<SymbolRegistry> = RefCell::new(SymbolRegistry::new());
+}
 
 #[derive(Debug)]
 pub struct Symbol(&'static (usize, &'static str));
@@ -25,6 +27,57 @@ impl Symbol {
 
     pub fn str(&self) -> &str {
         (self.0).1
+    }
+
+    pub fn translate_hmap<V, I: IntoIterator<Item = (RcStr, V)>>(map: I) -> HMap<Symbol, V> {
+        REGISTRY.with(|registry| registry.borrow_mut().translate_hmap(map))
+    }
+
+    pub fn translate_vec<T: Into<RcStr>>(vec: Vec<T>) -> Vec<Symbol> {
+        REGISTRY.with(|registry| registry.borrow_mut().translate_vec(vec))
+    }
+}
+
+impl From<&str> for Symbol {
+    fn from(s: &str) -> Self {
+        REGISTRY.with(|registry| registry.borrow_mut().intern_str(s))
+    }
+}
+
+impl From<&&str> for Symbol {
+    fn from(s: &&str) -> Self {
+        (*s).into()
+    }
+}
+
+impl From<&String> for Symbol {
+    fn from(s: &String) -> Self {
+        let s: &str = s;
+        s.into()
+    }
+}
+
+impl From<&RcStr> for Symbol {
+    fn from(s: &RcStr) -> Self {
+        REGISTRY.with(|registry| registry.borrow_mut().intern_rcstr(s))
+    }
+}
+
+impl From<RcStr> for Symbol {
+    fn from(s: RcStr) -> Self {
+        (&s).into()
+    }
+}
+
+impl From<Symbol> for RcStr {
+    fn from(s: Symbol) -> RcStr {
+        REGISTRY.with(|registry| registry.borrow().rcstr(s).clone())
+    }
+}
+
+impl From<&Symbol> for RcStr {
+    fn from(s: &Symbol) -> RcStr {
+        (*s).into()
     }
 }
 
@@ -67,41 +120,6 @@ impl Clone for Symbol {
 }
 
 impl Copy for Symbol {}
-
-/// Due to the ubiquity of how symbol registries are used
-/// (at least in this codebase), I'm just going to make it
-/// easier on myself and always pass around the registry
-/// by Rc<RefCell> (via SymbolRegistryHandle), rather
-/// than allow the use of a SymbolRegistry directly outside
-/// this module
-#[derive(Clone)]
-pub struct SymbolRegistryHandle(Rc<RefCell<SymbolRegistry>>);
-
-impl SymbolRegistryHandle {
-    pub fn new() -> SymbolRegistryHandle {
-        SymbolRegistryHandle(Rc::new(RefCell::new(SymbolRegistry::new())))
-    }
-
-    pub fn intern_rcstr(&self, rcstr: &RcStr) -> Symbol {
-        self.0.borrow_mut().intern_rcstr(rcstr)
-    }
-
-    pub fn intern_str(&self, s: &str) -> Symbol {
-        self.0.borrow_mut().intern_str(s)
-    }
-
-    pub fn rcstr(&self, symbol: Symbol) -> Ref<RcStr> {
-        Ref::map(self.0.borrow(), |sr| sr.rcstr(symbol))
-    }
-
-    pub fn translate_hmap<V, I: IntoIterator<Item = (RcStr, V)>>(&self, map: I) -> HMap<Symbol, V> {
-        self.0.borrow_mut().translate_hmap(map)
-    }
-
-    pub fn translate_vec<T: Into<RcStr>>(&self, vec: Vec<T>) -> Vec<Symbol> {
-        self.0.borrow_mut().translate_vec(vec)
-    }
-}
 
 struct SymbolRegistry {
     map: HashMap<RcStr, Symbol>,

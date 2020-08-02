@@ -16,8 +16,7 @@ const OS: &str = std::env::consts::OS;
 const FAMILY: &str = std::env::consts::FAMILY;
 const ARCH: &str = std::env::consts::ARCH;
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
     map.insert("name".into(), OS.into());
     map.insert("family".into(), FAMILY.into());
@@ -27,11 +26,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "getcwd", &[], |globals, _, _| {
+            NativeFunction::simple0("getcwd", &[], |globals, _, _| {
                 let cwd = Eval::try_(globals, std::env::current_dir())?;
                 Ok(cwd.into())
             }),
-            NativeFunction::simple0(sr, "env", &["name"], |globals, args, _kwargs| {
+            NativeFunction::simple0("env", &["name"], |globals, args, _kwargs| {
                 let name = Eval::expect_osstr(globals, &args[0])?;
                 match env::var(name) {
                     Ok(value) => Ok(value.into()),
