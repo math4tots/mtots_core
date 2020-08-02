@@ -61,7 +61,7 @@ except ProcessError(OSError) {
     def "Process failed with {status}"
 }
 
-class Process {
+@class Process {
     r###"
     Exposing Rust's 'Command'/'process' API
     "###
@@ -93,7 +93,10 @@ class Process {
     }
 
     def wait(self) = {
-        [status, stdout, stderr] = osproc::wait(self.proc)
+        proc = self.proc
+        self.proc = nil
+
+        [status, stdout, stderr] = osproc::wait(del proc)
         if self.encoding is not nil {
             stdout = stdout.decode(self.encoding)
             stderr = stderr.decode(self.encoding)

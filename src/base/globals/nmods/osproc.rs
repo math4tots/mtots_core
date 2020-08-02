@@ -3,10 +3,10 @@ use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
-use crate::Opaque;
 use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
+use crate::Handle;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::process::Child;
@@ -89,7 +89,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         Err(error) => return globals.set_io_error(error),
                     };
 
-                    Ok(Opaque::new(child).into())
+                    Ok(Handle::new(child).into())
                 },
             ),
             NativeFunction::snew(
@@ -97,7 +97,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 "wait",
                 (&["child_proc"], &[], None, None),
                 |globals, args, _kwargs| {
-                    let child = Eval::move_opaque::<Child>(globals, &args[0])?;
+                    let child = Eval::unwrap_handle::<Child>(globals, args.into_iter().next().unwrap())?;
                     let output = match child.wait_with_output() {
                         Ok(output) => output,
                         Err(error) => {

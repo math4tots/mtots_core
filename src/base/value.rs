@@ -55,7 +55,6 @@ pub enum Value {
     GeneratorObject(Rc<RefCell<GeneratorObject>>),
     Module(Rc<Module>),
     Handle(Rc<HandleData>),
-    Opaque(Rc<Opaque>),
 
     // mutable values
     MutableString(Rc<RefCell<String>>),   // @".."
@@ -99,7 +98,6 @@ impl Value {
             (Value::ExceptionKind(a), Value::ExceptionKind(b)) => ptr(a) == ptr(b),
             (Value::GeneratorObject(a), Value::GeneratorObject(b)) => ptr(a) == ptr(b),
             (Value::Module(a), Value::Module(b)) => ptr(a) == ptr(b),
-            (Value::Opaque(a), Value::Opaque(b)) => ptr(a) == ptr(b),
             (Value::Handle(a), Value::Handle(b)) => ptr(a) == ptr(b),
             (Value::MutableString(a), Value::MutableString(b)) => ptr(a) == ptr(b),
             (Value::MutableBytes(a), Value::MutableBytes(b)) => ptr(a) == ptr(b),
@@ -306,7 +304,6 @@ impl Value {
             Value::NativeFunction(..) => ValueKind::NativeFunction,
             Value::NativeClosure(..) => ValueKind::NativeClosure,
             Value::Module(..) => ValueKind::Module,
-            Value::Opaque(..) => ValueKind::Opaque,
             Value::Handle(handle) => ValueKind::Handle(handle.type_name),
             Value::Code(..) => ValueKind::Code,
             Value::Function(..) => ValueKind::Function,
@@ -356,7 +353,6 @@ impl fmt::Display for Value {
             }
             Value::Class(cls) => write!(f, "{:?}", cls),
             Value::Module(m) => write!(f, "{:?}", m),
-            Value::Opaque(opq) => write!(f, "{:?}", opq),
             Value::Handle(handle) => write!(f, "{:?}", handle),
             _ => fmt::Debug::fmt(self, f),
         }
@@ -389,7 +385,6 @@ pub enum ValueKind {
     NativeIterator,
     GeneratorObject,
     Module,
-    Opaque,
     Handle(&'static str),
     MutableString,
     MutableBytes,
@@ -1633,80 +1628,14 @@ impl<T: Any + Clone> Handle<T> {
     }
 }
 
-pub struct Opaque {
-    type_name: &'static str,
-    ptr: RefCell<Option<Box<dyn Any>>>,
-}
-impl From<Opaque> for Value {
-    fn from(opq: Opaque) -> Value {
-        Value::Opaque(opq.into())
+impl<T: Any> From<Handle<T>> for Value {
+    fn from(handle: Handle<T>) -> Self {
+        Self::Handle(handle.0)
     }
 }
-impl From<Rc<Opaque>> for Value {
-    fn from(opq: Rc<Opaque>) -> Value {
-        Value::Opaque(opq)
-    }
-}
-impl Opaque {
-    pub fn new<T: 'static>(t: T) -> Opaque {
-        let type_name = std::any::type_name::<T>();
-        Opaque {
-            type_name,
-            ptr: RefCell::new(Some(Box::new(t))),
-        }
-    }
-    pub fn moved(&self) -> bool {
-        self.ptr.borrow().is_none()
-    }
-    pub fn type_name(&self) -> &'static str {
-        if self.moved() {
-            "<moved>"
-        } else {
-            self.type_name
-        }
-    }
-    fn can_downcast_to<T: 'static>(&self) -> bool {
-        let ptr = self.ptr.borrow();
-        if let Some(ptr) = ptr.as_ref() {
-            let opt: Option<&T> = ptr.downcast_ref();
-            opt.is_some()
-        } else {
-            false
-        }
-    }
-    pub fn borrow<'a, T: 'static>(&'a self) -> Option<Ref<'a, T>> {
-        if self.can_downcast_to::<T>() {
-            Some(Ref::map(self.ptr.borrow(), |ptr| {
-                ptr.as_ref().unwrap().downcast_ref().unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-    pub fn borrow_mut<'a, T: 'static>(&'a self) -> Option<RefMut<'a, T>> {
-        if self.can_downcast_to::<T>() {
-            Some(RefMut::map(self.ptr.borrow_mut(), |ptr| {
-                ptr.as_mut().unwrap().downcast_mut().unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-    pub fn move_<T: 'static>(&self) -> Option<T> {
-        if self.can_downcast_to::<T>() {
-            let ptr = self.ptr.replace(None).unwrap();
-            Some(*ptr.downcast().unwrap())
-        } else {
-            None
-        }
-    }
-}
-impl fmt::Debug for Opaque {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<opaque {}", self.type_name)?;
-        if self.moved() {
-            write!(f, " (moved)")?;
-        }
-        write!(f, ">")
+
+impl<T: Any> From<&Handle<T>> for Value {
+    fn from(handle: &Handle<T>) -> Self {
+        Self::Handle(handle.0.clone())
     }
 }

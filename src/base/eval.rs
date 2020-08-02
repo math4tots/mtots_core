@@ -29,9 +29,7 @@ use crate::UnorderedHasher;
 use crate::Value;
 use crate::ValueKind;
 use crate::Handle;
-use std::cell::Ref;
 use std::cell::RefCell;
-use std::cell::RefMut;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fmt;
@@ -185,7 +183,6 @@ impl Eval {
             Value::NativeIterator(_) => &globals.builtin_classes().NativeIterator,
             Value::GeneratorObject(_) => &globals.builtin_classes().GeneratorObject,
             Value::Module(_) => &globals.builtin_classes().Module,
-            Value::Opaque(_) => &globals.builtin_classes().Opaque,
             Value::Handle(_) => &globals.builtin_classes().Handle,
             Value::MutableString(_) => &globals.builtin_classes().MutableString,
             Value::MutableBytes(_) => &globals.builtin_classes().MutableBytes,
@@ -632,68 +629,6 @@ impl Eval {
         }
     }
 
-    pub fn expect_opaque<'a, T: 'static>(
-        globals: &mut Globals,
-        value: &'a Value,
-    ) -> EvalResult<Ref<'a, T>> {
-        if let Value::Opaque(opq) = value {
-            if let Some(value) = opq.borrow() {
-                Ok(value)
-            } else {
-                let type_name = opq.type_name();
-                globals.set_exc_str(&format!(
-                    "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
-                    type_name,
-                ))
-            }
-        } else {
-            globals.set_kind_error(ValueKind::Opaque, value.kind())
-        }
-    }
-
-    pub fn expect_opaque_mut<'a, T: 'static>(
-        globals: &mut Globals,
-        value: &'a Value,
-    ) -> EvalResult<RefMut<'a, T>> {
-        if let Value::Opaque(opq) = value {
-            if let Some(value) = opq.borrow_mut() {
-                Ok(value)
-            } else {
-                let type_name = opq.type_name();
-                globals.set_exc_str(&format!(
-                    "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
-                    type_name,
-                ))
-            }
-        } else {
-            globals.set_kind_error(ValueKind::Opaque, value.kind())
-        }
-    }
-
-    pub fn clone_opaque<T: 'static + Clone>(globals: &mut Globals, value: &Value) -> EvalResult<T> {
-        let t: Ref<T> = Self::expect_opaque(globals, value)?;
-        Ok(t.clone())
-    }
-
-    pub fn move_opaque<'a, T: 'static>(globals: &mut Globals, value: &'a Value) -> EvalResult<T> {
-        if let Value::Opaque(opq) = value {
-            if let Some(value) = opq.move_() {
-                Ok(value)
-            } else {
-                let type_name = opq.type_name();
-                globals.set_exc_str(&format!(
-                    "Opaque downcast expected {:?} but got {:?}",
-                    std::any::type_name::<T>(),
-                    type_name,
-                ))
-            }
-        } else {
-            globals.set_kind_error(ValueKind::Opaque, value.kind())
-        }
-    }
-
     pub fn expect_handle<T: Any>(globals: &mut Globals, value: &Value) -> EvalResult<Handle<T>> {
         if let Some(handle) = value.handle() {
             Ok(handle)
@@ -702,14 +637,13 @@ impl Eval {
         }
     }
 
-    pub fn unwrap_handle<T: Any>(globals: &mut Globals, value: Value) -> EvalResult<Handle<T>> {
+    pub fn unwrap_handle<T: Any>(globals: &mut Globals, value: Value) -> EvalResult<T> {
         match value.into_handle() {
-            Ok(handle) => Ok(handle),
-            Err(value) => if value.handle::<T>().is_some() {
-                globals.set_exc_str("Could not unwrap handle; more references still exist")
-            } else {
-                globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
-            }
+            Ok(handle) => match handle.try_unwrap() {
+                Ok(t) => Ok(t),
+                Err(_) => globals.set_exc_str(&format!("Could not unwrap handle to {}; more references still exist", std::any::type_name::<T>())),
+            },
+            Err(value) => globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind()),
         }
     }
 
@@ -879,7 +813,6 @@ impl Eval {
             Value::NativeIterator(_) => true,
             Value::GeneratorObject(_) => true,
             Value::Module(_) => true,
-            Value::Opaque(_) => true,
             Value::Handle(_) => true,
             Value::MutableString(x) => !x.borrow().is_empty(),
             Value::MutableBytes(x) => !x.borrow().is_empty(),
@@ -1603,7 +1536,6 @@ impl Eval {
             Value::NativeIterator(iter) => format!("{:?}", iter.borrow()).into(),
             Value::GeneratorObject(obj) => format!("{:?}", obj.borrow()).into(),
             Value::Module(m) => format!("{:?}", m).into(),
-            Value::Opaque(opq) => format!("{:?}", opq).into(),
             Value::Handle(handle) => format!("{:?}", handle).into(),
             Value::MutableString(x) => format!("@{}", reprstr(&x.borrow())).into(),
             Value::MutableBytes(x) => format!("MutableBytes({:?})", &x.borrow()).into(),
