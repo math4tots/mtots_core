@@ -928,6 +928,42 @@ impl ParameterInfo {
     }
 }
 
+impl From<Vec<&'static str>> for ParameterInfo {
+    fn from(reqs: Vec<&'static str>) -> Self {
+        Self::snew(&reqs, &[], None, None)
+    }
+}
+
+impl From<&[&str]> for ParameterInfo {
+    fn from(reqs: &[&str]) -> Self {
+        Self::snew(&reqs, &[], None, None)
+    }
+}
+
+impl From<(&[&str], &[(&str, Value)])> for ParameterInfo {
+    fn from(args: (&[&str], &[(&str, Value)])) -> Self {
+        Self::snew(args.0, args.1, None, None)
+    }
+}
+
+impl From<(&[&str], &[(&str, Value)], &str)> for ParameterInfo {
+    fn from(args: (&[&str], &[(&str, Value)], &str)) -> Self {
+        Self::snew(args.0, args.1, Some(args.2), None)
+    }
+}
+
+impl From<(&[&str], &[(&str, Value)], &str, &str)> for ParameterInfo {
+    fn from(args: (&[&str], &[(&str, Value)], &str, &str)) -> Self {
+        Self::snew(args.0, args.1, Some(args.2), Some(args.3))
+    }
+}
+
+impl From<(&[&str], &[(&str, Value)], Option<&str>, Option<&str>)> for ParameterInfo {
+    fn from(args: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>)) -> Self {
+        Self::snew(args.0, args.1, args.2, args.3)
+    }
+}
+
 type FunctionResult = EvalResult<Value>;
 pub type NativeFunctionBody =
     fn(&mut Globals, args: Vec<Value>, kwargs: Option<HashMap<Symbol, Value>>) -> FunctionResult;
@@ -965,13 +1001,21 @@ impl NativeFunction {
         parameter_info: ParameterInfo,
         doc: Option<RcStr>,
         body: NativeFunctionBody,
-    ) -> NativeFunction {
-        NativeFunction {
+    ) -> Self {
+        Self {
             name,
             parameter_info,
             doc,
             body,
         }
+    }
+    pub fn new0<N: Into<RcStr>, P: Into<ParameterInfo>, D: Into<Option<RcStr>>>(
+        name: N,
+        parameter_info: P,
+        doc: D,
+        body: NativeFunctionBody,
+    ) -> Self {
+        Self::new(name.into(), parameter_info.into(), doc.into(), body)
     }
     pub fn snew(
         name: &str,
@@ -988,13 +1032,8 @@ impl NativeFunction {
     ) -> NativeFunction {
         Self::new(
             name.into(),
-            ParameterInfo::snew(
-                parameter_info.0,
-                parameter_info.1,
-                parameter_info.2,
-                parameter_info.3,
-            ),
-            doc.map(|s| s.into()),
+            parameter_info.into(),
+            doc.map(RcStr::from),
             body,
         )
     }
@@ -1011,13 +1050,9 @@ impl NativeFunction {
         params: &[&str],
         body: NativeFunctionBody,
     ) -> NativeFunction {
-        let params = params
-            .iter()
-            .map(|s| s.into())
-            .collect();
         Self::new(
             name.into(),
-            ParameterInfo::new(params, vec![], None, None),
+            ParameterInfo::snew(params, &[], None, None),
             None,
             body,
         )
@@ -1107,7 +1142,7 @@ impl NativeClosure {
                 parameter_info.2,
                 parameter_info.3,
             ),
-            doc.map(|s| s.into()),
+            doc.map(RcStr::from),
             body,
         )
     }
@@ -1284,7 +1319,7 @@ impl Class {
             kind,
             full_name,
             bases,
-            doc.map(|s| s.into()),
+            doc.map(RcStr::from),
             None,
             map,
             static_map,
