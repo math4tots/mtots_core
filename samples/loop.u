@@ -1,0 +1,16 @@
+# Just a straight up speed test of 10mil iterations
+# Not the best way to measure performance, but it gives
+# a baseline for the minimum amount of time you can expect
+# a loop to take
+
+def main() {
+    i = 0
+    total = 0
+    while i < 10000000 {
+        i = i + 1
+        total = total + i
+    }
+    print('total = ' + str(i))
+}
+
+main()

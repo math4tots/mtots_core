@@ -701,7 +701,8 @@ impl Globals {
     }
 
     /// Initializes a REPL scope with builtins for use with exec_repl
-    pub fn new_repl_scope(&self) -> ReplScope {
+    pub fn new_repl_scope(&mut self) -> ReplScope {
+        self.load_prelude().unwrap();
         let mut map = HashMap::new();
         for (key, val) in self.builtins.iter() {
             map.insert(key.clone(), Rc::new(RefCell::new(val.clone())));
