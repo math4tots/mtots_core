@@ -272,6 +272,34 @@ impl Value {
         }
     }
 
+    pub fn handle_borrow<T: Any>(&self) -> Option<Ref<T>> {
+        if let Value::Handle(data) = self {
+            if data.value.borrow().is::<T>() {
+                Some(Ref::map(data.value.borrow(), |bx| {
+                    bx.downcast_ref().unwrap()
+                }))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn handle_borrow_mut<T: Any>(&self) -> Option<RefMut<T>> {
+        if let Value::Handle(data) = self {
+            if data.value.borrow().is::<T>() {
+                Some(RefMut::map(data.value.borrow_mut(), |bx| {
+                    bx.downcast_mut().unwrap()
+                }))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn into_handle<T: Any>(self) -> std::result::Result<Handle<T>, Self> {
         if let Value::Handle(data) = self {
             if data.value.borrow().is::<T>() {

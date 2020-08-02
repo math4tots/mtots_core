@@ -30,7 +30,9 @@ use crate::UnorderedHasher;
 use crate::Value;
 use crate::ValueKind;
 use std::any::Any;
+use std::cell::Ref;
 use std::cell::RefCell;
+use std::cell::RefMut;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fmt;
@@ -626,6 +628,28 @@ impl Eval {
             Ok(module)
         } else {
             globals.set_kind_error(ValueKind::Module, value.kind())
+        }
+    }
+
+    pub fn handle_borrow<'a, T: Any>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<Ref<'a, T>> {
+        if let Some(rf) = value.handle_borrow() {
+            Ok(rf)
+        } else {
+            globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
+        }
+    }
+
+    pub fn handle_borrow_mut<'a, T: Any>(
+        globals: &mut Globals,
+        value: &'a Value,
+    ) -> EvalResult<RefMut<'a, T>> {
+        if let Some(rf) = value.handle_borrow_mut() {
+            Ok(rf)
+        } else {
+            globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
         }
     }
 
