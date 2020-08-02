@@ -651,9 +651,7 @@ impl Globals {
     /// when a JumpToTrampoline method is thrown.
     /// If the host does not take care to do this, code that depends on the trampoline
     /// mechanism may not work
-    pub fn move_trampoline_callback(
-        &mut self,
-    ) -> Option<Box<dyn FnOnce(Globals)>> {
+    pub fn move_trampoline_callback(&mut self) -> Option<Box<dyn FnOnce(Globals)>> {
         std::mem::replace(&mut self.trampoline_callback, None)
     }
 

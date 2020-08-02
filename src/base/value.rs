@@ -21,10 +21,10 @@ use std::cell::RefCell;
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt;
+use std::marker::PhantomData;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -1597,10 +1597,13 @@ pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
 
 impl<T: Any> Handle<T> {
     pub fn new(t: T) -> Self {
-        Self(Rc::new(HandleData {
-            type_name: std::any::type_name::<T>(),
-            value: RefCell::new(Box::new(t)),
-        }), PhantomData)
+        Self(
+            Rc::new(HandleData {
+                type_name: std::any::type_name::<T>(),
+                value: RefCell::new(Box::new(t)),
+            }),
+            PhantomData,
+        )
     }
     pub fn type_name(&self) -> &'static str {
         self.0.type_name

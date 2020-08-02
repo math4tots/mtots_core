@@ -2,11 +2,11 @@ use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
+use crate::Handle;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
-use crate::Handle;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::process::Child;
@@ -97,7 +97,8 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 "wait",
                 (&["child_proc"], &[], None, None),
                 |globals, args, _kwargs| {
-                    let child = Eval::unwrap_handle::<Child>(globals, args.into_iter().next().unwrap())?;
+                    let child =
+                        Eval::unwrap_handle::<Child>(globals, args.into_iter().next().unwrap())?;
                     let output = match child.wait_with_output() {
                         Ok(output) => output,
                         Err(error) => {

@@ -35,8 +35,8 @@ use util::FailableEq;
 use util::FailableHash;
 use util::UnorderedHasher;
 
-pub use base::*;
 pub use base::SOURCE_FILE_EXTENSION;
+pub use base::*;
 pub use util::GMap;
 pub use util::HMap;
 pub use util::RcPath;

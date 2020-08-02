@@ -14,6 +14,7 @@ use crate::Function;
 use crate::GMap;
 use crate::GeneratorResult;
 use crate::Globals;
+use crate::Handle;
 use crate::LexErrorKind;
 use crate::Module;
 use crate::NativeFunction;
@@ -28,7 +29,7 @@ use crate::Table;
 use crate::UnorderedHasher;
 use crate::Value;
 use crate::ValueKind;
-use crate::Handle;
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -38,7 +39,6 @@ use std::hash::Hasher;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::any::Any;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -641,9 +641,14 @@ impl Eval {
         match value.into_handle() {
             Ok(handle) => match handle.try_unwrap() {
                 Ok(t) => Ok(t),
-                Err(_) => globals.set_exc_str(&format!("Could not unwrap handle to {}; more references still exist", std::any::type_name::<T>())),
+                Err(_) => globals.set_exc_str(&format!(
+                    "Could not unwrap handle to {}; more references still exist",
+                    std::any::type_name::<T>()
+                )),
             },
-            Err(value) => globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind()),
+            Err(value) => {
+                globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
+            }
         }
     }
 
