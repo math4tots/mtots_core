@@ -16,7 +16,7 @@ pub(super) fn mkcls(sr: &SymbolRegistryHandle, base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::simple0(sr, "len", &["self"], |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
-            Ok(Value::Int(s.len() as i64))
+            Ok(Value::Int(s.charlen() as i64))
         }),
         NativeFunction::simple0(
             sr,

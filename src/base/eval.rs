@@ -350,14 +350,11 @@ impl Eval {
         string: &'a Value,
         start: &Value,
         end: &Value,
-    ) -> EvalResult<(&'a str, usize, usize)> {
+    ) -> EvalResult<(RcStr, usize, usize)> {
         let string = Eval::expect_string(globals, string)?;
-        let len = string.len();
+        let len = string.charlen();
         let (start, end) = Eval::expect_range_indices(globals, start, end, len)?;
-        match string.get(start..end) {
-            Some(slice) => Ok((slice, start, end)),
-            None => globals.set_exc_str("Invalid string slice indices"),
-        }
+        Ok((string.charslice(start, end), start, end))
     }
 
     /// Like expect_index, but returns an Option
