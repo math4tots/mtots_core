@@ -728,6 +728,10 @@ impl Globals {
         }
         Ok(())
     }
+    pub fn delete_stash<S: Stashable>(&mut self) {
+        let key = TypeId::of::<S>();
+        self.stash.remove(&key);
+    }
 
     /// Initializes a REPL scope with builtins for use with exec_repl
     pub fn new_repl_scope(&mut self) -> ReplScope {
