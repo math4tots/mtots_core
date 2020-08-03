@@ -259,6 +259,14 @@ impl Value {
         }
     }
 
+    pub fn is_handle<T: Any>(&self) -> bool {
+        if let Value::Handle(data) = self {
+            data.value.borrow().is::<T>()
+        } else {
+            false
+        }
+    }
+
     pub fn handle<T: Any>(&self) -> Option<Handle<T>> {
         if let Value::Handle(data) = self {
             if data.value.borrow().is::<T>() {
@@ -1703,5 +1711,43 @@ impl<T: Any> From<Handle<T>> for Value {
 impl<T: Any> From<&Handle<T>> for Value {
     fn from(handle: &Handle<T>) -> Self {
         Self::Handle(handle.0.clone())
+    }
+}
+
+/// Like Cow kind of, but instead of either Owned or Borrowed,
+/// it's Owned or Handle
+pub enum HCow<T: Any> {
+    Owned(T),
+    Handle(Handle<T>),
+}
+
+impl<T: Any> HCow<T> {
+    pub fn with<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce(&T) -> R,
+    {
+        match self {
+            Self::Owned(t) => f(t),
+            Self::Handle(handle) => f(&handle.borrow()),
+        }
+    }
+
+    pub fn with_mut<F, R>(&mut self, f: F) -> R
+    where
+        F: FnOnce(&mut T) -> R,
+    {
+        match self {
+            Self::Owned(t) => f(t),
+            Self::Handle(handle) => f(&mut handle.borrow_mut()),
+        }
+    }
+}
+
+impl<T: Any + Clone> HCow<T> {
+    pub fn unwrap_or_clone(self) -> T {
+        match self {
+            Self::Owned(t) => t,
+            Self::Handle(handle) => handle.borrow().clone(),
+        }
     }
 }

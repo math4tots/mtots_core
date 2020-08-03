@@ -1,5 +1,6 @@
 /// Operations on Value objects
 use crate::divmod;
+use crate::HCow;
 use crate::ArgumentError;
 use crate::Class;
 use crate::ClassKind;
@@ -650,6 +651,20 @@ impl Eval {
         }
     }
 
+    pub fn into_handle<T: Any>(globals: &mut Globals, hcow: HCow<T>) -> EvalResult<Handle<T>> {
+        match hcow {
+            HCow::Handle(handle) => Ok(handle),
+            HCow::Owned(t) => globals.new_handle(t),
+        }
+    }
+
+    pub fn hcow_to_owned<T: Any>(globals: &mut Globals, hcow: HCow<T>) -> EvalResult<T> {
+        match hcow {
+            HCow::Handle(handle) => Self::unwrap_typed_handle(globals, handle),
+            HCow::Owned(t) => Ok(t),
+        }
+    }
+
     pub fn expect_handle<T: Any>(globals: &mut Globals, value: &Value) -> EvalResult<Handle<T>> {
         if let Some(handle) = value.handle() {
             Ok(handle)
@@ -658,15 +673,19 @@ impl Eval {
         }
     }
 
+    pub fn unwrap_typed_handle<T: Any>(globals: &mut Globals, handle: Handle<T>) -> EvalResult<T> {
+        match handle.try_unwrap() {
+            Ok(t) => Ok(t),
+            Err(_) => globals.set_exc_str(&format!(
+                "Could not unwrap handle to {}; more references still exist",
+                std::any::type_name::<T>()
+            )),
+        }
+    }
+
     pub fn unwrap_handle<T: Any>(globals: &mut Globals, value: Value) -> EvalResult<T> {
         match value.into_handle() {
-            Ok(handle) => match handle.try_unwrap() {
-                Ok(t) => Ok(t),
-                Err(_) => globals.set_exc_str(&format!(
-                    "Could not unwrap handle to {}; more references still exist",
-                    std::any::type_name::<T>()
-                )),
-            },
+            Ok(handle) => Self::unwrap_typed_handle(globals, handle),
             Err(value) => {
                 globals.set_kind_error(ValueKind::Handle(std::any::type_name::<T>()), value.kind())
             }
