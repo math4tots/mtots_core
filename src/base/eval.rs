@@ -2022,6 +2022,7 @@ fn reprstr(s: &str) -> String {
             '\n' => ret.push_str("\\n"),
             '\r' => ret.push_str("\\r"),
             '\t' => ret.push_str("\\t"),
+            _ if c.is_control() => ret.push_str(&format!("\\u{{{:X}}}", c as u32)),
             _ => ret.push(c),
         }
     }
