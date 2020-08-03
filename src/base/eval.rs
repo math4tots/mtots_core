@@ -2211,3 +2211,14 @@ impl FailableEq<Globals, Value, ErrorIndicator> for Eval {
 
 pub type VMap = GMap<Globals, Value, Value, Eval, Eval, ErrorIndicator>;
 pub type VSet = GMap<Globals, Value, (), Eval, Eval, ErrorIndicator>;
+
+impl VMap {
+    pub fn to_string_keys(&self, globals: &mut Globals) -> EvalResult<HashMap<RcStr, Value>> {
+        let mut ret = HashMap::new();
+        for (k, v) in self {
+            let k = Eval::expect_string(globals, k)?;
+            ret.insert(k.clone(), v.clone());
+        }
+        Ok(ret)
+    }
+}
