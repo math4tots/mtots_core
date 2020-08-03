@@ -18,7 +18,8 @@ def __test_mutable_string() {
     for i in range(4) {
         s.extend(' ' + str(i))
     }
-    assert_eq(str(s), '@" 0 1 2 3"')
+    assert_eq(repr(s), '@" 0 1 2 3"')
+    assert_eq(str(s), ' 0 1 2 3')
     assert_eq(s.move(), ' 0 1 2 3')
 }
 
@@ -169,4 +170,14 @@ def __test_char_escapes() {
     assert_eq('\o{100}\o{100}', '@@')
     assert_eq('\u{1F914}', '🤔')
     assert_eq('\d{81}\u{1F914}', 'Q🤔')
+}
+
+def __test_pop() {
+    a = @'abc'
+    assert_eq(a, @'abc')
+    assert(a != @'ab')
+
+    a.pop()
+    assert_eq(a, @'ab')
+    assert(a != @'abc')
 }

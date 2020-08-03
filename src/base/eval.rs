@@ -1530,6 +1530,7 @@ impl Eval {
                     format!("{:?}", x).into()
                 }
             }
+            Value::MutableString(x) => x.borrow().clone().into(),
             Value::MutableUserObject(x) => {
                 let cls = x.cls();
                 if let Some(mt) = cls.get_from_instance_map(&globals.symbol_dunder_str()) {

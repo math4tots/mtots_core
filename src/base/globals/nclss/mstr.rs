@@ -24,6 +24,13 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             let contents = mstr.replace(String::new());
             Ok(contents.into())
         }),
+        NativeFunction::simple0("pop", &["self"], |globals, args, _kwargs| {
+            let s = Eval::expect_mutable_string(globals, &args[0])?;
+            match s.borrow_mut().pop() {
+                Some(ch) => Ok(globals.char_to_val(ch)),
+                None => globals.set_exc_str(&format!("Pop from empty string")),
+            }
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))
