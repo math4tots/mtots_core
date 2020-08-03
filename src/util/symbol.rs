@@ -57,6 +57,12 @@ impl From<&String> for Symbol {
     }
 }
 
+impl From<String> for Symbol {
+    fn from(s: String) -> Self {
+        (&s).into()
+    }
+}
+
 impl From<&RcStr> for Symbol {
     fn from(s: &RcStr) -> Self {
         REGISTRY.with(|registry| registry.borrow_mut().intern_rcstr(s))
