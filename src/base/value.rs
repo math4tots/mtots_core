@@ -1751,3 +1751,15 @@ impl<T: Any + Clone> HCow<T> {
         }
     }
 }
+
+impl<T: Any> From<T> for HCow<T> {
+    fn from(t: T) -> Self {
+        Self::Owned(t)
+    }
+}
+
+impl<T: Any> From<Handle<T>> for HCow<T> {
+    fn from(t: Handle<T>) -> Self {
+        Self::Handle(t)
+    }
+}
