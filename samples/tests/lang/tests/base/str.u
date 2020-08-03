@@ -160,3 +160,13 @@ def __test_ord_chr() {
     assert_raises(RuntimeError, def = ord(''))
     assert_raises(RuntimeError, def = chr(-1))
 }
+
+def __test_char_escapes() {
+    assert_eq('\x21', '!')
+    assert_eq('\x41', 'A')
+    assert_eq('\x41\x21', 'A!')
+    assert_eq('\o{100}', '@')
+    assert_eq('\o{100}\o{100}', '@@')
+    assert_eq('\u{1F914}', '🤔')
+    assert_eq('\d{81}\u{1F914}', 'Q🤔')
+}

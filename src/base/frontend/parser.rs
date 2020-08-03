@@ -10,6 +10,7 @@ use crate::Symbol;
 use crate::Token;
 use crate::TokenKind;
 use crate::Unop;
+use std::convert::TryFrom;
 
 const PREC_STEP: i32 = 10;
 
@@ -1455,6 +1456,10 @@ fn interpret_string(s: &str) -> Result<String, InterpretationError> {
     enum Mode {
         Normal,
         Escape,
+        ByteStart,
+        ByteFirst(char),
+        CharEscapeStart(u32),
+        CharEscape(u32, usize),
     }
 
     let mut ret = String::new();
@@ -1467,6 +1472,62 @@ fn interpret_string(s: &str) -> Result<String, InterpretationError> {
                     mode = Mode::Escape;
                 } else {
                     ret.push(c);
+                }
+            }
+            Mode::ByteStart => mode = Mode::ByteFirst(c),
+            Mode::ByteFirst(first) => {
+                let snippet = format!("{}{}", first, c);
+                let code = match u8::from_str_radix(&snippet, 16) {
+                    Ok(code) => code,
+                    Err(error) => {
+                        return Err(InterpretationError {
+                            offset,
+                            kind: InterpretationErrorKind::InvalidEscape(format!("{:?}", error)),
+                        })
+                    }
+                };
+                ret.push(code as char);
+                mode = Mode::Normal;
+            }
+            Mode::CharEscapeStart(radix) => {
+                if c != '{' {
+                    return Err(InterpretationError {
+                        offset,
+                        kind: InterpretationErrorKind::InvalidEscape(
+                            format!("Expected '{{' here",),
+                        ),
+                    });
+                }
+                mode = Mode::CharEscape(radix, offset + c.len_utf8());
+            }
+            Mode::CharEscape(radix, start) => {
+                if c == '}' {
+                    let snippet = &s[start..offset];
+                    let code = match u32::from_str_radix(snippet, radix) {
+                        Ok(code) => code,
+                        Err(error) => {
+                            return Err(InterpretationError {
+                                offset,
+                                kind: InterpretationErrorKind::InvalidEscape(format!(
+                                    "{:?}",
+                                    error
+                                )),
+                            })
+                        }
+                    };
+                    match char::try_from(code) {
+                        Ok(ch) => ret.push(ch),
+                        Err(error) => {
+                            return Err(InterpretationError {
+                                offset,
+                                kind: InterpretationErrorKind::InvalidEscape(format!(
+                                    "{:?}",
+                                    error
+                                )),
+                            })
+                        }
+                    }
+                    mode = Mode::Normal;
                 }
             }
             Mode::Escape => match c {
@@ -1490,6 +1551,25 @@ fn interpret_string(s: &str) -> Result<String, InterpretationError> {
                     mode = Mode::Normal;
                     ret.push('\'');
                 }
+                '\0' => {
+                    mode = Mode::Normal;
+                    ret.push('\0');
+                }
+                'x' => {
+                    mode = Mode::ByteStart;
+                }
+                'u' => {
+                    // hexadecimal escape
+                    mode = Mode::CharEscapeStart(16);
+                }
+                'o' => {
+                    // octal escape
+                    mode = Mode::CharEscapeStart(8);
+                }
+                'd' => {
+                    // decimal escape
+                    mode = Mode::CharEscapeStart(10);
+                }
                 _ => {
                     return Err(InterpretationError {
                         offset,
@@ -1503,7 +1583,11 @@ fn interpret_string(s: &str) -> Result<String, InterpretationError> {
 
     match mode {
         Mode::Normal => (),
-        Mode::Escape => {
+        Mode::Escape
+        | Mode::ByteStart
+        | Mode::ByteFirst(_)
+        | Mode::CharEscapeStart(..)
+        | Mode::CharEscape(..) => {
             return Err(InterpretationError {
                 offset,
                 kind: InterpretationErrorKind::EscapeAtEndOfString,
