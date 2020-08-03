@@ -897,7 +897,7 @@ impl Globals {
     }
 
     /// Convenience wrapper around the 'new_class' method
-    pub fn new_class0<N>(&mut self, name: N, methods: Vec<NativeFunction>) -> EvalResult<Rc<Class>>
+    pub fn new_class0<N>(&mut self, name: N, methods: Vec<NativeFunction>, static_methods: Vec<NativeFunction>) -> EvalResult<Rc<Class>>
     where
         N: Into<RcStr>,
     {
@@ -906,6 +906,11 @@ impl Globals {
             let name = Symbol::from(method.name());
             map.insert(name, method.into());
         }
-        self.new_class(name, vec![], map, HashMap::new())
+        let mut static_map = HashMap::new();
+        for method in static_methods {
+            let name = Symbol::from(method.name());
+            static_map.insert(name, method.into());
+        }
+        self.new_class(name, vec![], map, static_map)
     }
 }
