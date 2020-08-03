@@ -36,11 +36,11 @@ pub enum Value {
     String(RcStr),
     Bytes(Rc<Vec<u8>>),
     Path(RcPath),
-    List(Rc<Vec<Value>>),       // [x, ..]
-    Table(Rc<Table>),           // Table(k=v, ..)
-    Set(Rc<VSet>),              // Set([x, ..])
-    Map(Rc<VMap>),              // [k:v, ..]
-    UserObject(Rc<UserObject>), // [k:v, ..]
+    List(Rc<Vec<Value>>), // [x, ..]
+    Table(Rc<Table>),     // Table(k=v, ..)
+    Set(Rc<VSet>),        // Set([x, ..])
+    Map(Rc<VMap>),        // [k:v, ..]
+    UserObject(Rc<UserObject>),
     Exception(Rc<Exception>),
     NativeFunction(Rc<NativeFunction>),
     NativeClosure(Rc<NativeClosure>),
