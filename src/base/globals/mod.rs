@@ -691,16 +691,42 @@ impl Globals {
     /// The first time you call get_from_stash, Default will be used to construct
     /// the values.
     ///
-    pub fn get_from_stash<S: Stashable>(&mut self) -> Rc<RefCell<S>> {
+    pub fn get_from_stash<S: Stashable>(&mut self) -> EvalResult<Rc<RefCell<S>>> {
+        self.get_from_stash_or_else(|globals| {
+            globals.set_exc_str(&format!(
+                "Stash for {} never set",
+                std::any::type_name::<S>()
+            ))
+        })
+    }
+    pub fn get_from_stash_or_else<S: Stashable, F: FnOnce(&mut Self) -> EvalResult<S>>(
+        &mut self,
+        f: F,
+    ) -> EvalResult<Rc<RefCell<S>>> {
         let key = TypeId::of::<S>();
         if !self.stash.contains_key(&key) {
-            let typed_rc: Rc<RefCell<S>> = Rc::new(RefCell::new(S::default()));
+            let typed_rc: Rc<RefCell<S>> = Rc::new(RefCell::new(f(self)?));
             let untyped_rc: Rc<dyn Any> = typed_rc;
             self.stash.insert(key.clone(), untyped_rc);
         }
         let untyped_rc = self.stash.get(&key).unwrap().clone();
         let typed_rc: Rc<RefCell<S>> = untyped_rc.downcast().unwrap();
-        typed_rc
+        Ok(typed_rc)
+    }
+    pub fn get_from_stash_or_default<S: Stashable + Default>(&mut self) -> Rc<RefCell<S>> {
+        self.get_from_stash_or_else(|_| Ok(S::default())).unwrap()
+    }
+    pub fn set_stash<S: Stashable>(&mut self, s: S) -> EvalResult<()> {
+        let key = TypeId::of::<S>();
+        if self.stash.contains_key(&key) {
+            return self.set_exc_str(&format!(
+                "Stash for {} already set",
+                std::any::type_name::<S>()
+            ));
+        } else {
+            self.get_from_stash_or_else(move |_| Ok(s)).unwrap();
+        }
+        Ok(())
     }
 
     /// Initializes a REPL scope with builtins for use with exec_repl
@@ -897,7 +923,12 @@ impl Globals {
     }
 
     /// Convenience wrapper around the 'new_class' method
-    pub fn new_class0<N>(&mut self, name: N, methods: Vec<NativeFunction>, static_methods: Vec<NativeFunction>) -> EvalResult<Rc<Class>>
+    pub fn new_class0<N>(
+        &mut self,
+        name: N,
+        methods: Vec<NativeFunction>,
+        static_methods: Vec<NativeFunction>,
+    ) -> EvalResult<Rc<Class>>
     where
         N: Into<RcStr>,
     {

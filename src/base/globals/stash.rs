@@ -2,7 +2,7 @@
 /// in the Global stash.
 pub trait Stashable
 where
-    Self: 'static + Default,
+    Self: 'static,
 {
 }
 
@@ -30,7 +30,7 @@ mod tests {
 
         // check that value is properly initialized
         {
-            let sample: Rc<RefCell<Sample>> = globals.get_from_stash();
+            let sample: Rc<RefCell<Sample>> = globals.get_from_stash_or_default();
             assert_eq!(sample.borrow().x, 123);
             sample.borrow_mut().x = 999;
             assert_eq!(sample.borrow().x, 999);
@@ -38,7 +38,7 @@ mod tests {
 
         // check that changes persist
         {
-            let sample: Rc<RefCell<Sample>> = globals.get_from_stash();
+            let sample: Rc<RefCell<Sample>> = globals.get_from_stash_or_default();
             assert_eq!(sample.borrow().x, 999);
         }
     }
