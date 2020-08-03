@@ -16,8 +16,7 @@ pub const NAME: &str = "a._os.proc";
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
-    let pcls = globals.new_class0("Child", vec![
-    ])?;
+    let pcls = globals.new_class0("a._os.proc::Child", vec![])?;
     globals.set_handle_class::<Child>(pcls)?;
 
     map.extend(

@@ -1,4 +1,3 @@
-use crate::NativeFunction;
 use crate::compile;
 use crate::Class;
 use crate::ClassKind;
@@ -13,6 +12,7 @@ use crate::LexError;
 use crate::LexErrorKind;
 use crate::Lexer;
 use crate::Module;
+use crate::NativeFunction;
 use crate::Parser;
 use crate::RcPath;
 use crate::RcStr;
@@ -897,12 +897,10 @@ impl Globals {
     }
 
     /// Convenience wrapper around the 'new_class' method
-    pub fn new_class0<N>(
-        &mut self,
-        name: N,
-        methods: Vec<NativeFunction>,
-    ) -> EvalResult<Rc<Class>>
-    where N: Into<RcStr> {
+    pub fn new_class0<N>(&mut self, name: N, methods: Vec<NativeFunction>) -> EvalResult<Rc<Class>>
+    where
+        N: Into<RcStr>,
+    {
         let mut map = HashMap::new();
         for method in methods {
             let name = Symbol::from(method.name());
