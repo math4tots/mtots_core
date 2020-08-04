@@ -1,35 +1,41 @@
 extern crate mtots_core;
-use mtots_core::ReplDelegate;
+use mtots_core::Value;
 use std::io::Write;
 
 fn main() {
-    let globals = mtots_core::Globals::new();
-    mtots_core::main(globals, Some(Delegate));
-}
-
-struct Delegate;
-
-impl ReplDelegate for Delegate {
-    fn getline(&mut self, continuation: bool) -> Option<String> {
-        if continuation {
-            print!(".. ");
-        } else {
-            print!(">> ");
-        }
-        match std::io::stdout().flush() {
-            Ok(_) => {}
-            Err(_) => return None,
-        }
+    let mut globals = mtots_core::Globals::new();
+    let trace_base = globals.trace().len();
+    'exit: loop {
         let mut line = String::new();
-        match std::io::stdin().read_line(&mut line) {
-            Ok(len) => {
-                if len == 0 {
-                    None
-                } else {
-                    Some(line)
+        print(">> ");
+        loop {
+            match std::io::stdin().read_line(&mut line) {
+                Ok(0) => break 'exit,
+                Ok(_) => {}
+                Err(error) => {
+                    panic!("{:?}", error);
                 }
             }
-            Err(_) => None,
+            if globals.repl_ready(&line) {
+                break;
+            }
+            print(".. ");
+        }
+        match globals.exec_repl(&line) {
+            Ok(Value::Nil) => {}
+            Ok(value) => {
+                println!("{}", value);
+            }
+            Err(error) => {
+                let error = error.prepended(globals.trace().clone());
+                eprint!("{}", error.format());
+                globals.trace_unwind(trace_base);
+            }
         }
     }
+}
+
+fn print(msg: &str) {
+    print!("{}", msg);
+    std::io::stdout().flush().unwrap();
 }

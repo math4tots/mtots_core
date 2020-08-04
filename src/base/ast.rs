@@ -1,191 +1,285 @@
-use crate::ClassKind;
+use crate::ArgSpec;
+use crate::CallFunctionDesc;
+use crate::Mark;
 use crate::RcStr;
-use crate::Symbol;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::fmt;
 
-pub struct Expression {
-    offset: usize, // offset from start of file where this expression was parsed
-    lineno: usize,
-    data: ExpressionData,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum VariableType {
+    Local,
+    Upval,
 }
 
-impl Expression {
-    pub fn new(offset: usize, lineno: usize, data: ExpressionData) -> Expression {
-        Expression {
-            offset,
-            lineno,
-            data,
-        }
-    }
-    pub fn lineno(&self) -> usize {
-        self.lineno
-    }
-    pub fn offset(&self) -> usize {
-        self.offset
-    }
-    pub fn data(&self) -> &ExpressionData {
-        &self.data
-    }
-    pub fn data_move(self) -> ExpressionData {
-        self.data
-    }
-    pub fn children_mut(&mut self) -> Vec<&mut Expression> {
-        match &mut self.data {
-            ExpressionData::Nil => vec![],
-            ExpressionData::Bool(_) => vec![],
-            ExpressionData::Int(_) => vec![],
-            ExpressionData::Float(_) => vec![],
-            ExpressionData::Symbol(_) => vec![],
-            ExpressionData::String(_) => vec![],
-            ExpressionData::MutableString(_) => vec![],
-            ExpressionData::Name(_) => vec![],
-            ExpressionData::Del(_) => vec![],
-            ExpressionData::Nonlocal(_) => vec![],
-            ExpressionData::Parentheses(expr) => vec![&mut *expr],
-            ExpressionData::Block(ref mut exprs) => exprs2mutrefs(exprs),
-            ExpressionData::ListDisplay(ref mut exprs) => exprs2mutrefs(exprs),
-            ExpressionData::MapDisplay(ref mut pairs) => pairs2mutrefs(pairs),
-            ExpressionData::MutableListDisplay(ref mut exprs) => exprs2mutrefs(exprs),
-            ExpressionData::MutableMapDisplay(ref mut pairs) => pairs2mutrefs(pairs),
-            ExpressionData::Assign(target, expr) => vec![&mut *target, &mut *expr],
-            ExpressionData::AugAssign(target, _, expr) => vec![&mut *target, &mut *expr],
-            ExpressionData::AssignWithDoc(assign, _, _) => vec![&mut *assign],
-            ExpressionData::If(pairs, other) => join_mut_refs(vec![
-                pairs
-                    .iter_mut()
-                    .map(|(c, b)| vec![c, b])
-                    .flatten()
-                    .collect(),
-                other.iter_mut().map(|other| &mut **other).collect(),
-            ]),
-            ExpressionData::Switch(item, pairs, other) => join_mut_refs(vec![
-                vec![&mut *item],
-                pairs
-                    .iter_mut()
-                    .map(|(c, b)| vec![c, b])
-                    .flatten()
-                    .collect(),
-                other.iter_mut().map(|other| &mut **other).collect(),
-            ]),
-            ExpressionData::For(target, iterable, body) => {
-                vec![&mut *target, &mut *iterable, &mut *body]
-            }
-            ExpressionData::While(cond, body) => vec![&mut *cond, &mut *body],
-            ExpressionData::Unop(_, expr) => vec![&mut *expr],
-            ExpressionData::Binop(_, lhs, rhs) => vec![&mut *lhs, &mut *rhs],
-            ExpressionData::Attribute(owner, _) => vec![&mut *owner],
-            ExpressionData::StaticAttribute(owner, _) => vec![&mut *owner],
-            ExpressionData::Subscript(owner, index) => vec![&mut *owner, &mut *index],
-            ExpressionData::Slice(owner, start, end) => join_mut_refs(vec![
-                vec![&mut *owner],
-                start.iter_mut().map(|e| &mut *e.as_mut()).collect(),
-                end.iter_mut().map(|e| &mut *e.as_mut()).collect(),
-            ]),
-            ExpressionData::FunctionCall(f, arglist) => {
-                join_mut_refs(vec![vec![&mut *f], arglist.children_mut()])
-            }
-            ExpressionData::MethodCall(owner, _, arglist) => {
-                join_mut_refs(vec![vec![&mut *owner], arglist.children_mut()])
-            }
-            ExpressionData::New(arglist) => arglist.children_mut(),
-            ExpressionData::FunctionDisplay(_, _, _, defparams, _, _, _, body) => {
-                join_mut_refs(vec![
-                    defparams.iter_mut().map(|(_, e)| e).collect(),
-                    vec![&mut *body],
-                ])
-            }
-            ExpressionData::ClassDisplay(_, _, bases, _, _, methods, static_methods) => {
-                join_mut_refs(vec![
-                    exprs2mutrefs(bases),
-                    methods.iter_mut().map(|(_, e)| e).collect(),
-                    static_methods.iter_mut().map(|(_, e)| e).collect(),
-                ])
-            }
-            ExpressionData::ExceptionKindDisplay(_, base, _, _, msgexpr) => join_mut_refs(vec![
-                match base {
-                    Some(base) => vec![&mut *base],
-                    None => vec![],
-                },
-                vec![&mut *msgexpr],
-            ]),
-            ExpressionData::Import(..) => vec![],
-            ExpressionData::Yield(expr) => vec![&mut *expr],
-            ExpressionData::Return(expr) => match expr {
-                Some(expr) => vec![&mut *expr],
-                None => vec![],
-            },
-            ExpressionData::BreakPoint => vec![],
-        }
-    }
-    pub fn kind(&self) -> ExpressionKind {
-        match &self.data {
-            ExpressionData::Nil => ExpressionKind::Nil,
-            ExpressionData::Bool(_) => ExpressionKind::Bool,
-            ExpressionData::Int(_) => ExpressionKind::Int,
-            ExpressionData::Float(_) => ExpressionKind::Float,
-            ExpressionData::Symbol(_) => ExpressionKind::Symbol,
-            ExpressionData::String(_) => ExpressionKind::String,
-            ExpressionData::MutableString(_) => ExpressionKind::MutableString,
-            ExpressionData::Name(_) => ExpressionKind::Name,
-            ExpressionData::Del(_) => ExpressionKind::Del,
-            ExpressionData::Nonlocal(_) => ExpressionKind::Nonlocal,
-            ExpressionData::Parentheses(..) => ExpressionKind::Parentheses,
-            ExpressionData::Block(..) => ExpressionKind::Block,
-            ExpressionData::ListDisplay(..) => ExpressionKind::ListDisplay,
-            ExpressionData::MapDisplay(..) => ExpressionKind::MapDisplay,
-            ExpressionData::MutableListDisplay(..) => ExpressionKind::MutableListDisplay,
-            ExpressionData::MutableMapDisplay(..) => ExpressionKind::MutableMapDisplay,
-            ExpressionData::Assign(..) => ExpressionKind::Assign,
-            ExpressionData::AugAssign(..) => ExpressionKind::AugAssign,
-            ExpressionData::AssignWithDoc(..) => ExpressionKind::AssignWithDoc,
-            ExpressionData::If(..) => ExpressionKind::If,
-            ExpressionData::Switch(..) => ExpressionKind::Switch,
-            ExpressionData::For(..) => ExpressionKind::For,
-            ExpressionData::While(..) => ExpressionKind::While,
-            ExpressionData::Unop(..) => ExpressionKind::Unop,
-            ExpressionData::Binop(..) => ExpressionKind::Binop,
-            ExpressionData::Attribute(..) => ExpressionKind::Attribute,
-            ExpressionData::StaticAttribute(..) => ExpressionKind::StaticAttribute,
-            ExpressionData::Subscript(..) => ExpressionKind::Subscript,
-            ExpressionData::Slice(..) => ExpressionKind::Slice,
-            ExpressionData::FunctionCall(..) => ExpressionKind::FunctionCall,
-            ExpressionData::MethodCall(..) => ExpressionKind::MethodCall,
-            ExpressionData::New(..) => ExpressionKind::New,
-            ExpressionData::FunctionDisplay(..) => ExpressionKind::FunctionDisplay,
-            ExpressionData::ClassDisplay(..) => ExpressionKind::ClassDisplay,
-            ExpressionData::ExceptionKindDisplay(..) => ExpressionKind::ExceptionKindDisplay,
-            ExpressionData::Import(..) => ExpressionKind::Import,
-            ExpressionData::Yield(..) => ExpressionKind::Yield,
-            ExpressionData::Return(..) => ExpressionKind::Return,
-            ExpressionData::BreakPoint => ExpressionKind::BreakPoint,
-        }
+#[derive(Clone)]
+pub struct Variable {
+    type_: VariableType,
+    slot: usize,
+    name: RcStr,
+    mark: Mark,
+}
+
+impl fmt::Debug for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Variable({:?}, {}, {})",
+            self.type_, self.slot, self.name
+        )
     }
 }
 
-fn exprs2mutrefs(exprs: &mut Vec<Expression>) -> Vec<&mut Expression> {
-    let mut ret = vec![];
-    for expr in exprs.iter_mut() {
-        ret.push(expr);
+impl Variable {
+    pub fn type_(&self) -> VariableType {
+        self.type_
     }
-    ret
+    pub fn slot(&self) -> usize {
+        self.slot
+    }
+    pub fn name(&self) -> &RcStr {
+        &self.name
+    }
 }
 
-fn pairs2mutrefs(exprs: &mut Vec<(Expression, Expression)>) -> Vec<&mut Expression> {
-    let mut ret = vec![];
-    for (key, val) in exprs.iter_mut() {
-        ret.push(key);
-        ret.push(val);
-    }
-    ret
+/// Description of the state of variables in a given scope
+#[derive(Debug, Clone)]
+pub struct VarSpec {
+    local: Vec<(RcStr, Mark)>,
+    free: Vec<(RcStr, Mark)>,
+    owned: Vec<(RcStr, Mark)>,
+    cache: RefCell<HashMap<RcStr, Option<Variable>>>,
 }
 
-fn join_mut_refs(vec: Vec<Vec<&mut Expression>>) -> Vec<&mut Expression> {
-    let mut ret = vec![];
-    for subvec in vec {
-        for expr in subvec {
-            ret.push(expr);
+impl VarSpec {
+    pub fn new(
+        local: Vec<(RcStr, Mark)>,
+        free: Vec<(RcStr, Mark)>,
+        owned: Vec<(RcStr, Mark)>,
+    ) -> Self {
+        let mut ret = Self {
+            local,
+            free,
+            owned,
+            cache: RefCell::new(HashMap::new()),
+        };
+        ret.sort();
+        ret
+    }
+    fn sort(&mut self) {
+        self.local.sort_by(|(a, _), (b, _)| a.cmp(b));
+        self.free.sort_by(|(a, _), (b, _)| a.cmp(b));
+        self.owned.sort_by(|(a, _), (b, _)| a.cmp(b));
+    }
+    pub fn local(&self) -> &Vec<(RcStr, Mark)> {
+        &self.local
+    }
+    pub fn free(&self) -> &Vec<(RcStr, Mark)> {
+        &self.free
+    }
+    pub fn owned(&self) -> &Vec<(RcStr, Mark)> {
+        &self.owned
+    }
+    pub fn get(&self, name: &RcStr) -> Option<Variable> {
+        if !self.cache.borrow().contains_key(name) {
+            let result = self.get_uncached(name);
+            self.cache.borrow_mut().insert(name.clone(), result);
+        }
+        self.cache.borrow().get(name).unwrap().clone()
+    }
+    fn get_uncached(&self, name: &RcStr) -> Option<Variable> {
+        for (slot, (lname, mark)) in self.local.iter().enumerate() {
+            if name == lname {
+                return Some(Variable {
+                    name: name.clone(),
+                    type_: VariableType::Local,
+                    slot,
+                    mark: mark.clone(),
+                });
+            }
+        }
+        for (slot, (fname, mark)) in self.free.iter().chain(&self.owned).enumerate() {
+            if name == fname {
+                return Some(Variable {
+                    name: name.clone(),
+                    type_: VariableType::Upval,
+                    slot,
+                    mark: mark.clone(),
+                });
+            }
+        }
+        None
+    }
+}
+
+pub struct ModuleDisplay {
+    name: RcStr,
+    body: Expr,
+    varspec: Option<VarSpec>,
+}
+
+impl ModuleDisplay {
+    pub(crate) fn new(name: RcStr, body: Expr) -> Self {
+        Self {
+            name,
+            body,
+            varspec: None,
         }
     }
-    ret
+    pub fn name(&self) -> &RcStr {
+        &self.name
+    }
+    pub fn body(&self) -> &Expr {
+        &self.body
+    }
+    pub fn body_mut(&mut self) -> &mut Expr {
+        &mut self.body
+    }
+    pub fn varspec(&self) -> &Option<VarSpec> {
+        &self.varspec
+    }
+    pub fn varspec_mut(&mut self) -> &mut Option<VarSpec> {
+        &mut self.varspec
+    }
+}
+
+#[derive(Debug)]
+pub struct Args {
+    pub method: Option<RcStr>,
+    pub args: Vec<Expr>,
+    pub kwargs: Vec<(RcStr, Expr)>,
+}
+
+impl Args {
+    pub fn new(args: Vec<Expr>, kwargs: Vec<(RcStr, Expr)>) -> Self {
+        Self {
+            method: None,
+            args,
+            kwargs,
+        }
+    }
+    pub fn call_function_info(&self) -> CallFunctionDesc {
+        CallFunctionDesc {
+            argc: self.args.len(),
+            kwargs: self.kwargs.iter().map(|(name, _)| name.clone()).collect(),
+            method: self.method.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Expr {
+    mark: Mark,
+    desc: ExprDesc,
+}
+
+impl Expr {
+    pub fn new(mark: Mark, desc: ExprDesc) -> Self {
+        Self { mark, desc }
+    }
+    pub fn mark(&self) -> &Mark {
+        &self.mark
+    }
+    pub fn desc(&self) -> &ExprDesc {
+        &self.desc
+    }
+    pub(crate) fn desc_mut(&mut self) -> &mut ExprDesc {
+        &mut self.desc
+    }
+    pub fn unpack(self) -> (Mark, ExprDesc) {
+        (self.mark, self.desc)
+    }
+}
+
+#[derive(Debug)]
+pub enum ExprDesc {
+    Nil,
+    Bool(bool),
+    Number(f64),
+    String(RcStr),
+    Name(RcStr),
+    List(Vec<Expr>),
+    Map(Vec<(Expr, Expr)>),
+
+    Parentheses(Box<Expr>),
+    Block(Vec<Expr>),
+
+    Switch(Box<Expr>, Vec<(Expr, Expr)>, Option<Box<Expr>>),
+    If(Vec<(Expr, Expr)>, Option<Box<Expr>>),
+    For(AssignTarget, Box<Expr>, Box<Expr>),
+    While(Box<Expr>, Box<Expr>),
+
+    Binop(Binop, Box<Expr>, Box<Expr>),
+    Unop(Unop, Box<Expr>),
+    Subscript(Box<Expr>, Box<Expr>),
+    Slice(Box<Expr>, Option<Box<Expr>>, Option<Box<Expr>>),
+    Attr(Box<Expr>, RcStr),
+    CallFunction(Box<Expr>, Args),
+    MethodCall(Box<Expr>, RcStr, Args),
+    Assign(AssignTarget, Box<Expr>),
+    AugAssign(AssignTarget, Binop, Box<Expr>),
+    NonlocalAssign(RcStr, Box<Expr>),
+    Nonlocal(Vec<RcStr>),
+
+    Del(RcStr),
+    Yield(Box<Expr>),
+    Return(Option<Box<Expr>>),
+
+    Import(RcStr),
+    BreakPoint,
+
+    /// AssignDoc at runtime is more or less a nop.
+    /// However, it attaches docstrings to field assignments
+    /// (the first 'Expr' parameter should always be an Assign)
+    AssignDoc(Box<Expr>, RcStr, RcStr),
+
+    Function {
+        is_generator: bool,
+        name: Option<RcStr>,
+        params: ArgSpec,
+        docstr: Option<RcStr>,
+        body: Box<Expr>,
+
+        varspec: Option<VarSpec>,
+    },
+    Class {
+        name: RcStr,
+        bases: Vec<Expr>,
+        docstr: Option<RcStr>,
+        methods: Vec<(RcStr, Expr)>,
+        static_methods: Vec<(RcStr, Expr)>,
+    },
+}
+
+#[derive(Debug)]
+pub struct AssignTarget {
+    mark: Mark,
+    desc: AssignTargetDesc,
+}
+
+impl AssignTarget {
+    pub(crate) fn new(mark: Mark, desc: AssignTargetDesc) -> Self {
+        Self { mark, desc }
+    }
+    pub fn unpack(self) -> (Mark, AssignTargetDesc) {
+        (self.mark, self.desc)
+    }
+    pub fn mark(&self) -> &Mark {
+        &self.mark
+    }
+    pub fn desc(&self) -> &AssignTargetDesc {
+        &self.desc
+    }
+    pub(crate) fn desc_mut(&mut self) -> &mut AssignTargetDesc {
+        &mut self.desc
+    }
+}
+
+#[derive(Debug)]
+pub enum AssignTargetDesc {
+    Name(RcStr),
+    List(Vec<AssignTarget>),
+    Attr(Box<Expr>, RcStr),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -214,209 +308,4 @@ pub enum Binop {
     IsNot,
     And,
     Or,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Operation {
-    Binop(Binop),
-    Unop(Unop),
-}
-
-pub struct ArgumentList {
-    positional: Vec<Expression>,
-    keyword: Vec<(RcStr, Expression)>,
-    variadic: Option<Box<Expression>>,
-    table: Option<Box<Expression>>,
-}
-
-impl ArgumentList {
-    pub fn new(
-        positional: Vec<Expression>,
-        keyword: Vec<(RcStr, Expression)>,
-        variadic: Option<Expression>,
-        table: Option<Expression>,
-    ) -> ArgumentList {
-        ArgumentList {
-            positional,
-            keyword,
-            variadic: variadic.map(|e| e.into()),
-            table: table.map(|e| e.into()),
-        }
-    }
-
-    fn children_mut(&mut self) -> Vec<&mut Expression> {
-        let ArgumentList {
-            positional: args,
-            keyword: kwargs,
-            variadic,
-            table: kwtable,
-        } = self;
-        join_mut_refs(vec![
-            exprs2mutrefs(args),
-            kwargs.iter_mut().map(|(_, e)| e).collect(),
-            variadic.iter_mut().map(|b| &mut **b).collect(),
-            kwtable.iter_mut().map(|b| &mut **b).collect(),
-        ])
-    }
-
-    /// Tries to return a trivial version of the argument list, if there
-    /// are no special non-positional argument types
-    pub fn trivial(&self) -> Option<&Vec<Expression>> {
-        if self.keyword.is_empty() && self.variadic.is_none() && self.table.is_none() {
-            Some(&self.positional)
-        } else {
-            None
-        }
-    }
-
-    pub fn positional(&self) -> &Vec<Expression> {
-        &self.positional
-    }
-
-    pub fn keyword(&self) -> &Vec<(RcStr, Expression)> {
-        &self.keyword
-    }
-
-    pub fn variadic(&self) -> &Option<Box<Expression>> {
-        &self.variadic
-    }
-
-    pub fn table(&self) -> &Option<Box<Expression>> {
-        &self.table
-    }
-}
-
-pub enum ExpressionData {
-    Nil,
-    Bool(bool),
-    Int(i64),
-    Float(f64),
-    Symbol(Symbol),
-    String(RcStr),
-    MutableString(RcStr),
-    Name(RcStr),
-    Del(RcStr),
-    Nonlocal(Vec<RcStr>),
-    Parentheses(Box<Expression>),
-    Block(Vec<Expression>),
-    ListDisplay(Vec<Expression>),
-    MapDisplay(Vec<(Expression, Expression)>),
-    MutableListDisplay(Vec<Expression>),
-    MutableMapDisplay(Vec<(Expression, Expression)>),
-    Assign(Box<Expression>, Box<Expression>),
-    AugAssign(Box<Expression>, Binop, Box<Expression>),
-    AssignWithDoc(
-        Box<Expression>, // Assign expression
-        RcStr,           // variable name
-        RcStr,           // doc
-    ),
-    If(
-        Vec<(
-            Expression, // condition
-            Expression, // body
-        )>,
-        Option<Box<Expression>>, // other/else
-    ),
-    Switch(
-        Box<Expression>,
-        Vec<(
-            Expression, // match value
-            Expression, // body
-        )>,
-        Option<Box<Expression>>, // default
-    ),
-    For(
-        Box<Expression>, // target
-        Box<Expression>, // iterable
-        Box<Expression>, // body
-    ),
-    While(Box<Expression>, Box<Expression>),
-    Unop(Unop, Box<Expression>),
-    Binop(Binop, Box<Expression>, Box<Expression>),
-    Attribute(Box<Expression>, RcStr),
-    StaticAttribute(Box<Expression>, RcStr),
-    Subscript(Box<Expression>, Box<Expression>),
-    Slice(
-        Box<Expression>,
-        Option<Box<Expression>>,
-        Option<Box<Expression>>,
-    ),
-    FunctionCall(Box<Expression>, ArgumentList),
-    MethodCall(Box<Expression>, RcStr, ArgumentList),
-    New(ArgumentList),
-    FunctionDisplay(
-        bool,                     // is generator?
-        Option<RcStr>,            // name
-        Vec<RcStr>,               // required params
-        Vec<(RcStr, Expression)>, // optional params
-        Option<RcStr>,            // variadic param
-        Option<RcStr>,            // keywords param
-        Option<RcStr>,            // doc
-        Box<Expression>,          // body
-    ),
-    ClassDisplay(
-        ClassKind,                // (trait, class or @class)
-        RcStr,                    // short name
-        Vec<Expression>,          // bases
-        Option<RcStr>,            // docstring
-        Option<Vec<Symbol>>,      // fields
-        Vec<(RcStr, Expression)>, // methods
-        Vec<(RcStr, Expression)>, // static methods
-    ),
-    ExceptionKindDisplay(
-        RcStr,                   // short name
-        Option<Box<Expression>>, // base
-        Option<RcStr>,           // docstring
-        Option<Vec<Symbol>>,     // fields
-        Box<Expression>,         // message
-    ),
-    Import(RcStr),
-    Yield(Box<Expression>),
-    Return(Option<Box<Expression>>),
-
-    // For debugging
-    BreakPoint,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ExpressionKind {
-    Nil,
-    Bool,
-    Int,
-    Float,
-    Symbol,
-    String,
-    MutableString,
-    Name,
-    Del,
-    Nonlocal,
-    Parentheses,
-    Block,
-    ListDisplay,
-    MapDisplay,
-    MutableListDisplay,
-    MutableMapDisplay,
-    Assign,
-    AugAssign,
-    AssignWithDoc,
-    If,
-    Switch,
-    For,
-    While,
-    Unop,
-    Binop,
-    Attribute,
-    StaticAttribute,
-    Subscript,
-    Slice,
-    FunctionCall,
-    MethodCall,
-    New,
-    FunctionDisplay,
-    ClassDisplay,
-    ExceptionKindDisplay,
-    Import,
-    Yield,
-    Return,
-    BreakPoint,
 }

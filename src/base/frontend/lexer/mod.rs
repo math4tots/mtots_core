@@ -29,9 +29,14 @@ impl LexError {
     pub fn move_(self) -> (usize, usize, LexErrorKind) {
         (self.offset, self.lineno, self.kind)
     }
-
     pub fn kind(&self) -> LexErrorKind {
         self.kind.clone()
+    }
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+    pub fn lineno(&self) -> usize {
+        self.lineno
     }
 }
 

@@ -1,7 +1,0 @@
-r###"
-File system operations
-"###
-import a._fs
-
-copy = _fs::copy
-

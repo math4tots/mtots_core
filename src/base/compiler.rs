@@ -1,853 +1,261 @@
-use crate::ArgumentList;
-use crate::Binop;
-use crate::ClassKind;
+use crate::base::ast::*;
 use crate::Code;
-use crate::CodeBuilder;
-use crate::CodeBuilderError;
-use crate::CodeKind;
-use crate::ConstValue;
-use crate::Expression;
-use crate::ExpressionData;
-use crate::ExpressionKind;
-use crate::ParameterInfo;
+use crate::Error;
+use crate::Mark;
+use crate::NewFunctionDesc;
+use crate::Opcode;
 use crate::RcStr;
-use crate::Symbol;
-use crate::Unop;
-use crate::Value;
-use std::fmt;
+use crate::Result;
 
-#[derive(Debug)]
-pub struct CompileError {
+const INVALID_JUMP: usize = usize::MAX;
+
+pub fn compile(md: &ModuleDisplay) -> Result<Code> {
+    let mut builder = Builder::new(
+        Type::Module,
+        md.name().clone(),
+        md.varspec().clone().unwrap(),
+    );
+    builder.expr(md.body(), true)?;
+    Ok(builder.build())
+}
+
+enum Type {
+    Module,
+    Function,
+}
+
+struct Builder {
+    type_: Type,
     name: RcStr,
-    lineno: usize,
-    kind: CompileErrorKind,
+    varspec: VarSpec,
+    ops: Vec<Opcode>,
+    marks: Vec<Mark>,
+    params: Vec<Variable>,
 }
 
-impl CompileError {
-    pub fn move_(self) -> (RcStr, usize, CompileErrorKind) {
-        (self.name, self.lineno, self.kind)
-    }
-}
-
-#[derive(Debug)]
-pub enum CompileErrorKind {
-    InvalidAssignmentTarget(ExpressionKind),
-    InvalidAugmentedAssignmentTarget(ExpressionKind),
-    ExpectedConstantExpression(ExpressionKind),
-    ImportError {
-        start_module_name: RcStr,
-        import_path: RcStr,
-    },
-}
-
-impl fmt::Display for CompileErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            CompileErrorKind::InvalidAssignmentTarget(target_kind) => {
-                write!(f, "{:?} is not assignable", target_kind)?;
-            }
-            CompileErrorKind::InvalidAugmentedAssignmentTarget(target_kind) => {
-                write!(f, "{:?} is not augmented-assignable", target_kind)?;
-            }
-            CompileErrorKind::ExpectedConstantExpression(kind) => {
-                write!(f, "Expected a constant expression but got {:?}", kind)?;
-            }
-            CompileErrorKind::ImportError {
-                start_module_name,
-                import_path,
-            } => {
-                write!(
-                    f,
-                    "import {} could not be resolved from {}",
-                    import_path, start_module_name
-                )?;
-            }
-        }
-        Ok(())
-    }
-}
-
-struct Error {
-    lineno: usize,
-    kind: CompileErrorKind,
-}
-
-impl Error {
-    fn new(lineno: usize, kind: CompileErrorKind) -> Error {
-        Error { lineno, kind }
-    }
-}
-impl From<CodeBuilderError> for Error {
-    fn from(err: CodeBuilderError) -> Error {
-        match err {}
-    }
-}
-
-pub fn compile(name: RcStr, expr: &Expression) -> Result<Code, CompileError> {
-    let doc = if let ExpressionData::Block(exprs) = expr.data() {
-        if let Some(ExpressionData::String(s)) = exprs.get(0).map(|e| e.data()) {
-            Some(s.clone())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-    let mut builder = CodeBuilder::for_module(name.clone(), doc);
-    let result = (|| -> Result<Code, Error> {
-        rec(&mut builder, expr, true)?;
-        Ok(builder.build()?)
-    })();
-    match result {
-        Ok(code) => Ok(code),
-        Err(error) => Err(CompileError {
+impl Builder {
+    fn new(type_: Type, name: RcStr, varspec: VarSpec) -> Self {
+        Self {
+            type_,
             name,
-            lineno: error.lineno,
-            kind: error.kind,
-        }),
+            varspec,
+            ops: vec![],
+            marks: vec![],
+            params: vec![],
+        }
+    }
+    fn build(self) -> Code {
+        assert_eq!(self.ops.len(), self.marks.len());
+        Code::new(self.name, self.ops, self.params, self.varspec, self.marks)
+    }
+    fn add(&mut self, op: Opcode, mark: Mark) -> usize {
+        let id = self.ops.len();
+        self.ops.push(op);
+        self.marks.push(mark);
+        id
     }
 }
 
-/// compiles the given expression
-/// the 'used' argument indicates whether the result of the expression is
-/// actually used, and determines whether the evaluated value should
-/// remain on the stack after the expression finishes evaluating.
-fn rec(builder: &mut CodeBuilder, expr: &Expression, used: bool) -> Result<(), Error> {
-    match expr.data() {
-        ExpressionData::Nil => {
-            if used {
-                builder.load_const(())
-            }
-        }
-        ExpressionData::Bool(x) => {
-            if used {
-                builder.load_const(*x)
-            }
-        }
-        ExpressionData::Int(x) => {
-            if used {
-                builder.load_const(*x)
-            }
-        }
-        ExpressionData::Float(x) => {
-            if used {
-                builder.load_const(*x)
-            }
-        }
-        ExpressionData::Symbol(x) => {
-            if used {
-                builder.load_const(*x)
-            }
-        }
-        ExpressionData::String(x) => {
-            if used {
-                builder.load_const(x.clone())
-            }
-        }
-        ExpressionData::MutableString(x) => {
-            if used {
-                builder.make_mutable_string(x);
-            }
-        }
-        ExpressionData::Name(x) => {
-            // for variables, we need to load them regardless of whether
-            // the value is actually used, since the act of loading itself could have
-            // side-effects
-            builder.load_var(x.clone());
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::Del(x) => {
-            // Delete the given variable.
-            // Note that, if used as an expression, we expect to return the old
-            // value that used to be there.
-            // This feature is important for functions that expect unique
-            // references (e.g. __raise)
-            if used {
-                builder.load_var(x.clone());
-            }
-            builder.load_const(ConstValue::Uninitialized);
-            builder.store_var(x.clone());
-        }
-        ExpressionData::Nonlocal(names) => {
-            for name in names {
-                builder.nonlocal(name.clone());
-            }
-            if used {
-                builder.load_const(());
-            }
-        }
-        ExpressionData::Parentheses(expr) => rec(builder, expr, used)?,
-        ExpressionData::Block(exprs) => {
-            if exprs.is_empty() {
+impl Builder {
+    fn expr(&mut self, expr: &Expr, used: bool) -> Result<()> {
+        let mark = expr.mark().clone();
+        match expr.desc() {
+            ExprDesc::Nil => {
                 if used {
-                    builder.load_const(());
-                }
-            } else {
-                let mut exprs = exprs.iter().peekable();
-                while let Some(expr) = exprs.next() {
-                    builder.lineno(expr.lineno());
-                    let rec_used = if exprs.peek().is_some() { false } else { used };
-                    rec(builder, expr, rec_used)?;
+                    self.add(Opcode::Nil, mark);
                 }
             }
-        }
-        ExpressionData::ListDisplay(exprs) => {
-            for expr in exprs {
-                rec(builder, expr, used)?;
+            ExprDesc::Bool(x) => {
+                if used {
+                    self.add(Opcode::Bool(*x), mark);
+                }
             }
-            if used {
-                builder.make_list(exprs.len());
+            ExprDesc::Number(x) => {
+                if used {
+                    self.add(Opcode::Number(*x), mark);
+                }
             }
-        }
-        ExpressionData::MapDisplay(pairs) => {
-            for (key, val) in pairs {
-                rec(builder, key, used)?;
-                rec(builder, val, used)?;
+            ExprDesc::String(x) => {
+                if used {
+                    self.add(Opcode::String(x.clone()), mark);
+                }
             }
-            if used {
-                builder.make_map(pairs.len());
+            ExprDesc::Name(name) => {
+                let variable = self.varspec.get(name).unwrap();
+                self.add(Opcode::GetVar(variable.into()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
-        }
-        ExpressionData::MutableListDisplay(exprs) => {
-            for expr in exprs {
-                rec(builder, expr, used)?;
+            ExprDesc::Parentheses(expr) => {
+                self.expr(expr, used)?;
             }
-            if used {
-                builder.make_mutable_list(exprs.len());
-            }
-        }
-        ExpressionData::MutableMapDisplay(pairs) => {
-            for (key, val) in pairs {
-                rec(builder, key, used)?;
-                rec(builder, val, used)?;
-            }
-            if used {
-                builder.make_mutable_map(pairs.len());
-            }
-        }
-        ExpressionData::Assign(target, expr) => {
-            // You'll notice that the RHS gets evaluated first
-            // even though the LHS appears first in the source text.
-            // But Python also behaves this way, so I'm gonna say this is OK.
-            rec(builder, expr, true)?;
-            if used {
-                builder.dup_top();
-            }
-            assign(builder, target)?;
-        }
-        ExpressionData::AugAssign(target, op, expr) => {
-            // You'll notice that the RHS gets evaluated first
-            // even though the LHS appears first in the source text.
-            // But Python also behaves this way, so I'm gonna say this is OK.
-            rec(builder, expr, true)?;
-            augassign(builder, target, *op, used)?;
-        }
-        ExpressionData::AssignWithDoc(assign, name, doc) => {
-            if let CodeKind::Module = builder.kind() {
-                let doc_name: RcStr = format!("__doc_{}", name).into();
-                builder.load_const(doc.clone());
-                builder.store_var(doc_name.clone());
-            }
-            rec(builder, assign, used)?;
-        }
-        ExpressionData::If(pairs, other) => {
-            let end = builder.new_label();
-
-            for (cond, body) in pairs {
-                let next = builder.new_label();
-
-                rec(builder, cond, true)?;
-                builder.pop_jump_if_false(next);
-
-                rec(builder, body, used)?;
-                builder.jump(end);
-
-                builder.label(next);
-            }
-
-            if let Some(other) = other {
-                rec(builder, other, used)?;
-            } else if used {
-                builder.load_const(());
-            }
-
-            builder.label(end);
-        }
-        ExpressionData::Switch(item, pairs, other) => {
-            let end = builder.new_label();
-
-            rec(builder, item, true)?;
-
-            for (match_, body) in pairs {
-                let next = builder.new_label();
-
-                builder.dup_top();
-                rec(builder, match_, true)?;
-                builder.binop(Binop::Eq);
-                builder.pop_jump_if_false(next);
-
-                rec(builder, body, used)?;
-                builder.jump(end);
-
-                builder.label(next);
-            }
-
-            if let Some(other) = other {
-                rec(builder, other, used)?;
-            } else if used {
-                builder.load_const(());
-            }
-
-            builder.label(end);
-
-            // pop the original item
-            if used {
-                builder.rot_two();
-            }
-            builder.pop();
-        }
-        ExpressionData::For(target, iterable, body) => {
-            let start = builder.new_label();
-            let end = builder.new_label();
-
-            rec(builder, iterable, true)?;
-            builder.get_iter(); // TOS = iter(TOS)
-            builder.label(start);
-            builder.for_iter(end); // push(next(TOS)) or pop and jump to END if done
-            assign(builder, target)?;
-            rec(builder, body, false)?;
-            builder.jump(start);
-            builder.label(end);
-            if used {
-                builder.load_const(());
-            }
-        }
-        ExpressionData::While(cond, body) => {
-            let start = builder.new_label();
-            let end = builder.new_label();
-
-            builder.label(start);
-            rec(builder, cond, true)?;
-            builder.pop_jump_if_false(end);
-            rec(builder, body, false)?;
-            builder.jump(start);
-            builder.label(end);
-            if used {
-                builder.load_const(());
-            }
-        }
-        ExpressionData::Unop(op, expr) => {
-            rec(builder, expr, true)?;
-            builder.unop(*op);
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::Binop(op, lhs, rhs) => {
-            match op {
-                Binop::And => {
-                    let end = builder.new_label();
-                    rec(builder, lhs, true)?;
-                    builder.jump_if_false_or_pop(end);
-                    rec(builder, rhs, true)?;
-                    builder.label(end);
-                    if !used {
-                        builder.pop();
+            ExprDesc::Block(exprs) => {
+                if used {
+                    match exprs.split_last() {
+                        None => {
+                            self.add(Opcode::Nil, mark.clone());
+                        }
+                        Some((last, subexprs)) => {
+                            for subexpr in subexprs {
+                                self.expr(subexpr, false)?;
+                            }
+                            self.expr(last, true)?;
+                        }
                     }
-                }
-                Binop::Or => {
-                    let end = builder.new_label();
-                    rec(builder, lhs, true)?;
-                    builder.jump_if_true_or_pop(end);
-                    rec(builder, rhs, true)?;
-                    builder.label(end);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                Binop::IsNot => {
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.binop(Binop::Is);
-                    builder.unop(Unop::Not);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                Binop::Ne => {
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.binop(Binop::Eq);
-                    builder.unop(Unop::Not);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                Binop::Gt => {
-                    // a > b <=> b < a
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.rot_two();
-                    builder.binop(Binop::Lt);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                Binop::Le => {
-                    // a <= b <=> !(b < a)
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.rot_two();
-                    builder.binop(Binop::Lt);
-                    builder.unop(Unop::Not);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                Binop::Ge => {
-                    // a >= b <=> !(a < b)
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.binop(Binop::Lt);
-                    builder.unop(Unop::Not);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-                _ => {
-                    rec(builder, lhs, true)?;
-                    rec(builder, rhs, true)?;
-                    builder.binop(*op);
-                    if !used {
-                        builder.pop();
-                    }
-                }
-            }
-        }
-        ExpressionData::Attribute(owner, name) => {
-            rec(builder, owner, true)?;
-            builder.load_attr(name);
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::StaticAttribute(owner, name) => {
-            rec(builder, owner, true)?;
-            builder.load_static_attr(name);
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::Subscript(owner, index) => {
-            rec(builder, owner, true)?;
-            builder.load_method(&"__getitem".into());
-            finish_call0(builder, true, vec![&*index])?;
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::Slice(owner, start, end) => {
-            rec(builder, owner, true)?;
-            builder.load_method(&"__slice".into());
-            if let Some(start) = start {
-                rec(builder, start, true)?;
-            } else {
-                builder.load_const(());
-            }
-            if let Some(end) = end {
-                rec(builder, end, true)?;
-            } else {
-                builder.load_const(());
-            }
-            builder.call_func(3);
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::FunctionCall(f, arglist) => {
-            rec(builder, f, true)?;
-            finish_call(builder, 0, arglist)?;
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::MethodCall(owner, name, arglist) => {
-            rec(builder, owner, true)?;
-            builder.load_method(name);
-            finish_call(builder, 1, arglist)?;
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::New(arglist) => {
-            builder.load_dunder_new();
-            builder.load_class_for_new();
-            finish_call(builder, 1, arglist)?;
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::FunctionDisplay(is_generator, short_name, req, opt, var, kw, doc, body) => {
-            let short_name = match short_name {
-                Some(short_name) => short_name.clone(),
-                None => "<lambda>".into(),
-            };
-            let lineno = expr.lineno();
-            let req = req.iter().map(Symbol::from).collect();
-            let opt = {
-                let mut pairs = Vec::new();
-                for (name, expr) in opt {
-                    pairs.push((Symbol::from(name), Value::from(consteval(expr)?)));
-                }
-                pairs
-            };
-            let var = var.as_ref().map(Symbol::from);
-            let kw = kw.as_ref().map(Symbol::from);
-            let parameter_info = ParameterInfo::new(req, opt, var, kw);
-            let full_func_name = format!("{}.{}", builder.full_name(), short_name);
-            let mut func_builder = if *is_generator {
-                CodeBuilder::for_generator(
-                    parameter_info,
-                    builder.module_name().clone(),
-                    full_func_name.into(),
-                    lineno,
-                    doc.clone(),
-                )
-            } else {
-                CodeBuilder::for_func(
-                    parameter_info,
-                    builder.module_name().clone(),
-                    full_func_name.into(),
-                    lineno,
-                    doc.clone(),
-                )
-            };
-            rec(&mut func_builder, body, true)?;
-            let func_code = func_builder.build()?;
-
-            for freevar in func_code.freevars() {
-                builder.load_cell(RcStr::from(freevar));
-            }
-            builder.make_list(func_code.freevars().len());
-
-            let func_code_index = builder.add_code_obj(func_code.into());
-            builder.make_func(func_code_index);
-
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::ClassDisplay(
-            class_kind,
-            short_name,
-            bases,
-            docstring,
-            fields,
-            methods,
-            static_methods,
-        ) => {
-            for base in bases {
-                rec(builder, base, true)?;
-            }
-            builder.make_list(bases.len());
-
-            if let Some(docstring) = docstring {
-                builder.load_const(docstring.clone());
-            } else {
-                builder.load_const(());
-            }
-
-            let fields = if let ClassKind::Trait = class_kind {
-                assert!(fields.is_none());
-                vec![]
-            } else {
-                if let Some(fields) = fields {
-                    fields.clone()
                 } else {
-                    vec![]
-                }
-            };
-            for field in &fields {
-                builder.load_const(*field);
-            }
-            builder.make_list(fields.len());
-
-            for (keystr, method) in methods {
-                let key = Symbol::from(keystr);
-                builder.load_const(key);
-                rec(builder, method, true)?;
-            }
-            builder.make_table(methods.len());
-
-            for (keystr, method) in static_methods {
-                let key = Symbol::from(keystr);
-                builder.load_const(key);
-                rec(builder, method, true)?;
-            }
-            builder.make_table(static_methods.len());
-
-            let full_name = format!("{}::{}", builder.module_name(), short_name).into();
-            builder.make_class(&full_name, *class_kind);
-
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::ExceptionKindDisplay(short_name, base, _docstring, fields, template) => {
-            let full_name = format!("{}::{}", builder.module_name(), short_name).into();
-
-            if let Some(base) = base {
-                rec(builder, base, true)?;
-            } else {
-                builder.load_const(());
-            }
-
-            if let Some(fields) = fields {
-                for field in fields {
-                    builder.load_const(*field);
-                }
-                builder.make_list(fields.len());
-            } else {
-                builder.load_const(());
-            }
-
-            rec(builder, template, true)?;
-
-            builder.make_exception_kind(&full_name);
-
-            if !used {
-                builder.pop();
-            }
-        }
-        ExpressionData::Import(name) => {
-            if name.starts_with('.') {
-                // resolve relative imports into absolute ones
-                // Relative imports are relative to the name of the current module
-                //
-                // So if your script is in:
-                //   * foo/bar/__init.u,
-                //       your module name is foo.bar, and
-                //       import .baz
-                //       will translate to
-                //       import foo.bar.baz
-                //
-                //       import ..baz
-                //       will translate to
-                //       import foo.baz
-                // and so on
-                //
-                // The behavior is identical between foo/bar/__init.u
-                // and foo/bar.u since, both files would have the same
-                // module names
-                //
-                let mut module_name = builder.module_name().str().to_owned();
-                for _ in 0..name.chars().take_while(|c| *c == '.').count() - 1 {
-                    if let Some(i) = module_name.rfind('.') {
-                        module_name.truncate(i);
-                    } else {
-                        return Err(Error {
-                            lineno: expr.lineno(),
-                            kind: CompileErrorKind::ImportError {
-                                start_module_name: builder.module_name().clone(),
-                                import_path: name.clone(),
-                            },
-                        });
+                    for expr in exprs {
+                        self.expr(expr, false)?;
                     }
                 }
-                builder.import_(
-                    &format!("{}.{}", module_name, name.str().trim_start_matches('.')).into(),
-                );
-            } else {
-                builder.import_(name);
             }
-        }
-        ExpressionData::Yield(expr) => {
-            rec(builder, expr, true)?;
-            builder.yield_();
-            if !used {
-                builder.pop();
+            ExprDesc::If(pairs, other) => {
+                let mut end_jumps = Vec::new();
+                let mut last = None;
+                for (cond, body) in pairs {
+                    if let Some(last) = last {
+                        self.patch_jump(last);
+                    }
+                    self.expr(cond, true)?;
+                    last = Some(self.add(Opcode::JumpIfFalse(INVALID_JUMP), mark.clone()));
+                    self.expr(body, used)?;
+                    end_jumps.push(self.add(Opcode::Jump(INVALID_JUMP), mark.clone()));
+                }
+                if let Some(last) = last {
+                    self.patch_jump(last);
+                }
+                if let Some(other) = other {
+                    self.expr(other, used)?;
+                } else if used {
+                    self.add(Opcode::Nil, mark);
+                }
+                for id in end_jumps {
+                    self.patch_jump(id);
+                }
             }
-        }
-        ExpressionData::Return(expr) => {
-            if let Some(expr) = expr {
-                rec(builder, expr, true)?;
-            } else {
-                builder.load_const(());
+            ExprDesc::Binop(op, lhs, rhs) => {
+                self.expr(lhs, true)?;
+                self.expr(rhs, true)?;
+                self.add(Opcode::Binop(*op), mark);
             }
-            builder.return_();
-        }
-        ExpressionData::BreakPoint => {
-            builder.breakpoint();
-            if used {
-                builder.load_const(());
+            ExprDesc::Attr(owner, attr) => {
+                self.expr(owner, true)?;
+                self.add(Opcode::GetAttr(attr.clone()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
-        }
-    }
-    Ok(())
-}
-
-fn consteval(expr: &Expression) -> Result<ConstValue, Error> {
-    Ok(match expr.data() {
-        ExpressionData::Nil => ConstValue::Nil,
-        ExpressionData::Bool(x) => ConstValue::Bool(*x),
-        ExpressionData::Int(x) => ConstValue::Int(*x),
-        ExpressionData::Float(x) => ConstValue::Float(x.to_bits()),
-        ExpressionData::String(x) => ConstValue::String(x.clone()),
-        _ => {
-            return Err(Error::new(
-                expr.lineno(),
-                CompileErrorKind::ExpectedConstantExpression(expr.kind()),
-            ));
-        }
-    })
-}
-
-fn assign(builder: &mut CodeBuilder, target: &Expression) -> Result<(), Error> {
-    match target.data() {
-        ExpressionData::Name(name) => {
-            builder.store_var(name.clone());
-        }
-        ExpressionData::Attribute(owner, name) => {
-            rec(builder, owner, true)?;
-            builder.store_attr(name);
-        }
-        ExpressionData::ListDisplay(subtargets) => {
-            builder.unpack(subtargets.len());
-            for subtarget in subtargets {
-                assign(builder, subtarget)?;
+            ExprDesc::CallFunction(f, args) => {
+                self.expr(f, true)?;
+                self.args(args)?;
+                let info = args.call_function_info();
+                self.add(Opcode::CallFunction(info.into()), mark);
             }
-        }
-        ExpressionData::Subscript(owner, index) => {
-            rec(builder, owner, true)?;
-            builder.load_method(&"__setitem".into());
-            rec(builder, index, true)?;
-
-            // at this point, the stack looks like:
-            //      TOS : index
-            //      TOS1: owner
-            //      TOS2: method
-            //      TOS3: expr
-            // we use pull_tos3, fix the order for the method call
-            builder.pull_tos3();
-            builder.call_func(3);
-
-            builder.pop();
-        }
-        _ => {
-            return Err(Error::new(
-                target.lineno(),
-                CompileErrorKind::InvalidAssignmentTarget(target.kind()),
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn augassign(
-    builder: &mut CodeBuilder,
-    target: &Expression,
-    op: Binop,
-    used: bool,
-) -> Result<(), Error> {
-    // NOTES:
-    //   * TODO: aug-assign for subscript,
-    match target.data() {
-        ExpressionData::Name(name) => {
-            builder.load_var(name.clone());
-            builder.rot_two();
-            builder.binop(op);
-            if used {
-                builder.dup_top();
+            ExprDesc::Assign(target, valexpr) => {
+                self.expr(valexpr, true)?;
+                self.target(target, !used)?;
             }
-            builder.store_var(name.clone());
-        }
-        ExpressionData::Attribute(owner, name) => {
-            rec(builder, owner, true)?;
-            builder.dup_top();
-            builder.load_attr(name);
-            builder.pull_tos2();
-            builder.binop(op);
-            if used {
-                builder.dup_top();
-                builder.pull_tos2();
-            } else {
-                builder.rot_two();
+            ExprDesc::NonlocalAssign(name, valexpr) => {
+                self.expr(valexpr, true)?;
+                let variable = self.varspec.get(name).unwrap();
+                if used {
+                    self.add(Opcode::TeeVar(variable.into()), mark);
+                } else {
+                    self.add(Opcode::SetVar(variable.into()), mark);
+                }
             }
-            builder.store_attr(name);
-        }
-        _ => {
-            return Err(Error::new(
-                target.lineno(),
-                CompileErrorKind::InvalidAugmentedAssignmentTarget(target.kind()),
-            ));
-        }
-    }
-    Ok(())
-}
+            ExprDesc::Return(valexpr) => {
+                match self.type_ {
+                    Type::Module => {
+                        return Err(Error::rt(format!("Return is not allowed here").into(), vec![mark]));
+                    }
+                    Type::Function => {}
+                }
+                if let Some(valexpr) = valexpr {
+                    self.expr(valexpr, true)?;
+                } else {
+                    self.add(Opcode::Nil, mark.clone());
+                }
+                self.add(Opcode::Return, mark);
+            }
+            ExprDesc::Function {
+                is_generator: _,
+                name,
+                params,
+                docstr: _,
+                body,
+                varspec,
+            } => {
+                let short_name = name.clone().unwrap_or_else(|| "<lambda>".into());
+                let name = format!("{}#{}", self.name, short_name).into();
 
-/// extra_args can be needed because:
-///   * method calls will have an extra owner argument in the beginning,
-///   * new expressions will have an extra 'class' argument in the beginning
-fn finish_call(
-    builder: &mut CodeBuilder,
-    extra_args: usize,
-    arglist: &ArgumentList,
-) -> Result<(), Error> {
-    if let Some(args) = arglist.trivial() {
-        for arg in args {
-            rec(builder, arg, true)?;
-        }
-        builder.call_func(extra_args + args.len());
-        Ok(())
-    } else {
-        let args = arglist.positional();
-        let kwargs = arglist.keyword();
-        let variadic = arglist.variadic();
-        let table = arglist.table();
+                let mut func_builder = Builder::new(Type::Function, name, varspec.clone().unwrap());
+                func_builder.expr(body, true)?;
+                let func_code = func_builder.build();
 
-        // positional args
-        for arg in args {
-            rec(builder, arg, true)?;
-        }
-        builder.make_list(extra_args + args.len());
+                let mut freevar_binding_slots = Vec::new();
+                for (freevar, _) in func_code.varspec().free() {
+                    let variable = self.varspec.get(freevar).unwrap();
+                    assert_eq!(variable.type_(), VariableType::Upval);
+                    freevar_binding_slots.push(variable.slot());
+                }
 
-        // keyword args
-        for (keystr, arg) in kwargs {
-            let key = Symbol::from(keystr);
-            builder.load_const(key);
-            rec(builder, arg, true)?;
+                let desc = NewFunctionDesc {
+                    code: func_code.into(),
+                    argspec: params.clone().into(),
+                    freevar_binding_slots,
+                };
+                self.add(Opcode::NewFunction(desc.into()), mark);
+            }
+            desc => panic!("TODO compile {:?}", desc),
         }
-        builder.make_table(kwargs.len());
-
-        // variadic (extra positional args)
-        if let Some(variadic) = variadic {
-            builder.rot_two(); // bring the arg vec to TOS
-            rec(builder, variadic, true)?;
-            builder.extend_list();
-            builder.rot_two(); // bring the kw table back to TOS
-        }
-
-        // table args (extra keyword args)
-        if let Some(table) = table {
-            rec(builder, table, true)?;
-            builder.extend_table();
-        }
-
-        builder.call_func_generic();
         Ok(())
     }
-}
-
-fn finish_call0(
-    builder: &mut CodeBuilder,
-    account_for_owner: bool,
-    args: Vec<&Expression>,
-) -> Result<(), Error> {
-    for arg in &args {
-        rec(builder, arg, true)?;
+    fn args(&mut self, args: &Args) -> Result<()> {
+        for arg in &args.args {
+            self.expr(arg, true)?;
+        }
+        for (_, arg) in &args.kwargs {
+            self.expr(arg, true)?;
+        }
+        Ok(())
     }
-    builder.call_func(if account_for_owner { 1 } else { 0 } + args.len());
-    Ok(())
+    fn target(&mut self, target: &AssignTarget, consume: bool) -> Result<()> {
+        let mark = target.mark().clone();
+        match target.desc() {
+            AssignTargetDesc::Name(name) => {
+                let variable = self.varspec.get(name).unwrap();
+                if consume {
+                    self.add(Opcode::SetVar(variable.into()), mark);
+                } else {
+                    self.add(Opcode::TeeVar(variable.into()), mark);
+                }
+            }
+            AssignTargetDesc::List(targets) => {
+                if !consume {
+                    self.add(Opcode::Dup, mark.clone());
+                }
+                self.add(Opcode::Unpack(targets.len() as u32), mark);
+                for target in targets.iter().rev() {
+                    self.target(target, true)?;
+                }
+            }
+            AssignTargetDesc::Attr(owner, attr) => {
+                self.expr(owner, true)?;
+                if consume {
+                    self.add(Opcode::SetAttr(attr.clone()), mark);
+                } else {
+                    self.add(Opcode::TeeAttr(attr.clone()), mark);
+                }
+            }
+        }
+        Ok(())
+    }
+    fn here(&self) -> usize {
+        self.ops.len()
+    }
+    fn patch_jump(&mut self, jump_id: usize) {
+        let new_dest = self.here();
+        self.ops[jump_id].patch_jump(new_dest);
+    }
 }
