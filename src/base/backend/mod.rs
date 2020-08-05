@@ -10,6 +10,7 @@ use crate::Result;
 use crate::Value;
 use crate::VarSpec;
 use crate::Variable;
+use crate::ResumeResult;
 use crate::VariableType;
 use std::cell::RefCell;
 use std::collections::HashMap;

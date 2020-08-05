@@ -1,0 +1,18 @@
+# Just a straight up speed test of 10mil iterations
+# Not the best way to measure performance, but it gives
+# a baseline for the minimum amount of time you can expect
+# a loop to take
+
+def main() {
+    print(range(10))
+}
+
+def* range(n) {
+    i = 0
+    while i < n {
+        yield i
+        i = i + 1
+    }
+}
+
+main()

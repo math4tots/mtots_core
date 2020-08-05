@@ -92,6 +92,14 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
             get(valexpr, out)?;
         }
+        ExprDesc::Yield(expr) => {
+            get(expr, out)?;
+        }
+        ExprDesc::Return(expr) => {
+            if let Some(expr) = expr {
+                get(expr, out)?;
+            }
+        }
         ExprDesc::Import(_) => {}
         ExprDesc::Function {
             is_generator: _,

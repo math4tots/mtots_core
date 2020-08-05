@@ -212,6 +212,7 @@ pub struct Function {
     argspec: Rc<ArgSpec>,
     code: Rc<Code>,
     bindings: Vec<Rc<RefCell<Value>>>,
+    is_generator: bool,
 }
 
 impl cmp::PartialEq for Function {
@@ -227,12 +228,16 @@ impl fmt::Debug for Function {
 }
 
 impl Function {
-    pub fn new(argspec: Rc<ArgSpec>, code: Rc<Code>, bindings: Vec<Rc<RefCell<Value>>>) -> Self {
+    pub fn new(argspec: Rc<ArgSpec>, code: Rc<Code>, bindings: Vec<Rc<RefCell<Value>>>, is_generator: bool) -> Self {
+        if argspec.nparams() != code.params().len() {
+            println!("code.name = {}", code.name());
+        }
         assert_eq!(argspec.nparams(), code.params().len());
         Self {
             argspec,
             code,
             bindings,
+            is_generator,
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -245,7 +250,12 @@ impl Function {
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
         let args = self.argspec.apply(args, kwargs)?;
-        self.code
-            .apply_for_function(globals, self.bindings.clone(), args)
+        if self.is_generator {
+            let frame = self.code.new_frame(self.bindings.clone());
+            Ok(Generator::new(self.code.clone(), frame).into())
+        } else {
+            self.code
+                .apply_for_function(globals, self.bindings.clone(), args)
+        }
     }
 }

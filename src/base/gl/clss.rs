@@ -11,6 +11,7 @@ pub struct ClassManager {
     pub Map: Rc<Class>,
     pub Function: Rc<Class>,
     pub Builtin: Rc<Class>,
+    pub Generator: Rc<Class>,
     pub Class: Rc<Class>,
     pub Module: Rc<Class>,
 }
@@ -27,6 +28,7 @@ impl ClassManager {
         let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
         let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
         let Builtin = Class::new("Builtin".into(), HashMap::new(), HashMap::new());
+        let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());
         let Module = Class::new("Module".into(), HashMap::new(), HashMap::new());
         Self {
@@ -39,6 +41,7 @@ impl ClassManager {
             Map,
             Function,
             Builtin,
+            Generator,
             Class,
             Module,
         }
@@ -56,6 +59,7 @@ impl ClassManager {
             Value::Map(..) => &self.Map,
             Value::Function(..) => &self.Function,
             Value::Builtin(..) => &self.Builtin,
+            Value::Generator(..) => &self.Generator,
             Value::Class(..) => &self.Class,
             Value::Module(..) => &self.Module,
         }
@@ -72,6 +76,7 @@ impl ClassManager {
             &self.Map,
             &self.Function,
             &self.Builtin,
+            &self.Generator,
             &self.Class,
             &self.Module,
         ]

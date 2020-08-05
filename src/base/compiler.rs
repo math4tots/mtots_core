@@ -13,6 +13,7 @@ pub fn compile(md: &ModuleDisplay) -> Result<Code> {
     let mut builder = Builder::new(
         Type::Module,
         md.name().clone(),
+        vec![],
         md.varspec().clone().unwrap(),
     );
     builder.expr(md.body(), true)?;
@@ -22,26 +23,27 @@ pub fn compile(md: &ModuleDisplay) -> Result<Code> {
 enum Type {
     Module,
     Function,
+    Generator,
 }
 
 struct Builder {
     type_: Type,
     name: RcStr,
+    params: Vec<Variable>,
     varspec: VarSpec,
     ops: Vec<Opcode>,
     marks: Vec<Mark>,
-    params: Vec<Variable>,
 }
 
 impl Builder {
-    fn new(type_: Type, name: RcStr, varspec: VarSpec) -> Self {
+    fn new(type_: Type, name: RcStr, params: Vec<Variable>, varspec: VarSpec) -> Self {
         Self {
             type_,
             name,
+            params,
             varspec,
             ops: vec![],
             marks: vec![],
-            params: vec![],
         }
     }
     fn build(self) -> Code {
@@ -190,6 +192,19 @@ impl Builder {
                     self.add(Opcode::SetVar(variable.into()), mark);
                 }
             }
+            ExprDesc::Yield(valexpr) => {
+                match self.type_ {
+                    Type::Module | Type::Function => {
+                        return Err(Error::rt(
+                            format!("Yield is not allowed here").into(),
+                            vec![mark],
+                        ));
+                    }
+                    Type::Generator => {}
+                }
+                self.expr(valexpr, true)?;
+                self.add(Opcode::Yield, mark);
+            }
             ExprDesc::Return(valexpr) => {
                 match self.type_ {
                     Type::Module => {
@@ -198,7 +213,7 @@ impl Builder {
                             vec![mark],
                         ));
                     }
-                    Type::Function => {}
+                    Type::Function | Type::Generator => {}
                 }
                 if let Some(valexpr) = valexpr {
                     self.expr(valexpr, true)?;
@@ -214,17 +229,27 @@ impl Builder {
                 }
             }
             ExprDesc::Function {
-                is_generator: _,
+                is_generator,
                 name,
                 params,
                 docstr: _,
                 body,
                 varspec,
             } => {
+                let varspec = varspec.as_ref().unwrap().clone();
                 let short_name = name.clone().unwrap_or_else(|| "<lambda>".into());
                 let name = format!("{}#{}", self.name, short_name).into();
 
-                let mut func_builder = Builder::new(Type::Function, name, varspec.clone().unwrap());
+                let param_vars = {
+                    let mut vars = Vec::new();
+                    for name in params.params() {
+                        vars.push(varspec.get(&name).unwrap());
+                    }
+                    vars
+                };
+
+                let type_ = if *is_generator { Type::Generator } else { Type::Function };
+                let mut func_builder = Builder::new(type_, name, param_vars, varspec);
                 func_builder.expr(body, true)?;
                 let func_code = func_builder.build();
 
@@ -239,6 +264,7 @@ impl Builder {
                     code: func_code.into(),
                     argspec: params.clone().into(),
                     freevar_binding_slots,
+                    is_generator: *is_generator,
                 };
                 self.add(Opcode::NewFunction(desc.into()), mark);
             }

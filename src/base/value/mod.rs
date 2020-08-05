@@ -5,12 +5,14 @@ mod cv;
 mod format;
 mod func;
 mod key;
+mod gen;
 mod m;
 use crate::Code;
 use crate::Error;
 use crate::Globals;
 use crate::RcStr;
 use crate::Result;
+use crate::Frame;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
@@ -27,6 +29,7 @@ pub use conv::*;
 pub use cv::*;
 pub use func::*;
 pub use key::*;
+pub use gen::*;
 pub use m::*;
 
 #[derive(Clone, PartialEq)]
@@ -41,6 +44,7 @@ pub enum Value {
     Map(Rc<Map>),
     Function(Rc<Function>),
     Builtin(Rc<Builtin>),
+    Generator(Rc<RefCell<Generator>>),
     Class(Rc<Class>),
     Module(Rc<Module>),
 }
@@ -56,7 +60,7 @@ impl Value {
             Self::List(list) => list.borrow().len() > 0,
             Self::Set(set) => set.borrow().len() > 0,
             Self::Map(map) => map.borrow().len() > 0,
-            Self::Function(_) | Self::Builtin(_) | Self::Class(_) | Self::Module(_) => true,
+            Self::Function(_) | Self::Builtin(_) | Self::Generator(_) | Self::Class(_) | Self::Module(_) => true,
         }
     }
     pub fn bool(&self) -> Result<bool> {

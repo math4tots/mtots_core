@@ -144,6 +144,12 @@ impl From<Builtin> for Value {
     }
 }
 
+impl From<Generator> for Value {
+    fn from(gen: Generator) -> Self {
+        Self::Generator(Rc::new(RefCell::new(gen)))
+    }
+}
+
 impl From<Rc<Class>> for Value {
     fn from(cls: Rc<Class>) -> Self {
         Self::Class(cls)

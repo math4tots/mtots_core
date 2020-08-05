@@ -58,6 +58,7 @@ impl fmt::Debug for Value {
             }
             Value::Function(func) => write!(f, "{:?}", func),
             Value::Builtin(func) => write!(f, "{:?}", func),
+            Value::Generator(gen) => write!(f, "{:?}", gen.borrow()),
             Value::Module(module) => write!(f, "{:?}", module),
             Value::Class(cls) => write!(f, "{:?}", cls),
         }

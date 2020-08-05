@@ -21,6 +21,7 @@ pub(crate) enum Opcode {
     Binop(Binop),
 
     Import(RcStr),
+    Yield,
     Return,
     Jump(usize),
     JumpIfFalse(usize),
@@ -61,6 +62,8 @@ pub(crate) struct NewFunctionDesc {
     /// The list of upval slots that are needed to create the bindings
     /// for this new function
     pub freevar_binding_slots: Vec<usize>,
+
+    pub is_generator: bool,
 }
 
 #[inline(always)]
@@ -192,6 +195,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             };
             frame.push(result);
         }
+        Opcode::Yield => {
+            let value = frame.pop();
+            return StepResult::Yield(value);
+        }
         Opcode::Return => {
             let value = frame.pop();
             return StepResult::Return(value);
@@ -238,7 +245,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 .iter()
                 .map(|slot| frame.getcell(*slot))
                 .collect();
-            let func = Function::new(desc.argspec.clone(), desc.code.clone(), bindings);
+            let func = Function::new(desc.argspec.clone(), desc.code.clone(), bindings, desc.is_generator);
             frame.push(func.into());
         }
     }
@@ -248,6 +255,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
 pub(super) enum StepResult {
     Ok,
     Return(Value),
+    Yield(Value),
     Err(Error),
 }
 

@@ -50,7 +50,7 @@ impl Code {
     pub fn marks(&self) -> &Vec<Mark> {
         &self.marks
     }
-    fn new_frame(&self, bindings: Vec<Rc<RefCell<Value>>>) -> Frame {
+    pub(crate) fn new_frame(&self, bindings: Vec<Rc<RefCell<Value>>>) -> Frame {
         Frame::new(
             self.varspec.local().len(),
             bindings,
@@ -148,8 +148,21 @@ impl Code {
         loop {
             match step(globals, self, frame) {
                 StepResult::Ok => {}
+                StepResult::Yield(_) => return Err(rterr!("Yield from unyieldable context")),
                 StepResult::Return(value) => return Ok(value),
                 StepResult::Err(error) => return Err(error),
+            }
+        }
+    }
+
+    pub(crate) fn resume_frame(&self, globals: &mut Globals, frame: &mut Frame, arg: Value) -> ResumeResult {
+        frame.push(arg);
+        loop {
+            match step(globals, self, frame) {
+                StepResult::Ok => {}
+                StepResult::Yield(value) => return ResumeResult::Yield(value),
+                StepResult::Return(value) => return ResumeResult::Return(value),
+                StepResult::Err(error) => return ResumeResult::Err(error),
             }
         }
     }
