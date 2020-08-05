@@ -16,6 +16,7 @@ use crate::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::cmp;
 mod bltn;
 mod clss;
 mod ge;
@@ -39,6 +40,7 @@ pub struct Globals {
     module_map: HashMap<RcStr, Rc<Module>>,
     native_modules: HashMap<RcStr, NativeModule>,
     source_roots: Vec<RcStr>,
+    main_module: Option<RcStr>,
 
     // builtins
     class_manager: ClassManager,
@@ -57,6 +59,7 @@ impl Globals {
             module_map: HashMap::new(),
             native_modules: HashMap::new(),
             source_roots: vec![],
+            main_module: None,
             class_manager,
             builtins,
             repl_scope: None,
@@ -84,6 +87,12 @@ impl Globals {
     }
     pub fn class_manager(&self) -> &ClassManager {
         &self.class_manager
+    }
+    pub fn get_main(&self) -> &Option<RcStr> {
+        &self.main_module
+    }
+    pub fn set_main(&mut self, main_module_name: RcStr) {
+        self.main_module = Some(main_module_name);
     }
     pub fn exec(&mut self, source: Rc<Source>) -> Result<Rc<Module>> {
         let name = source.name().clone();

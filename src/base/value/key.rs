@@ -8,7 +8,7 @@ use std::hash::Hasher;
 pub enum Key {
     Nil,
     Bool(bool),
-    NumberBits(u64), // f64 stored as bits
+    NumberBits(i64), // f64 stored as bits
     String(RcStr),
     List(Vec<Key>),
     Set(HSet),

@@ -3,7 +3,7 @@ use super::*;
 /// Wrapper around RefCell<Vec<Value>>
 /// Having a wrapper keeps the possibility open for e.g.
 /// caching hash values, or mutability locks
-#[derive(PartialEq)]
+#[derive(PartialEq, PartialOrd)]
 pub struct List {
     vec: RefCell<Vec<Value>>,
 }
@@ -64,6 +64,12 @@ impl Set {
     }
 }
 
+impl cmp::PartialOrd for Set {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        self.sorted_keys().partial_cmp(&other.sorted_keys())
+    }
+}
+
 #[derive(PartialEq)]
 pub struct Map {
     map: RefCell<IndexMap<Key, Value>>,
@@ -91,6 +97,11 @@ impl Map {
         }
         Ok(ret)
     }
+    pub fn sorted(&self) -> Vec<(Key, Value)> {
+        let mut vec: Vec<_> = self.borrow().clone().into_iter().collect();
+        vec.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
+        vec
+    }
     pub fn generator(map: Rc<Self>) -> NativeGenerator {
         let mut i = 0;
         NativeGenerator::new("map-iterator", move |_globals, _arg| {
@@ -103,6 +114,12 @@ impl Map {
                 ResumeResult::Return(Value::Nil)
             }
         })
+    }
+}
+
+impl cmp::PartialOrd for Map {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        self.sorted().partial_cmp(&other.sorted())
     }
 }
 

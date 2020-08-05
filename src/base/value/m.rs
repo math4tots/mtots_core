@@ -37,6 +37,12 @@ impl cmp::PartialEq for Module {
     }
 }
 
+impl cmp::PartialOrd for Module {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        (self as *const Self as usize).partial_cmp(&(other as *const Self as usize))
+    }
+}
+
 impl fmt::Debug for Module {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<module {}>", self.name)

@@ -34,7 +34,7 @@ pub use gen::*;
 pub use key::*;
 pub use m::*;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Invalid,
     Nil,

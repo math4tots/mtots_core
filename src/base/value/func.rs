@@ -206,6 +206,12 @@ impl cmp::PartialEq for NativeFunction {
     }
 }
 
+impl cmp::PartialOrd for NativeFunction {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        (self as *const Self as usize).partial_cmp(&(other as *const Self as usize))
+    }
+}
+
 impl fmt::Debug for NativeFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<native function {}>", self.name())
@@ -222,6 +228,12 @@ pub struct Function {
 impl cmp::PartialEq for Function {
     fn eq(&self, other: &Self) -> bool {
         self as *const _ == other as *const _
+    }
+}
+
+impl cmp::PartialOrd for Function {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        (self as *const Self as usize).partial_cmp(&(other as *const Self as usize))
     }
 }
 

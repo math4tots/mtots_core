@@ -193,7 +193,7 @@ impl TryFrom<Value> for Key {
         match value {
             Value::Nil => Ok(Key::Nil),
             Value::Bool(x) => Ok(Key::Bool(x)),
-            Value::Number(x) => Ok(Key::NumberBits(x.to_bits())),
+            Value::Number(x) => Ok(Key::NumberBits(x.to_bits() as i64)),
             Value::String(x) => Ok(Key::String(x)),
             Value::List(x) => Ok(Key::List(
                 x.borrow()
@@ -215,7 +215,7 @@ impl From<Key> for Value {
         match key {
             Key::Nil => Value::Nil,
             Key::Bool(x) => Value::Bool(x),
-            Key::NumberBits(bits) => Value::Number(f64::from_bits(bits)),
+            Key::NumberBits(bits) => Value::Number(f64::from_bits(bits as u64)),
             Key::String(s) => Value::String(s),
             Key::List(list) => list
                 .into_iter()

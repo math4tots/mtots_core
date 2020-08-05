@@ -1,5 +1,6 @@
 import a._os
 import a._os.proc as osproc
+import a._os::Path
 
 name = _os::name
 family = _os::family
@@ -37,7 +38,7 @@ def* walk(root) {
         return
     }
 
-    stack = @[root]
+    stack = [root]
 
     while stack {
         path = stack.pop()
@@ -52,22 +53,16 @@ def* walk(root) {
     }
 }
 
-INHERIT = :inherit
-PIPE = :pipe
-NULL = :null
-UTF8 = :utf8
+INHERIT = 'inherit'
+PIPE = 'pipe'
+NULL = 'null'
+UTF8 = 'utf8'
 
-except ProcessError(OSError) {
-    [status, stdout, stderr]
-    def "Process failed with {status}"
-}
-
-@class Process {
+# [proc, encoding, check]
+class Process {
     r###"
     Exposing Rust's 'Command'/'process' API
     "###
-
-    [proc, encoding, check]
 
     static def __call(
             cmd,

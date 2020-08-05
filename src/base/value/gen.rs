@@ -31,6 +31,12 @@ impl cmp::PartialEq for Generator {
     }
 }
 
+impl cmp::PartialOrd for Generator {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        (self as *const Self as usize).partial_cmp(&(other as *const Self as usize))
+    }
+}
+
 impl fmt::Debug for Generator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -92,6 +98,12 @@ impl NativeGenerator {
 impl cmp::PartialEq for NativeGenerator {
     fn eq(&self, other: &Self) -> bool {
         self as *const _ == other as *const _
+    }
+}
+
+impl cmp::PartialOrd for NativeGenerator {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        (self as *const Self as usize).partial_cmp(&(other as *const Self as usize))
     }
 }
 
