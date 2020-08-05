@@ -449,8 +449,9 @@ pub enum ConstValue {
     Bytes(Rc<Vec<u8>>),
 }
 
-impl From<ConstValue> for Value {
-    fn from(cv: ConstValue) -> Value {
+impl<T: Into<ConstValue>> From<T> for Value {
+    fn from(cv: T) -> Value {
+        let cv = cv.into();
         match cv {
             ConstValue::Uninitialized => Value::Uninitialized,
             ConstValue::Nil => Value::Nil,
@@ -546,151 +547,6 @@ impl From<Rc<Vec<u8>>> for ConstValue {
 impl From<&Rc<Vec<u8>>> for ConstValue {
     fn from(x: &Rc<Vec<u8>>) -> ConstValue {
         ConstValue::Bytes(x.clone())
-    }
-}
-
-impl From<()> for Value {
-    fn from(_: ()) -> Value {
-        Value::Nil
-    }
-}
-
-impl From<bool> for Value {
-    fn from(x: bool) -> Value {
-        Value::Bool(x)
-    }
-}
-
-impl From<isize> for Value {
-    fn from(x: isize) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<i64> for Value {
-    fn from(x: i64) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<i32> for Value {
-    fn from(x: i32) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<i16> for Value {
-    fn from(x: i16) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<i8> for Value {
-    fn from(x: i8) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<usize> for Value {
-    fn from(x: usize) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<u64> for Value {
-    fn from(x: u64) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<u32> for Value {
-    fn from(x: u32) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<u16> for Value {
-    fn from(x: u16) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<u8> for Value {
-    fn from(x: u8) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<f64> for Value {
-    fn from(x: f64) -> Value {
-        Value::Number(x)
-    }
-}
-
-impl From<f32> for Value {
-    fn from(x: f32) -> Value {
-        Value::Number(x as f64)
-    }
-}
-
-impl From<Symbol> for Value {
-    fn from(x: Symbol) -> Value {
-        Value::Symbol(x)
-    }
-}
-
-impl From<RcStr> for Value {
-    fn from(x: RcStr) -> Value {
-        Value::String(x)
-    }
-}
-
-impl From<String> for Value {
-    fn from(x: String) -> Value {
-        Value::String(x.into())
-    }
-}
-
-impl From<&str> for Value {
-    fn from(x: &str) -> Value {
-        Value::String(x.into())
-    }
-}
-
-impl From<RcPath> for Value {
-    fn from(x: RcPath) -> Value {
-        Value::Path(x)
-    }
-}
-
-impl From<&Path> for Value {
-    fn from(x: &Path) -> Value {
-        Value::Path(x.into())
-    }
-}
-
-impl From<PathBuf> for Value {
-    fn from(x: PathBuf) -> Value {
-        let x: &Path = &x;
-        Value::Path(x.into())
-    }
-}
-
-impl From<Vec<u8>> for Value {
-    fn from(x: Vec<u8>) -> Value {
-        Value::Bytes(x.into())
-    }
-}
-
-impl From<Rc<Vec<u8>>> for Value {
-    fn from(x: Rc<Vec<u8>>) -> Value {
-        Value::Bytes(x)
-    }
-}
-
-impl From<&Rc<Vec<u8>>> for Value {
-    fn from(x: &Rc<Vec<u8>>) -> Value {
-        Value::Bytes(x.clone())
     }
 }
 
