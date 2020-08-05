@@ -1,6 +1,5 @@
 /// Operations on Value objects
 use crate::divmod;
-use crate::HCow;
 use crate::ArgumentError;
 use crate::Class;
 use crate::ClassKind;
@@ -15,6 +14,7 @@ use crate::Function;
 use crate::GMap;
 use crate::GeneratorResult;
 use crate::Globals;
+use crate::HCow;
 use crate::Handle;
 use crate::LexErrorKind;
 use crate::Module;
