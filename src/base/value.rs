@@ -1312,8 +1312,8 @@ impl fmt::Debug for Class {
 }
 impl Class {
     /// The main way to create a new class.
-    /// If bases is empty, the Object class is automatically added
-    pub fn new(
+    /// Use Globals::new_class
+    pub(crate) fn new(
         globals: &mut Globals,
         kind: ClassKind,
         full_name: RcStr,
