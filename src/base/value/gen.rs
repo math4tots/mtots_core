@@ -32,7 +32,7 @@ impl fmt::Debug for Generator {
 }
 
 pub struct NativeGenerator {
-    name: &'static str,
+    name: Cow<'static, str>,
     body: Box<dyn FnMut(&mut Globals, Value) -> ResumeResult>,
 }
 
@@ -42,8 +42,24 @@ impl NativeGenerator {
         B: FnMut(&mut Globals, Value) -> ResumeResult + 'static,
     {
         Self {
-            name,
+            name: Cow::Borrowed(name),
             body: Box::new(body),
+        }
+    }
+    pub fn new_with_dynamic_name<N, B>(name: N, body: B) -> Self
+    where
+        N: Into<String>,
+        B: FnMut(&mut Globals, Value) -> ResumeResult + 'static,
+    {
+        Self {
+            name: Cow::Owned(name.into()),
+            body: Box::new(body),
+        }
+    }
+    pub fn name(&self) -> &str {
+        match &self.name {
+            Cow::Borrowed(s) => s,
+            Cow::Owned(s) => s,
         }
     }
     pub fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {

@@ -51,6 +51,17 @@ impl Set {
         vec.sort();
         vec
     }
+    pub fn generator(set: Rc<Self>) -> NativeGenerator {
+        let mut i = 0;
+        NativeGenerator::new("set-iterator", move |_globals, _arg| {
+            if let Some(x) = set.borrow().get_index(i).cloned() {
+                i += 1;
+                ResumeResult::Yield(x.into())
+            } else {
+                ResumeResult::Return(Value::Nil)
+            }
+        })
+    }
 }
 
 #[derive(PartialEq)]
@@ -79,6 +90,19 @@ impl Map {
             }
         }
         Ok(ret)
+    }
+    pub fn generator(map: Rc<Self>) -> NativeGenerator {
+        let mut i = 0;
+        NativeGenerator::new("map-iterator", move |_globals, _arg| {
+            if let Some((k, v)) = map.borrow().get_index(i) {
+                let k: Value = k.clone().into();
+                let v = v.clone();
+                i += 1;
+                ResumeResult::Yield(vec![k, v].into())
+            } else {
+                ResumeResult::Return(Value::Nil)
+            }
+        })
     }
 }
 

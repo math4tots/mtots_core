@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
 use std::rc::Rc;
+use std::borrow::Cow;
 
 pub use cls::*;
 pub use coll::*;
@@ -162,7 +163,7 @@ impl Value {
     }
     pub fn getattr_opt(&self, attr: &RcStr) -> Option<Value> {
         match self {
-            Self::Class(cls) => cls.static_map().get(attr).map(|cell| cell.borrow().clone()),
+            Self::Class(cls) => cls.static_map().get(attr).cloned(),
             Self::Module(module) => module.get(attr),
             _ => None,
         }
@@ -173,22 +174,16 @@ impl Value {
             None => Err(rterr!("Attribute {:?} not found in {:?}", attr, self)),
         }
     }
-    pub fn setattr(&self, attr: &RcStr, value: Value) -> Result<()> {
+    pub fn setattr(&self, attr: &RcStr, _value: Value) -> Result<()> {
+        // We disallow setting attributes this way for both classes and modules
+        //   A class's static fields are immutable
+        //   A module's fields are mutable, but it should only be possible to
+        //     edit a module's field from within the module itself. So
+        //     trying to modify a field with setattr should be disallowed
         match self {
-            Self::Class(cls) => match cls.static_map().get(attr) {
-                Some(cell) => {
-                    cell.replace(value);
-                }
-                None => return Err(rterr!("{:?} not found in {:?}", attr, cls)),
-            },
-            Self::Module(module) => match module.map().get(attr) {
-                Some(cell) => {
-                    cell.replace(value);
-                }
-                None => return Err(rterr!("{:?} not found in {:?}", attr, module)),
-            },
             _ => return Err(rterr!("Attribute {:?} not found in {:?}", attr, self)),
         }
+        #[allow(unreachable_code)]
         Ok(())
     }
     pub fn apply(
@@ -212,7 +207,7 @@ impl Value {
     ) -> Result<Value> {
         match self {
             Self::Class(cls) => match cls.static_map().get(method_name) {
-                Some(method) => method.borrow().apply(globals, args, kwargs),
+                Some(method) => method.apply(globals, args, kwargs),
                 None => Err(rterr!("{:?} not found in {:?}", method_name, cls)),
             },
             Self::Module(module) => match module.get(method_name) {

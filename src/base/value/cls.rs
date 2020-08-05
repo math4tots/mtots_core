@@ -3,14 +3,14 @@ use super::*;
 pub struct Class {
     name: RcStr,
     map: HashMap<RcStr, Value>,
-    static_map: HashMap<RcStr, RefCell<Value>>,
+    static_map: HashMap<RcStr, Value>,
 }
 
 impl Class {
     pub fn new(
         name: RcStr,
         map: HashMap<RcStr, Value>,
-        static_map: HashMap<RcStr, RefCell<Value>>,
+        static_map: HashMap<RcStr, Value>,
     ) -> Rc<Self> {
         Rc::new(Self {
             name,
@@ -24,7 +24,7 @@ impl Class {
     pub fn map(&self) -> &HashMap<RcStr, Value> {
         &self.map
     }
-    pub fn static_map(&self) -> &HashMap<RcStr, RefCell<Value>> {
+    pub fn static_map(&self) -> &HashMap<RcStr, Value> {
         &self.static_map
     }
 }
