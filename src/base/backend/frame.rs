@@ -57,7 +57,7 @@ impl Frame {
         self.stack.drain(len - n..).collect()
     }
     #[inline(always)]
-    pub(super) fn pushn<I: IntoIterator<Item=Value>>(&mut self, vec: I) {
+    pub(super) fn pushn<I: IntoIterator<Item = Value>>(&mut self, vec: I) {
         self.stack.extend(vec);
     }
     #[inline(always)]

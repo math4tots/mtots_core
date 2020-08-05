@@ -3,9 +3,10 @@ import a.os
 import a.os::PIPE
 import a.os::UTF8
 import a.os::Process
+import a.os::Path
 
 def main() {
-    args = __args()
+    args = os.args()
     if args.len() is 1 {
         [root_dir] = args
         test_pkg = ''

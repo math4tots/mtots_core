@@ -9,6 +9,7 @@ triple = [name, family, arch]
 
 getcwd = _os::getcwd
 env = _os::env
+args = _os::args
 
 def home() = {
     homestr = if name == 'windows' {

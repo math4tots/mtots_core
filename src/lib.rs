@@ -1,4 +1,5 @@
 mod base;
+mod nlibs;
 mod util;
 
 // I feel really yucky depending on an external crate in core
@@ -9,6 +10,7 @@ pub extern crate indexmap;
 pub use base::*;
 pub use indexmap::IndexMap;
 pub use indexmap::IndexSet;
+pub use nlibs::*;
 pub use util::*;
 
 #[cfg(test)]

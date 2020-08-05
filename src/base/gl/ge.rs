@@ -9,7 +9,7 @@ impl Globals {
     pub fn add<E: Into<GlobalElement>>(&mut self, e: E) -> Result<()> {
         match e.into() {
             GlobalElement::NativeModule(nm) => {
-                self.native_modules.insert(nm.name.clone(), nm);
+                self.native_modules.insert(nm.name().clone(), nm);
             }
             GlobalElement::SourceRoot(root) => {
                 self.source_roots.push(root);
@@ -22,6 +22,12 @@ impl Globals {
 impl From<NativeModule> for GlobalElement {
     fn from(nm: NativeModule) -> Self {
         Self::NativeModule(nm)
+    }
+}
+
+impl From<NativeModuleBuilder> for GlobalElement {
+    fn from(nm: NativeModuleBuilder) -> Self {
+        Self::NativeModule(nm.build())
     }
 }
 

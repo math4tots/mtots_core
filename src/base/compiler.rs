@@ -199,9 +199,7 @@ impl Builder {
                     LogicalBinop::And => {
                         self.add(Opcode::TeeJumpIfFalse(INVALID_JUMP), mark.clone())
                     }
-                    LogicalBinop::Or => {
-                        self.add(Opcode::TeeJumpIfTrue(INVALID_JUMP), mark.clone())
-                    }
+                    LogicalBinop::Or => self.add(Opcode::TeeJumpIfTrue(INVALID_JUMP), mark.clone()),
                 };
                 self.expr(rhs, true)?;
                 self.patch_jump(jump_id);
