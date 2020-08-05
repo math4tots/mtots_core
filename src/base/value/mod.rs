@@ -108,6 +108,19 @@ impl Value {
             Err(rterr!("Expected module"))
         }
     }
+    pub fn into_rcstr(self) -> RcStr {
+        match self {
+            Self::String(r) => r,
+            _ => format!("{}", self).into(),
+        }
+    }
+    pub fn unwrap_string_or_clone(self) -> Result<String> {
+        if let Self::String(r) = self {
+            Ok(r.unwrap_or_clone())
+        } else {
+            Err(rterr!("Expected string"))
+        }
+    }
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {
         globals.class_manager().get_class(self)
     }

@@ -63,6 +63,10 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 get(other, out)?;
             }
         }
+        ExprDesc::While(cond, body) => {
+            get(cond, out)?;
+            get(body, out)?;
+        }
         ExprDesc::Binop(_op, lhs, rhs) => {
             get(lhs, out)?;
             get(rhs, out)?;

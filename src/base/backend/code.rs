@@ -85,7 +85,7 @@ impl Code {
                 input_bindings.push(Rc::new(RefCell::new(value.clone())));
             } else {
                 return Err(crate::Error::rt(
-                    format!("Variable {:?} not found", name).into(),
+                    format!("Name {:?} not found", name).into(),
                     vec![mark.clone()],
                 ));
             }
@@ -124,7 +124,7 @@ impl Code {
                 input_bindings.push(cell.clone());
             } else {
                 return Err(crate::Error::rt(
-                    format!("Variable {:?} not found", name).into(),
+                    format!("Name {:?} not found", name).into(),
                     vec![mark.clone()],
                 ));
             }

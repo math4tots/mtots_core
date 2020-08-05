@@ -54,6 +54,9 @@ impl Builder {
         self.marks.push(mark);
         id
     }
+    fn len(&self) -> usize {
+        self.ops.len()
+    }
 }
 
 impl Builder {
@@ -133,6 +136,17 @@ impl Builder {
                     self.patch_jump(id);
                 }
             }
+            ExprDesc::While(cond, body) => {
+                let start_label = self.len();
+                self.expr(cond, true)?;
+                let cond_jump_id = self.add(Opcode::JumpIfFalse(INVALID_JUMP), mark.clone());
+                self.expr(body, false)?;
+                self.add(Opcode::Jump(start_label), mark.clone());
+                self.patch_jump(cond_jump_id);
+                if used {
+                    self.add(Opcode::Nil, mark);
+                }
+            }
             ExprDesc::Binop(op, lhs, rhs) => {
                 self.expr(lhs, true)?;
                 self.expr(rhs, true)?;
@@ -149,7 +163,10 @@ impl Builder {
                 self.expr(f, true)?;
                 self.args(args)?;
                 let info = args.call_function_info();
-                self.add(Opcode::CallFunction(info.into()), mark);
+                self.add(Opcode::CallFunction(info.into()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::Assign(target, valexpr) => {
                 self.expr(valexpr, true)?;
