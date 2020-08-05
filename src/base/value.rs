@@ -1179,47 +1179,24 @@ impl fmt::Debug for NativeClosure {
     }
 }
 impl NativeClosure {
-    pub fn new<F>(
-        name: RcStr,
-        parameter_info: ParameterInfo,
-        doc: Option<RcStr>,
+    pub fn new<N, P, F, D>(
+        name: N,
+        parameter_info: P,
+        doc: D,
         body: F,
     ) -> NativeClosure
     where
+        N: Into<RcStr>,
+        P: Into<ParameterInfo>,
+        D: Into<DocStr>,
         F: Fn(&mut Globals, Vec<Value>, Option<HashMap<Symbol, Value>>) -> FunctionResult + 'static,
     {
         NativeClosure {
-            name,
-            parameter_info,
-            doc,
+            name: name.into(),
+            parameter_info: parameter_info.into(),
+            doc: doc.into().0,
             body: Box::new(body),
         }
-    }
-    pub fn sdnew(
-        name: &str,
-        parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
-        doc: Option<&str>,
-        body: NativeFunctionBody,
-    ) -> Self {
-        Self::new(
-            name.into(),
-            ParameterInfo::snew(
-                parameter_info.0,
-                parameter_info.1,
-                parameter_info.2,
-                parameter_info.3,
-            ),
-            doc.map(RcStr::from),
-            body,
-        )
-    }
-    pub fn sdnew0(
-        name: &str,
-        params: &[&str],
-        doc: Option<&str>,
-        body: NativeFunctionBody,
-    ) -> Self {
-        Self::sdnew(name, (params, &[], None, None), doc, body)
     }
     pub fn name(&self) -> &RcStr {
         &self.name
