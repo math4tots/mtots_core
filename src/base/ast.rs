@@ -217,6 +217,7 @@ pub enum ExprDesc {
     While(Box<Expr>, Box<Expr>),
 
     Binop(Binop, Box<Expr>, Box<Expr>),
+    LogicalBinop(LogicalBinop, Box<Expr>, Box<Expr>),
     Unop(Unop, Box<Expr>),
     Subscript(Box<Expr>, Box<Expr>),
     Slice(Box<Expr>, Option<Box<Expr>>, Option<Box<Expr>>),
@@ -313,6 +314,10 @@ pub enum Binop {
     Ne,
     Is,
     IsNot,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LogicalBinop {
     And,
     Or,
 }

@@ -1,4 +1,5 @@
 use crate::ArgSpec;
+use crate::LogicalBinop;
 use crate::Args;
 use crate::AssignTarget;
 use crate::AssignTargetDesc;
@@ -926,10 +927,10 @@ fn geninfix() -> (
             ),
         ],
         &[(&["or"], |state, lhs, prec| {
-            mkbinop(state, lhs, prec, Binop::Or)
+            mklbinop(state, lhs, prec, LogicalBinop::Or)
         })],
         &[(&["and"], |state, lhs, prec| {
-            mkbinop(state, lhs, prec, Binop::And)
+            mklbinop(state, lhs, prec, LogicalBinop::And)
         })],
         &[
             (&["<"], |state, lhs, prec| {
@@ -1090,6 +1091,13 @@ fn mkbinop(state: &mut ParserState, lhs: Expr, prec: Prec, op: Binop) -> Result<
     state.gettok();
     let rhs = state.expr(prec)?;
     Ok(Expr::new(mark, ExprDesc::Binop(op, lhs.into(), rhs.into())))
+}
+
+fn mklbinop(state: &mut ParserState, lhs: Expr, prec: Prec, op: LogicalBinop) -> Result<Expr> {
+    let mark = state.mark();
+    state.gettok();
+    let rhs = state.expr(prec)?;
+    Ok(Expr::new(mark, ExprDesc::LogicalBinop(op, lhs.into(), rhs.into())))
 }
 
 fn break_assignment(expr: Expr) -> Option<(RcStr, Expr)> {
