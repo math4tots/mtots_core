@@ -248,7 +248,11 @@ impl Builder {
                     vars
                 };
 
-                let type_ = if *is_generator { Type::Generator } else { Type::Function };
+                let type_ = if *is_generator {
+                    Type::Generator
+                } else {
+                    Type::Function
+                };
                 let mut func_builder = Builder::new(type_, name, param_vars, varspec);
                 func_builder.expr(body, true)?;
                 let func_code = func_builder.build();

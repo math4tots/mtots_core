@@ -245,7 +245,12 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 .iter()
                 .map(|slot| frame.getcell(*slot))
                 .collect();
-            let func = Function::new(desc.argspec.clone(), desc.code.clone(), bindings, desc.is_generator);
+            let func = Function::new(
+                desc.argspec.clone(),
+                desc.code.clone(),
+                bindings,
+                desc.is_generator,
+            );
             frame.push(func.into());
         }
     }

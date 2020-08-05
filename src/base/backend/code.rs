@@ -155,7 +155,12 @@ impl Code {
         }
     }
 
-    pub(crate) fn resume_frame(&self, globals: &mut Globals, frame: &mut Frame, arg: Value) -> ResumeResult {
+    pub(crate) fn resume_frame(
+        &self,
+        globals: &mut Globals,
+        frame: &mut Frame,
+        arg: Value,
+    ) -> ResumeResult {
         frame.push(arg);
         loop {
             match step(globals, self, frame) {

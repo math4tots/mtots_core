@@ -1,7 +1,14 @@
 mod base;
 mod util;
 
+// I feel really yucky depending on an external crate in core
+// Eventually I might just replace this with a makeshift implementation
+// and eat the performance costs
+pub extern crate indexmap;
+
 pub use base::*;
+pub use indexmap::IndexMap;
+pub use indexmap::IndexSet;
 pub use util::*;
 
 #[cfg(test)]

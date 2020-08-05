@@ -1,6 +1,6 @@
+use crate::IndexSet;
 use crate::RcStr;
 use std::cmp;
-use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
 
@@ -14,9 +14,9 @@ pub enum Key {
     Set(HSet),
 }
 
-/// Basically a HashSet that has been made Ord and Hash
+/// Basically a IndexSet that has been made Ord and Hash
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HSet(pub HashSet<Key>);
+pub struct HSet(pub IndexSet<Key>);
 
 impl HSet {
     fn sorted_keys(&self) -> Vec<Key> {

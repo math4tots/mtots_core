@@ -22,17 +22,17 @@ impl List {
 
 #[derive(PartialEq, Eq)]
 pub struct Set {
-    set: RefCell<HashSet<Key>>,
+    set: RefCell<IndexSet<Key>>,
 }
 
 impl Set {
-    pub fn borrow(&self) -> Ref<HashSet<Key>> {
+    pub fn borrow(&self) -> Ref<IndexSet<Key>> {
         self.set.borrow()
     }
-    pub fn borrow_mut(&self) -> RefMut<HashSet<Key>> {
+    pub fn borrow_mut(&self) -> RefMut<IndexSet<Key>> {
         self.set.borrow_mut()
     }
-    pub fn into_inner(self) -> HashSet<Key> {
+    pub fn into_inner(self) -> IndexSet<Key> {
         self.set.into_inner()
     }
     pub fn sorted_keys(&self) -> Vec<Key> {
@@ -44,23 +44,18 @@ impl Set {
 
 #[derive(PartialEq)]
 pub struct Map {
-    map: RefCell<HashMap<Key, Value>>,
+    map: RefCell<IndexMap<Key, Value>>,
 }
 
 impl Map {
-    pub fn borrow(&self) -> Ref<HashMap<Key, Value>> {
+    pub fn borrow(&self) -> Ref<IndexMap<Key, Value>> {
         self.map.borrow()
     }
-    pub fn borrow_mut(&self) -> RefMut<HashMap<Key, Value>> {
+    pub fn borrow_mut(&self) -> RefMut<IndexMap<Key, Value>> {
         self.map.borrow_mut()
     }
-    pub fn into_inner(self) -> HashMap<Key, Value> {
+    pub fn into_inner(self) -> IndexMap<Key, Value> {
         self.map.into_inner()
-    }
-    pub fn sorted_pairs(&self) -> Vec<(Key, Value)> {
-        let mut vec: Vec<_> = self.borrow().clone().into_iter().collect();
-        vec.sort_by(|a, b| a.0.cmp(&b.0));
-        vec
     }
     pub fn to_string_keys(&self) -> Result<HashMap<RcStr, Value>> {
         let mut ret = HashMap::new();
@@ -87,8 +82,8 @@ impl From<Vec<Value>> for Value {
     }
 }
 
-impl From<HashSet<Key>> for Value {
-    fn from(set: HashSet<Key>) -> Self {
+impl From<IndexSet<Key>> for Value {
+    fn from(set: IndexSet<Key>) -> Self {
         Self::Set(
             Set {
                 set: RefCell::new(set),

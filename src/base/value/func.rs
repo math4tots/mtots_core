@@ -228,7 +228,12 @@ impl fmt::Debug for Function {
 }
 
 impl Function {
-    pub fn new(argspec: Rc<ArgSpec>, code: Rc<Code>, bindings: Vec<Rc<RefCell<Value>>>, is_generator: bool) -> Self {
+    pub fn new(
+        argspec: Rc<ArgSpec>,
+        code: Rc<Code>,
+        bindings: Vec<Rc<RefCell<Value>>>,
+        is_generator: bool,
+    ) -> Self {
         if argspec.nparams() != code.params().len() {
             println!("code.name = {}", code.name());
         }

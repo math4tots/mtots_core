@@ -4,21 +4,22 @@ mod conv;
 mod cv;
 mod format;
 mod func;
-mod key;
 mod gen;
+mod key;
 mod m;
 use crate::Code;
 use crate::Error;
+use crate::Frame;
 use crate::Globals;
+use crate::IndexMap;
+use crate::IndexSet;
 use crate::RcStr;
 use crate::Result;
-use crate::Frame;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::cmp;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::fmt;
 use std::rc::Rc;
@@ -28,8 +29,8 @@ pub use coll::*;
 pub use conv::*;
 pub use cv::*;
 pub use func::*;
-pub use key::*;
 pub use gen::*;
+pub use key::*;
 pub use m::*;
 
 #[derive(Clone, PartialEq)]
@@ -60,7 +61,11 @@ impl Value {
             Self::List(list) => list.borrow().len() > 0,
             Self::Set(set) => set.borrow().len() > 0,
             Self::Map(map) => map.borrow().len() > 0,
-            Self::Function(_) | Self::Builtin(_) | Self::Generator(_) | Self::Class(_) | Self::Module(_) => true,
+            Self::Function(_)
+            | Self::Builtin(_)
+            | Self::Generator(_)
+            | Self::Class(_)
+            | Self::Module(_) => true,
         }
     }
     pub fn bool(&self) -> Result<bool> {
