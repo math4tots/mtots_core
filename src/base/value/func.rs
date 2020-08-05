@@ -208,7 +208,7 @@ impl cmp::PartialEq for NativeFunction {
 
 impl fmt::Debug for NativeFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<NativeFunction {}>", self.name())
+        write!(f, "<native function {}>", self.name())
     }
 }
 

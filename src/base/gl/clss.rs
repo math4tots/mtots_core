@@ -12,6 +12,7 @@ pub struct ClassManager {
     pub Function: Rc<Class>,
     pub NativeFunction: Rc<Class>,
     pub Generator: Rc<Class>,
+    pub NativeGenerator: Rc<Class>,
     pub Class: Rc<Class>,
     pub Module: Rc<Class>,
 }
@@ -29,6 +30,7 @@ impl ClassManager {
         let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
         let NativeFunction = Class::new("NativeFunction".into(), HashMap::new(), HashMap::new());
         let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
+        let NativeGenerator = Class::new("NativeGenerator".into(), HashMap::new(), HashMap::new());
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());
         let Module = Class::new("Module".into(), HashMap::new(), HashMap::new());
         Self {
@@ -42,6 +44,7 @@ impl ClassManager {
             Function,
             NativeFunction,
             Generator,
+            NativeGenerator,
             Class,
             Module,
         }
@@ -60,6 +63,7 @@ impl ClassManager {
             Value::Function(..) => &self.Function,
             Value::NativeFunction(..) => &self.NativeFunction,
             Value::Generator(..) => &self.Generator,
+            Value::NativeGenerator(..) => &self.NativeGenerator,
             Value::Class(..) => &self.Class,
             Value::Module(..) => &self.Module,
         }
@@ -77,6 +81,7 @@ impl ClassManager {
             &self.Function,
             &self.NativeFunction,
             &self.Generator,
+            &self.NativeGenerator,
             &self.Class,
             &self.Module,
         ]

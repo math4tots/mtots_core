@@ -46,6 +46,7 @@ pub enum Value {
     Function(Rc<Function>),
     NativeFunction(Rc<NativeFunction>),
     Generator(Rc<RefCell<Generator>>),
+    NativeGenerator(Rc<RefCell<NativeGenerator>>),
     Class(Rc<Class>),
     Module(Rc<Module>),
 }
@@ -64,6 +65,7 @@ impl Value {
             Self::Function(_)
             | Self::NativeFunction(_)
             | Self::Generator(_)
+            | Self::NativeGenerator(_)
             | Self::Class(_)
             | Self::Module(_) => true,
         }
@@ -208,13 +210,44 @@ impl Value {
             }
         }
     }
-    pub fn unpack(self, _globals: &mut Globals) -> Result<Vec<Value>> {
+    pub fn unpack(self, globals: &mut Globals) -> Result<Vec<Value>> {
         match self {
             Self::List(list) => match Rc::try_unwrap(list) {
                 Ok(list) => Ok(list.into_inner()),
                 Err(list) => Ok(list.borrow().clone()),
             },
+            Self::Generator(gen) => {
+                let mut gen = gen.borrow_mut();
+                let mut ret = Vec::new();
+                loop {
+                    match gen.resume(globals, Value::Nil) {
+                        ResumeResult::Yield(value) => ret.push(value),
+                        ResumeResult::Return(_) => break,
+                        ResumeResult::Err(error) => return Err(error),
+                    }
+                }
+                Ok(ret)
+            }
+            Self::NativeGenerator(gen) => {
+                let mut gen = gen.borrow_mut();
+                let mut ret = Vec::new();
+                loop {
+                    match gen.resume(globals, Value::Nil) {
+                        ResumeResult::Yield(value) => ret.push(value),
+                        ResumeResult::Return(_) => break,
+                        ResumeResult::Err(error) => return Err(error),
+                    }
+                }
+                Ok(ret)
+            }
             _ => Err(rterr!("{:?} is not unpackable", self)),
+        }
+    }
+    pub fn resume(&self, globals: &mut Globals, arg: Value) -> ResumeResult {
+        match self {
+            Self::Generator(gen) => gen.borrow_mut().resume(globals, arg),
+            Self::NativeGenerator(gen) => gen.borrow_mut().resume(globals, arg),
+            _ => ResumeResult::Err(rterr!("{:?} is not a generator", self)),
         }
     }
 }

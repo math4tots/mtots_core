@@ -31,6 +31,42 @@ impl fmt::Debug for Generator {
     }
 }
 
+pub struct NativeGenerator {
+    name: &'static str,
+    body: Box<dyn FnMut(&mut Globals, Value) -> ResumeResult>,
+}
+
+impl NativeGenerator {
+    pub fn new<B>(name: &'static str, body: B) -> Self
+    where
+        B: FnMut(&mut Globals, Value) -> ResumeResult + 'static,
+    {
+        Self {
+            name,
+            body: Box::new(body),
+        }
+    }
+    pub fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {
+        (self.body)(globals, arg)
+    }
+}
+
+impl cmp::PartialEq for NativeGenerator {
+    fn eq(&self, other: &Self) -> bool {
+        self as *const _ == other as *const _
+    }
+}
+
+impl fmt::Debug for NativeGenerator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "<native generator object {} at {:?}>",
+            self.name, self as *const _
+        )
+    }
+}
+
 pub enum ResumeResult {
     Yield(Value),
     Return(Value),
