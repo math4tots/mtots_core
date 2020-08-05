@@ -34,7 +34,7 @@ impl fmt::Debug for Value {
             }
             Value::Set(xs) => {
                 write!(f, "Set([")?;
-                for (i, x) in xs.sorted_keys().into_iter().enumerate() {
+                for (i, x) in xs.sorted().into_iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
@@ -56,6 +56,7 @@ impl fmt::Debug for Value {
                 }
                 write!(f, "]")
             }
+            Value::Object(obj) => write!(f, "{:?}", obj),
             Value::Function(func) => write!(f, "{:?}", func),
             Value::NativeFunction(func) => write!(f, "{:?}", func),
             Value::Generator(gen) => write!(f, "{:?}", gen.borrow()),

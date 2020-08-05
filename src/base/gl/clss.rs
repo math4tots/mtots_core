@@ -9,6 +9,7 @@ pub struct ClassManager {
     pub List: Rc<Class>,
     pub Set: Rc<Class>,
     pub Map: Rc<Class>,
+    pub Object: Rc<Class>,
     pub Function: Rc<Class>,
     pub NativeFunction: Rc<Class>,
     pub Generator: Rc<Class>,
@@ -39,6 +40,7 @@ impl ClassManager {
             )]),
         );
         let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
+        let Object = Class::new("Object".into(), HashMap::new(), HashMap::new());
         let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
         let NativeFunction = Class::new("NativeFunction".into(), HashMap::new(), HashMap::new());
         let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
@@ -53,6 +55,7 @@ impl ClassManager {
             List,
             Set,
             Map,
+            Object,
             Function,
             NativeFunction,
             Generator,
@@ -72,6 +75,7 @@ impl ClassManager {
             Value::List(..) => &self.List,
             Value::Set(..) => &self.Set,
             Value::Map(..) => &self.Map,
+            Value::Object(..) => &self.Object,
             Value::Function(..) => &self.Function,
             Value::NativeFunction(..) => &self.NativeFunction,
             Value::Generator(..) => &self.Generator,
@@ -90,6 +94,7 @@ impl ClassManager {
             &self.List,
             &self.Set,
             &self.Map,
+            &self.Object,
             &self.Function,
             &self.NativeFunction,
             &self.Generator,

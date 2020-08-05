@@ -1,5 +1,6 @@
 mod cls;
 mod coll;
+mod obj;
 mod conv;
 mod cv;
 mod format;
@@ -27,6 +28,7 @@ use std::rc::Rc;
 
 pub use cls::*;
 pub use coll::*;
+pub use obj::*;
 pub use conv::*;
 pub use cv::*;
 pub use func::*;
@@ -44,6 +46,7 @@ pub enum Value {
     List(Rc<List>),
     Set(Rc<Set>),
     Map(Rc<Map>),
+    Object(Rc<Object>),
     Function(Rc<Function>),
     NativeFunction(Rc<NativeFunction>),
     Generator(Rc<RefCell<Generator>>),
@@ -63,7 +66,8 @@ impl Value {
             Self::List(list) => list.borrow().len() > 0,
             Self::Set(set) => set.borrow().len() > 0,
             Self::Map(map) => map.borrow().len() > 0,
-            Self::Function(_)
+            Self::Object(_)
+            | Self::Function(_)
             | Self::NativeFunction(_)
             | Self::Generator(_)
             | Self::NativeGenerator(_)
@@ -71,7 +75,7 @@ impl Value {
             | Self::Module(_) => true,
         }
     }
-    pub fn debug_typename(&self) -> String {
+    pub fn debug_typename(&self) -> RcStr {
         match self {
             Self::Invalid => panic!("Value::Invalid::debug_typename"),
             Self::Nil => "Nil".into(),
@@ -81,12 +85,13 @@ impl Value {
             Self::List(_) => "List".into(),
             Self::Set(_) => "Set".into(),
             Self::Map(_) => "Map".into(),
+            Self::Object(obj) => obj.cls().name().clone(),
             Self::Function(_) => "Function".into(),
             Self::NativeFunction(_) => "NativeFunction".into(),
             Self::Generator(_) => "Generator".into(),
             Self::NativeGenerator(_) => "NativeGenerator".into(),
-            Self::Class(m) => format!("{:?}", m),
-            Self::Module(m) => format!("{:?}", m),
+            Self::Class(m) => format!("{:?}", m).into(),
+            Self::Module(m) => format!("{:?}", m).into(),
         }
     }
     pub fn bool(&self) -> Result<bool> {

@@ -46,7 +46,7 @@ impl Set {
     pub fn into_inner(self) -> IndexSet<Key> {
         self.set.into_inner()
     }
-    pub fn sorted_keys(&self) -> Vec<Key> {
+    pub fn sorted(&self) -> Vec<Key> {
         let mut vec: Vec<_> = self.borrow().clone().into_iter().collect();
         vec.sort();
         vec
@@ -66,7 +66,7 @@ impl Set {
 
 impl cmp::PartialOrd for Set {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        self.sorted_keys().partial_cmp(&other.sorted_keys())
+        self.sorted().partial_cmp(&other.sorted())
     }
 }
 
