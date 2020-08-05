@@ -1028,7 +1028,7 @@ fn geninfix() -> (
                 match lhs.desc() {
                     ExprDesc::Attr(..) => match lhs.unpack() {
                         (mark, ExprDesc::Attr(owner, name)) => {
-                            Ok(Expr::new(mark, ExprDesc::MethodCall(owner, name, arglist)))
+                            Ok(Expr::new(mark, ExprDesc::CallMethod(owner, name, arglist)))
                         }
                         _ => panic!("FUBAR"),
                     },

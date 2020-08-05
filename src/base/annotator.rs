@@ -78,6 +78,10 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             get(f, out)?;
             getargs(args, out)?;
         }
+        ExprDesc::CallMethod(owner, _name, args) => {
+            get(owner, out)?;
+            getargs(args, out)?;
+        }
         ExprDesc::Assign(target, valexpr) => {
             gettarget(target, out)?;
             get(valexpr, out)?;
@@ -88,6 +92,7 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
             get(valexpr, out)?;
         }
+        ExprDesc::Import(_) => {}
         ExprDesc::Function {
             is_generator: _,
             name: _,

@@ -215,7 +215,7 @@ pub enum ExprDesc {
     Slice(Box<Expr>, Option<Box<Expr>>, Option<Box<Expr>>),
     Attr(Box<Expr>, RcStr),
     CallFunction(Box<Expr>, Args),
-    MethodCall(Box<Expr>, RcStr, Args),
+    CallMethod(Box<Expr>, RcStr, Args),
     Assign(AssignTarget, Box<Expr>),
     AugAssign(AssignTarget, Binop, Box<Expr>),
     NonlocalAssign(RcStr, Box<Expr>),
