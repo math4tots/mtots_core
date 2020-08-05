@@ -57,6 +57,10 @@ impl Frame {
         self.stack.drain(len - n..).collect()
     }
     #[inline(always)]
+    pub(super) fn pushn<I: IntoIterator<Item=Value>>(&mut self, vec: I) {
+        self.stack.extend(vec);
+    }
+    #[inline(always)]
     pub(super) fn setvar(&mut self, var: &Variable, value: Value) {
         match var.type_() {
             VariableType::Local => self.locals[var.slot()] = value,

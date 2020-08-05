@@ -33,17 +33,17 @@ impl fmt::Debug for Value {
                 write!(f, "]")
             }
             Value::Set(xs) => {
-                write!(f, "{{")?;
+                write!(f, "Set([")?;
                 for (i, x) in xs.sorted_keys().into_iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
                     write!(f, "{:?}", Value::from(x.clone()))?;
                 }
-                write!(f, "}}")
+                write!(f, "])")
             }
             Value::Map(xs) => {
-                write!(f, "{{")?;
+                write!(f, "[")?;
                 if xs.borrow().is_empty() {
                     write!(f, ":")?;
                 } else {
@@ -54,7 +54,7 @@ impl fmt::Debug for Value {
                         write!(f, "{:?}: {:?}", Value::from(k.clone()), v)?;
                     }
                 }
-                write!(f, "}}")
+                write!(f, "]")
             }
             Value::Function(func) => write!(f, "{:?}", func),
             Value::NativeFunction(func) => write!(f, "{:?}", func),

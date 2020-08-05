@@ -13,6 +13,7 @@ pub(crate) enum Opcode {
     String(RcStr),
 
     NewList(u32),
+    NewMap(u32),
 
     GetVar(Box<Variable>),
     SetVar(Box<Variable>),
@@ -140,6 +141,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             if vec.len() != *len as usize {
                 err!("Expected {} elements but got {}", len, vec.len())
             }
+            frame.pushn(vec);
         }
         Opcode::Nil => frame.push(Value::Nil),
         Opcode::Bool(b) => frame.push(Value::Bool(*b)),
@@ -149,6 +151,17 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let len = *len as usize;
             let vec = frame.popn(len);
             frame.push(vec.into());
+        }
+        Opcode::NewMap(len) => {
+            let len = *len as usize;
+            let mut iter = frame.popn(2 * len).into_iter();
+            let mut map = IndexMap::new();
+            while let Some(key) = iter.next() {
+                let key = get0!(Key::try_from(key));
+                let value = iter.next().unwrap();
+                map.insert(key, value);
+            }
+            frame.push(map.into());
         }
         Opcode::GetVar(var) => {
             let value = get0!(frame.getvar(var));

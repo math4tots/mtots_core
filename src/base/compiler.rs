@@ -96,7 +96,19 @@ impl Builder {
                 for item in exprs {
                     self.expr(item, true)?;
                 }
-                self.add(Opcode::NewList(exprs.len() as u32), mark);
+                if used {
+                    self.add(Opcode::NewList(exprs.len() as u32), mark);
+                }
+            }
+            ExprDesc::Map(pairs) => {
+                for (key, val) in pairs {
+                    self.expr(key, true)?;
+                    self.expr(val, true)?;
+                }
+                self.add(Opcode::NewMap(pairs.len() as u32), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::Parentheses(expr) => {
                 self.expr(expr, used)?;

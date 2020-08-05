@@ -1,7 +1,3 @@
-# Just a straight up speed test of 10mil iterations
-# Not the best way to measure performance, but it gives
-# a baseline for the minimum amount of time you can expect
-# a loop to take
 
 def main() {
 
@@ -11,7 +7,19 @@ def main() {
         print(x)
     }
 
-    print(range(10))
+    print(Set([2, 1, 3]))
+    for x in Set([2, 1, 3]) {
+        print(x)
+    }
+
+    print([1: 2, 3: 4])
+    d = [1: 2, 3: 4]
+    print(['d = ', d])
+    for [k, v] in d {
+        print([k, v])
+    }
+
+    # print(range(10))
 }
 
 def* range(n) {

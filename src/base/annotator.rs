@@ -51,6 +51,12 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 get(expr, out)?;
             }
         }
+        ExprDesc::Map(pairs) => {
+            for (key, val) in pairs {
+                get(key, out)?;
+                get(val, out)?;
+            }
+        }
         ExprDesc::Parentheses(expr) => {
             get(expr, out)?;
         }

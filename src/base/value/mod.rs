@@ -15,6 +15,7 @@ use crate::IndexMap;
 use crate::IndexSet;
 use crate::RcStr;
 use crate::Result;
+use std::borrow::Cow;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
@@ -23,7 +24,6 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
 use std::rc::Rc;
-use std::borrow::Cow;
 
 pub use cls::*;
 pub use coll::*;
@@ -154,8 +154,13 @@ impl Value {
     pub fn iter(self, _globals: &mut Globals) -> Result<Self> {
         match self {
             Self::List(list) => Ok(List::generator(list).into()),
+            Self::Set(set) => Ok(Set::generator(set).into()),
+            Self::Map(map) => Ok(Map::generator(map).into()),
             Self::Generator(_) | Self::NativeGenerator(_) => Ok(self),
-            _ => Err(rterr!("Expected iterable but got {}", self.debug_typename())),
+            _ => Err(rterr!(
+                "Expected iterable but got {}",
+                self.debug_typename()
+            )),
         }
     }
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {
@@ -195,6 +200,13 @@ impl Value {
         match self {
             Self::Function(func) => func.apply(globals, args, kwargs),
             Self::NativeFunction(func) => func.apply(globals, args, kwargs),
+            Self::Class(cls) => match cls.get_call() {
+                Some(func) => func.apply(globals, args, kwargs),
+                None => Err(rterr!(
+                    "{:?} is not callable (the class has no static __call method)",
+                    cls
+                )),
+            },
             _ => Err(rterr!("{:?} is not a function", self)),
         }
     }
@@ -230,37 +242,53 @@ impl Value {
             }
         }
     }
+    pub fn unpack_into_set(self, globals: &mut Globals) -> Result<IndexSet<Key>> {
+        match self {
+            Self::Set(set) => match Rc::try_unwrap(set) {
+                Ok(set) => Ok(set.into_inner()),
+                Err(set) => Ok(set.borrow().clone()),
+            },
+            _ => self
+                .unpack(globals)?
+                .into_iter()
+                .map(Key::try_from)
+                .collect(),
+        }
+    }
+    pub fn unpack_into_map(self, globals: &mut Globals) -> Result<IndexMap<Key, Value>> {
+        match self {
+            Self::Map(map) => match Rc::try_unwrap(map) {
+                Ok(map) => Ok(map.into_inner()),
+                Err(map) => Ok(map.borrow().clone()),
+            },
+            _ => self
+                .unpack(globals)?
+                .into_iter()
+                .map(|pairval| {
+                    let [key, val] = pairval.unpack_2(globals)?;
+                    Ok((Key::try_from(key)?, val))
+                })
+                .collect(),
+        }
+    }
     pub fn unpack(self, globals: &mut Globals) -> Result<Vec<Value>> {
         match self {
             Self::List(list) => match Rc::try_unwrap(list) {
                 Ok(list) => Ok(list.into_inner()),
                 Err(list) => Ok(list.borrow().clone()),
             },
-            Self::Generator(gen) => {
-                let mut gen = gen.borrow_mut();
-                let mut ret = Vec::new();
-                loop {
-                    match gen.resume(globals, Value::Nil) {
-                        ResumeResult::Yield(value) => ret.push(value),
-                        ResumeResult::Return(_) => break,
-                        ResumeResult::Err(error) => return Err(error),
-                    }
-                }
-                Ok(ret)
-            }
-            Self::NativeGenerator(gen) => {
-                let mut gen = gen.borrow_mut();
-                let mut ret = Vec::new();
-                loop {
-                    match gen.resume(globals, Value::Nil) {
-                        ResumeResult::Yield(value) => ret.push(value),
-                        ResumeResult::Return(_) => break,
-                        ResumeResult::Err(error) => return Err(error),
-                    }
-                }
-                Ok(ret)
-            }
+            Self::Generator(gen) => gen.borrow_mut().unpack(globals),
+            Self::NativeGenerator(gen) => gen.borrow_mut().unpack(globals),
             _ => Err(rterr!("{:?} is not unpackable", self)),
+        }
+    }
+    pub fn unpack_2(self, globals: &mut Globals) -> Result<[Value; 2]> {
+        let vec = self.unpack(globals)?;
+        if vec.len() != 2 {
+            Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
+        } else {
+            let mut iter = vec.into_iter();
+            Ok([iter.next().unwrap(), iter.next().unwrap()])
         }
     }
     pub fn resume(&self, globals: &mut Globals, arg: Value) -> ResumeResult {

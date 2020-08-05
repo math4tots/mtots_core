@@ -127,3 +127,14 @@ impl From<IndexSet<Key>> for Value {
         )
     }
 }
+
+impl From<IndexMap<Key, Value>> for Value {
+    fn from(map: IndexMap<Key, Value>) -> Self {
+        Self::Map(
+            Map {
+                map: RefCell::new(map),
+            }
+            .into(),
+        )
+    }
+}

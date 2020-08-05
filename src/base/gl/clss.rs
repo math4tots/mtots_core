@@ -25,7 +25,19 @@ impl ClassManager {
         let Number = Class::new("Number".into(), HashMap::new(), HashMap::new());
         let String = Class::new("String".into(), HashMap::new(), HashMap::new());
         let List = Class::new("List".into(), HashMap::new(), HashMap::new());
-        let Set = Class::new("Set".into(), HashMap::new(), HashMap::new());
+        let Set = Class::new(
+            "Set".into(),
+            HashMap::new(),
+            Class::map_from_funcs(vec![NativeFunction::new(
+                "__call",
+                ["x"],
+                |globals, args| {
+                    let x = args.into_iter().next().unwrap();
+                    let set = x.unpack_into_set(globals)?;
+                    Ok(set.into())
+                },
+            )]),
+        );
         let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
         let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
         let NativeFunction = Class::new("NativeFunction".into(), HashMap::new(), HashMap::new());

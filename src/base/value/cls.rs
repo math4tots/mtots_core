@@ -27,6 +27,19 @@ impl Class {
     pub fn static_map(&self) -> &HashMap<RcStr, Value> {
         &self.static_map
     }
+    pub fn get_call(&self) -> Option<Value> {
+        self.static_map.get("__call").cloned()
+    }
+
+    /// Convenience method for creating a map or static_map
+    /// from some native functions
+    pub fn map_from_funcs(funcs: Vec<NativeFunction>) -> HashMap<RcStr, Value> {
+        let mut map = HashMap::new();
+        for func in funcs {
+            map.insert(func.name().clone(), func.into());
+        }
+        map
+    }
 }
 
 impl cmp::PartialEq for Class {

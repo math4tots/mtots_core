@@ -12,6 +12,17 @@ impl Generator {
     pub fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {
         self.code.resume_frame(globals, &mut self.frame, arg)
     }
+    pub fn unpack(&mut self, globals: &mut Globals) -> Result<Vec<Value>> {
+        let mut ret = Vec::new();
+        loop {
+            match self.resume(globals, Value::Nil) {
+                ResumeResult::Yield(value) => ret.push(value),
+                ResumeResult::Return(_) => break,
+                ResumeResult::Err(error) => return Err(error),
+            }
+        }
+        Ok(ret)
+    }
 }
 
 impl cmp::PartialEq for Generator {
@@ -64,6 +75,17 @@ impl NativeGenerator {
     }
     pub fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {
         (self.body)(globals, arg)
+    }
+    pub fn unpack(&mut self, globals: &mut Globals) -> Result<Vec<Value>> {
+        let mut ret = Vec::new();
+        loop {
+            match self.resume(globals, Value::Nil) {
+                ResumeResult::Yield(value) => ret.push(value),
+                ResumeResult::Return(_) => break,
+                ResumeResult::Err(error) => return Err(error),
+            }
+        }
+        Ok(ret)
     }
 }
 
