@@ -4,6 +4,7 @@ use crate::Eval;
 use crate::GeneratorResult;
 use crate::NativeFunction;
 use crate::NativeIterator;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 
@@ -29,19 +30,22 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     // in this case
 
     let methods = vec![
-        NativeFunction::simple0("list", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("list", &["self"], None, |globals, args, _kwargs| {
             Ok(Eval::list_from_iterable(globals, &args[0])?)
         }),
-        NativeFunction::simple0("set", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("set", &["self"], None, |globals, args, _kwargs| {
             Ok(Eval::set_from_iterable(globals, &args[0])?)
         }),
         // This really should be two different functions,
         //   - map() => for building a map from an iterable of pairs
         //   - map(f) => for getting a new iterator with f applied to each element
         // TODO: Consider whether this is evil
-        NativeFunction::snew(
+        NativeFunction::new(
             "map",
-            (&["self"], &[("f", Value::Uninitialized)], None, None),
+            ParameterInfo::builder()
+                .required("self")
+                .optional("f", Value::Uninitialized),
+            None,
             |globals, args, _kwargs| {
                 if let Value::Uninitialized = &args[1] {
                     Ok(Eval::map_from_iterable(globals, &args[0])?)
@@ -63,7 +67,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0("filter", &["self", "f"], None, |_globals, args, _kwargs| {
+        NativeFunction::new("filter", &["self", "f"], None, |_globals, args, _kwargs| {
             let owner = args[0].clone();
             let f = args[1].clone();
             let mut done = false;
@@ -85,7 +89,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             })
             .into())
         }),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "fold",
             &["self", "acc", "f"],
             None,
@@ -99,10 +103,12 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(acc)
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::new(
             "enumerate",
-            (&["self"], &[("start", Value::Int(0))], None, None),
-            Some("converts each element x to [i, x] in this iterator"),
+            ParameterInfo::builder()
+                .required("self")
+                .optional("start", 0),
+            "converts each element x to [i, x] in this iterator",
             |globals, args, _kwargs| {
                 let iterator = args[0].clone();
                 let mut i = Eval::expect_int(globals, &args[1])?;
@@ -119,9 +125,11 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 .into())
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::new(
             "zip",
-            (&["self"], &[], Some("iterables"), None),
+            ParameterInfo::builder()
+                .required("self")
+                .variadic("iterables"),
             None,
             |globals, args, _kwargs| {
                 let iterators = {

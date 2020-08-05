@@ -1,3 +1,4 @@
+use crate::ParameterInfo;
 use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
@@ -10,19 +11,15 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("keys", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("keys", &["self"], None, |globals, args, _kwargs| {
             let m = Eval::expect_module(globals, &args[0])?;
             let keys: Vec<_> = m.keys().map(|s| Value::from(*s)).collect();
             Ok(keys.into())
         }),
-        NativeFunction::snew(
+        NativeFunction::new(
             "get",
-            (
-                &["self", "key"],
-                &[("default", Value::Uninitialized)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder().required("self").required("key").optional("default", Value::Uninitialized),
+            None,
             |globals, args, _kwargs| {
                 let key = Eval::expect_symbollike(globals, &args[1])?;
                 if let Value::Uninitialized = &args[2] {
@@ -35,9 +32,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "doc",
-            (&["self"], &[("key", Value::Uninitialized)], None, None),
+            ParameterInfo::builder().required("self").optional("key", Value::Uninitialized),
+            None,
             |globals, args, _kwargs| {
                 let m = Eval::expect_module(globals, &args[0])?;
                 if let Value::Uninitialized = &args[1] {

@@ -10,12 +10,12 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("to", &["self", "type"], |globals, args, _kwargs| {
+        NativeFunction::new("to", &["self", "type"], None, |globals, args, _kwargs| {
             let iterable = &args[0];
             let type_ = &args[1];
             Eval::from_iterable(globals, type_, iterable.clone())
         }),
-        NativeFunction::simple0("iter", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("iter", &["self"], None, |globals, args, _kwargs| {
             // Even though I want this to be the default way to get iterators,
             // I think to implement an iterable, a class should have a `__iter` method
             Eval::iter(globals, &args[0])

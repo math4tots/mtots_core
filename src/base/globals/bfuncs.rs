@@ -1,6 +1,7 @@
 use crate::Class;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Value;
 
 use std::rc::Rc;
@@ -61,46 +62,46 @@ impl NativeFunctions {
 }
 
 pub(super) fn new() -> NativeFunctions {
-    let print = NativeFunction::simple0("print", &["x"], |globals, args, _kwargs| {
+    let print = NativeFunction::new("print", ["x"], None, |globals, args, _kwargs| {
         let s = Eval::str(globals, &args[0])?;
         println!("{}", s);
         Ok(Value::Nil)
     })
     .into();
 
-    let str_ = NativeFunction::simple0("str", &["x"], |globals, args, _kwargs| {
+    let str_ = NativeFunction::new("str", ["x"], None, |globals, args, _kwargs| {
         Ok(Value::String(Eval::str(globals, &args[0])?))
     })
     .into();
 
-    let repr = NativeFunction::simple0("repr", &["x"], |globals, args, _kwargs| {
+    let repr = NativeFunction::new("repr", ["x"], None, |globals, args, _kwargs| {
         Ok(Value::String(Eval::repr(globals, &args[0])?))
     })
     .into();
 
-    let type_ = NativeFunction::simple0("type", &["x"], |globals, args, _kwargs| {
+    let type_ = NativeFunction::new("type", ["x"], None, |globals, args, _kwargs| {
         Ok(Eval::classof(globals, &args[0])?.clone().into())
     })
     .into();
 
-    let sorted = NativeFunction::simple0("sorted", &["xs"], |globals, args, _kwargs| {
+    let sorted = NativeFunction::new("sorted", &["xs"], None, |globals, args, _kwargs| {
         let mut vec = Eval::iterable_to_vec(globals, &args[0])?;
         Eval::sort(globals, &mut vec)?;
         Ok(vec.into())
     })
     .into();
 
-    let min = NativeFunction::sdnew(
+    let min = NativeFunction::new(
         "min",
-        (&["xs"], &[], Some("varargs"), None),
-        Some(concat!(
+        ParameterInfo::builder().required("xs").variadic("varargs"),
+        concat!(
             "Gets the minimum of an iterable\n",
             "If exactly one argument is provided, it is assumed to be an iterable, ",
             "and this function returns the minimum element in that iterable.\n",
             "This function with throw if the iterable is empty.\n",
             "If more than one argument is provided, the list of all arguments is ",
             "taken as the iterable, and the minimum element is returned.\n",
-        )),
+        ),
         |globals, args, _kwargs| {
             let iterator = if args.len() == 1 {
                 Eval::iter(globals, &args[0])?
@@ -121,17 +122,17 @@ pub(super) fn new() -> NativeFunctions {
     )
     .into();
 
-    let max = NativeFunction::sdnew(
+    let max = NativeFunction::new(
         "max",
-        (&["xs"], &[], Some("varargs"), None),
-        Some(concat!(
+        ParameterInfo::builder().required("xs").variadic("varargs"),
+        concat!(
             "Gets the maximum of an iterable\n",
             "If exactly one argument is provided, it is assumed to be an iterable, ",
             "and this function returns the maximum element in that iterable.\n",
             "This function with throw if the iterable is empty.\n",
             "If more than one argument is provided, the list of all arguments is ",
             "taken as the iterable, and the maximum element is returned.\n",
-        )),
+        ),
         |globals, args, _kwargs| {
             let iterator = if args.len() == 1 {
                 Eval::iter(globals, &args[0])?
@@ -152,7 +153,7 @@ pub(super) fn new() -> NativeFunctions {
     )
     .into();
 
-    let ord = NativeFunction::simple0("ord", &["ch"], |globals, args, _kwargs| {
+    let ord = NativeFunction::new("ord", &["ch"], None, |globals, args, _kwargs| {
         let chstr = Eval::expect_string(globals, &args[0])?;
         let chars: Vec<_> = chstr.chars().collect();
         if chars.len() != 1 {
@@ -165,7 +166,7 @@ pub(super) fn new() -> NativeFunctions {
     })
     .into();
 
-    let chr = NativeFunction::simple0("chr", &["i"], |globals, args, _kwargs| {
+    let chr = NativeFunction::new("chr", &["i"], None, |globals, args, _kwargs| {
         let i = Eval::expect_int(globals, &args[0])?;
         let i = Eval::check_u32(globals, i)?;
         match std::char::from_u32(i) {
@@ -175,13 +176,13 @@ pub(super) fn new() -> NativeFunctions {
     })
     .into();
 
-    let hash = NativeFunction::simple0("hash", &["x"], |globals, args, _kwargs| {
+    let hash = NativeFunction::new("hash", ["x"], None, |globals, args, _kwargs| {
         let hash = Eval::hash(globals, &args[0])?;
         Ok((hash as i64).into())
     })
     .into();
 
-    let assert = NativeFunction::simple0("assert", &["x"], |globals, args, _kwargs| {
+    let assert = NativeFunction::new("assert", ["x"], None, |globals, args, _kwargs| {
         if !Eval::truthy(globals, &args[0])? {
             return globals.set_assert_error(&format!("Assertion failed").into());
         }
@@ -189,19 +190,23 @@ pub(super) fn new() -> NativeFunctions {
     })
     .into();
 
-    let assert_eq = NativeFunction::simple0("assert_eq", &["a", "b"], |globals, args, _kwargs| {
-        if !Eval::eq(globals, &args[0], &args[1])? {
-            let str1 = Eval::repr(globals, &args[0])?;
-            let str2 = Eval::repr(globals, &args[1])?;
-            return globals
-                .set_assert_error(&format!("Expected {} to equal {}", str1, str2).into());
-        }
-        Ok(Value::Nil)
-    })
-    .into();
+    let assert_eq =
+        NativeFunction::new("assert_eq", &["a", "b"], None, |globals, args, _kwargs| {
+            if !Eval::eq(globals, &args[0], &args[1])? {
+                let str1 = Eval::repr(globals, &args[0])?;
+                let str2 = Eval::repr(globals, &args[1])?;
+                return globals
+                    .set_assert_error(&format!("Expected {} to equal {}", str1, str2).into());
+            }
+            Ok(Value::Nil)
+        })
+        .into();
 
-    let assert_raises =
-        NativeFunction::simple0("assert_raises", &["exck", "f"], |globals, args, _kwargs| {
+    let assert_raises = NativeFunction::new(
+        "assert_raises",
+        &["exck", "f"],
+        None,
+        |globals, args, _kwargs| {
             let exception_kind = Eval::expect_exception_kind(globals, &args[0])?;
             let trace_len = globals.trace_len();
             match Eval::call(globals, &args[1], vec![]) {
@@ -220,32 +225,44 @@ pub(super) fn new() -> NativeFunctions {
                     }
                 }
             }
+        },
+    )
+    .into();
+
+    let dunder_import =
+        NativeFunction::new("__import", &["name"], None, |globals, args, _kwargs| {
+            let name = Eval::expect_symbollike(globals, &args[0])?;
+            let module = globals.load_by_symbol(name)?;
+            Ok(Value::Module(module))
         })
         .into();
 
-    let dunder_import = NativeFunction::simple0("__import", &["name"], |globals, args, _kwargs| {
-        let name = Eval::expect_symbollike(globals, &args[0])?;
-        let module = globals.load_by_symbol(name)?;
-        Ok(Value::Module(module))
-    })
-    .into();
-
-    let dunder_malloc =
-        NativeFunction::simple0("__malloc", &["cls", "fields"], |globals, args, _kwargs| {
+    let dunder_malloc = NativeFunction::new(
+        "__malloc",
+        &["cls", "fields"],
+        None,
+        |globals, args, _kwargs| {
             let cls = Eval::expect_class(globals, &args[0])?;
             let fields = Eval::expect_list(globals, &args[1])?;
             let obj = Class::instantiate(cls, globals, fields.clone(), None)?;
             Ok(obj.into())
-        })
-        .into();
+        },
+    )
+    .into();
 
-    let dunder_new = NativeFunction::sdnew(
+    let dunder_new = NativeFunction::new(
         "__new",
-        (&["class"], &[], Some("args"), Some("kwargs")),
-        Some(concat!(
-            "Function used by 'new' expressions when building new instances\n",
-            "This function should never be called directly"
-        )),
+        ParameterInfo::builder()
+            .required("class")
+            .variadic("args")
+            .keywords("kwargs"),
+        Some(
+            concat!(
+                "Function used by 'new' expressions when building new instances\n",
+                "This function should never be called directly"
+            )
+            .into(),
+        ),
         |globals, mut args, kwargs| {
             // Making the first parameter of the function 'class' is intentional
             // since the user may pass arbitrary keyword parameters, a normal
@@ -261,7 +278,7 @@ pub(super) fn new() -> NativeFunctions {
     )
     .into();
 
-    let dunder_args = NativeFunction::simple0("__args", &[], |globals, _args, _kwargs| {
+    let dunder_args = NativeFunction::new("__args", &[], None, |globals, _args, _kwargs| {
         let mut ret: Vec<Value> = Vec::new();
         for arg in globals.cli_args() {
             ret.push(arg.clone().into());
@@ -271,23 +288,24 @@ pub(super) fn new() -> NativeFunctions {
     .into();
 
     let dunder_main =
-        NativeFunction::simple0("__main", &[], |globals, _args, _kwargs| {
-            match globals.main_module_name() {
-                Some(main_module_name) => Ok(main_module_name.clone().into()),
-                None => Ok(Value::Nil),
-            }
+        NativeFunction::new("__main", &[], None, |globals, _args, _kwargs| match globals
+            .main_module_name()
+        {
+            Some(main_module_name) => Ok(main_module_name.clone().into()),
+            None => Ok(Value::Nil),
         })
         .into();
 
-    let dunder_raise = NativeFunction::simple0("__raise", &["exc"], |globals, args, _kwargs| {
+    let dunder_raise = NativeFunction::new("__raise", &["exc"], None, |globals, args, _kwargs| {
         let exc = Eval::move_exc(globals, args.into_iter().next().unwrap())?;
         globals.set_exc(exc)
     })
     .into();
 
-    let dunder_try = NativeFunction::snew(
+    let dunder_try = NativeFunction::new(
         "__try",
-        (&["main"], &[], Some("rest"), None),
+        ParameterInfo::builder().required("main").variadic("rest"),
+        None,
         |globals, mut args, _kwargs| {
             let finally_clause = if args.len() % 2 == 0 {
                 Some(args.pop().unwrap())
@@ -354,10 +372,11 @@ pub(super) fn new() -> NativeFunctions {
     )
     .into();
 
-    let dunder_iter = NativeFunction::simple0("__iter", &["iterable"], |globals, args, _kwargs| {
-        Eval::iter(globals, &args[0])
-    })
-    .into();
+    let dunder_iter =
+        NativeFunction::new("__iter", &["iterable"], None, |globals, args, _kwargs| {
+            Eval::iter(globals, &args[0])
+        })
+        .into();
 
     NativeFunctions {
         print,

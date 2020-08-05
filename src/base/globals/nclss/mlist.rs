@@ -2,6 +2,7 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 use std::cell::RefCell;
@@ -9,30 +10,36 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("move", &["self"], None, |globals, args, _kwargs| {
             // Like MutableString:move -- empties out the contents of this List,
             // while returning an immutable List with the same contents
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             let contents = list.replace(vec![]);
             Ok(contents.into())
         }),
-        NativeFunction::simple0("clone", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("clone", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             let cloned_list = list.borrow().clone();
             Ok(Value::MutableList(RefCell::new(cloned_list).into()))
         }),
-        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             Ok(Value::Int(list.borrow().len() as i64))
         }),
-        NativeFunction::simple0("__getitem", &["self", "i"], |globals, args, _kwargs| {
-            let list = Eval::expect_mutable_list(globals, &args[0])?;
-            let i = Eval::expect_index(globals, &args[1], list.borrow().len())?;
-            Ok((list.borrow())[i].clone())
-        }),
-        NativeFunction::simple0(
+        NativeFunction::new(
+            "__getitem",
+            &["self", "i"],
+            None,
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let i = Eval::expect_index(globals, &args[1], list.borrow().len())?;
+                Ok((list.borrow())[i].clone())
+            },
+        ),
+        NativeFunction::new(
             "__setitem",
             &["self", "i", "val"],
+            None,
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let i = Eval::expect_index(globals, &args[1], list.borrow().len())?;
@@ -41,10 +48,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "__slice",
             &["self", "start", "end"],
-            Some("Creates a new mutable list consisting of a subrange of this mutable list"),
+            "Creates a new mutable list consisting of a subrange of this mutable list",
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let list = list.borrow();
@@ -55,7 +62,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 ))
             },
         ),
-        NativeFunction::simple0("map", &["self", "f"], |globals, args, _kwargs| {
+        NativeFunction::new("map", &["self", "f"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             let f = &args[1];
             let mut ret = Vec::new();
@@ -65,15 +72,13 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             }
             Ok(Value::MutableList(RefCell::new(ret).into()))
         }),
-        NativeFunction::sdnew(
+        NativeFunction::new(
             "remove",
-            (
-                &["self", "i"],
-                &[("default", Value::Uninitialized)],
-                None,
-                None,
-            ),
-            Some("Removes and returns the element at position i"),
+            ParameterInfo::builder()
+                .required("self")
+                .required("i")
+                .optional("default", Value::Uninitialized),
+            "Removes and returns the element at position i",
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let try_index = Eval::try_index(&args[1], list.borrow().len());
@@ -90,10 +95,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "insert",
             &["self", "i", "value"],
-            Some("Removes and returns the element at position i"),
+            "Removes and returns the element at position i",
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let len = list.borrow().len();
@@ -102,10 +107,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "splice",
             &["self", "start", "end", "iterable"],
-            Some("Removes and returns the element at position i"),
+            "Removes and returns the element at position i",
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let len = list.borrow().len();
@@ -115,45 +120,51 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(ret.into())
             },
         ),
-        NativeFunction::simple0("pop", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("pop", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             match list.borrow_mut().pop() {
                 Some(value) => Ok(value),
                 None => return globals.set_empty_pop_error()?,
             }
         }),
-        NativeFunction::simple0("push", &["self", "x"], |globals, args, _kwargs| {
+        NativeFunction::new("push", &["self", "x"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             let item = args[1].clone();
             list.borrow_mut().push(item);
             Ok(Value::Nil)
         }),
-        NativeFunction::simple0("extend", &["self", "xs"], |globals, args, _kwargs| {
+        NativeFunction::new("extend", &["self", "xs"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             Eval::extend_from_iterable(globals, &mut list.borrow_mut(), &args[1])?;
             Ok(Value::Nil)
         }),
-        NativeFunction::simple0("reverse", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("reverse", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_mutable_list(globals, &args[0])?;
             list.borrow_mut().reverse();
             Ok(Value::Nil)
         }),
-        NativeFunction::simple0("resize", &["self", "new_size"], |globals, args, _kwargs| {
-            let list = Eval::expect_mutable_list(globals, &args[0])?;
-            let mut list = list.borrow_mut();
-            let new_size = Eval::expect_usize(globals, &args[1])?;
-            if list.len() < new_size {
-                for _ in list.len()..new_size {
-                    list.push(Value::Nil);
+        NativeFunction::new(
+            "resize",
+            &["self", "new_size"],
+            None,
+            |globals, args, _kwargs| {
+                let list = Eval::expect_mutable_list(globals, &args[0])?;
+                let mut list = list.borrow_mut();
+                let new_size = Eval::expect_usize(globals, &args[1])?;
+                if list.len() < new_size {
+                    for _ in list.len()..new_size {
+                        list.push(Value::Nil);
+                    }
+                } else {
+                    list.truncate(new_size);
                 }
-            } else {
-                list.truncate(new_size);
-            }
-            Ok(Value::Nil)
-        }),
-        NativeFunction::snew(
+                Ok(Value::Nil)
+            },
+        ),
+        NativeFunction::new(
             "any",
-            (&["self"], &[("f", Value::Nil)], None, None),
+            ParameterInfo::builder().required("self").optional("f", ()),
+            None,
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let f = &args[1];
@@ -171,9 +182,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(false.into())
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "all",
-            (&["self"], &[("f", Value::Nil)], None, None),
+            ParameterInfo::builder().required("self").optional("f", ()),
+            None,
             |globals, args, _kwargs| {
                 let list = Eval::expect_mutable_list(globals, &args[0])?;
                 let f = &args[1];
@@ -197,10 +209,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .collect();
 
     let static_methods = vec![
-        NativeFunction::simple0("__call", &["x"], |globals, args, _kwargs| {
+        NativeFunction::new("__call", &["x"], None, |globals, args, _kwargs| {
             Eval::mutable_list_from_iterable(globals, &args[0])
         }),
-        NativeFunction::simple0("from_iterable", &["x"], |globals, args, _kwargs| {
+        NativeFunction::new("from_iterable", &["x"], None, |globals, args, _kwargs| {
             Eval::mutable_list_from_iterable(globals, &args[0])
         }),
     ]

@@ -2,41 +2,51 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("decode", &["self", "encoding"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_bytes(globals, &args[0])?;
-            let encoding = Eval::expect_symbol(globals, &args[1])?;
-            if encoding == Symbol::UTF8 {
-                match std::str::from_utf8(bytes) {
-                    Ok(s) => Ok(s.into()),
-                    Err(error) => globals.set_utf8_error(error),
+        NativeFunction::new(
+            "decode",
+            &["self", "encoding"],
+            None,
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_bytes(globals, &args[0])?;
+                let encoding = Eval::expect_symbol(globals, &args[1])?;
+                if encoding == Symbol::UTF8 {
+                    match std::str::from_utf8(bytes) {
+                        Ok(s) => Ok(s.into()),
+                        Err(error) => globals.set_utf8_error(error),
+                    }
+                } else {
+                    globals.set_exc_str(&format!("Unrecognized encoding {:?}", encoding,))
                 }
-            } else {
-                globals.set_exc_str(&format!("Unrecognized encoding {:?}", encoding,))
-            }
-        }),
-        NativeFunction::sdnew0("len", &["self"], None, |globals, args, _kwargs| {
+            },
+        ),
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_bytes(globals, &args[0])?;
             Ok((bytes.len() as i64).into())
         }),
-        NativeFunction::simple0("__getitem", &["self", "i"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_bytes(globals, &args[0])?;
-            let i = Eval::expect_index(globals, &args[1], bytes.len())?;
-            Ok((bytes[i] as i64).into())
-        }),
-        NativeFunction::sdnew(
+        NativeFunction::new(
+            "__getitem",
+            &["self", "i"],
+            None,
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_bytes(globals, &args[0])?;
+                let i = Eval::expect_index(globals, &args[1], bytes.len())?;
+                Ok((bytes[i] as i64).into())
+            },
+        ),
+        NativeFunction::new(
             "int",
-            (
-                &["self", "nbytes", "i"],
-                &[("endian", Value::Nil)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("nbytes")
+                .required("i")
+                .optional("endian", ()),
             None,
             |globals, args, _kwargs| {
                 use std::convert::TryInto;
@@ -90,14 +100,13 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew(
+        NativeFunction::new(
             "uint",
-            (
-                &["self", "nbytes", "i"],
-                &[("endian", Value::Nil)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("nbytes")
+                .required("i")
+                .optional("endian", ()),
             None,
             |globals, args, _kwargs| {
                 use std::convert::TryInto;
@@ -146,10 +155,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "__slice",
             &["self", "start", "end"],
-            Some("Creates a new bytes object consisting of a subrange of this object"),
+            "Creates a new bytes object consisting of a subrange of this object",
             |globals, args, _kwargs| {
                 let bytes = Eval::expect_bytes(globals, &args[0])?;
                 let (start, end) =
@@ -163,20 +172,20 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .collect();
 
     let static_methods = vec![
-        NativeFunction::simple0("__call", &["pattern"], |globals, args, _kwargs| {
+        NativeFunction::new("__call", &["pattern"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
             Ok(bytes.into())
         }),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "le",
             &["n", "val"],
-            Some(concat!(
+            concat!(
                 "Create little endian bytes from an integer or float\n",
                 "The first parameter n specifies the number of bytes to use\n",
                 "The second parameter specifies the actual value to encode\n",
                 "For integers, n must be one of 1, 2, 4, 8\n",
                 "For floats, n must be ine of 4 or 8\n",
-            )),
+            ),
             |globals, args, _kwargs| {
                 let n = Eval::expect_uint(globals, &args[0])?;
                 match (n, &args[1]) {
@@ -229,16 +238,16 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "be",
             &["n", "val"],
-            Some(concat!(
+            concat!(
                 "Create big endian bytes from an integer or float\n",
                 "The first parameter n specifies the number of bytes to use\n",
                 "The second parameter specifies the actual value to encode\n",
                 "For integers, n must be one of 1, 2, 4, 8\n",
                 "For floats, n must be ine of 4 or 8\n",
-            )),
+            ),
             |globals, args, _kwargs| {
                 let n = Eval::expect_uint(globals, &args[0])?;
                 match (n, &args[1]) {
@@ -291,9 +300,12 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
-            Eval::bytes_from_iterable(globals, &args[0])
-        }),
+        NativeFunction::new(
+            "from_iterable",
+            &["iterable"],
+            None,
+            |globals, args, _kwargs| Eval::bytes_from_iterable(globals, &args[0]),
+        ),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

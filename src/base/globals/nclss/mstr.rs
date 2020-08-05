@@ -10,21 +10,26 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_mutable_string(globals, &args[0])?;
             Ok(Value::Int(s.borrow().len() as i64))
         }),
-        NativeFunction::simple0("extend", &["self", "other"], |globals, args, _kwargs| {
-            let s = Eval::expect_mutable_string(globals, &args[0])?;
-            Eval::extend_str(globals, &mut s.borrow_mut(), &args[1])?;
-            Ok(Value::Nil)
-        }),
-        NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new(
+            "extend",
+            &["self", "other"],
+            None,
+            |globals, args, _kwargs| {
+                let s = Eval::expect_mutable_string(globals, &args[0])?;
+                Eval::extend_str(globals, &mut s.borrow_mut(), &args[1])?;
+                Ok(Value::Nil)
+            },
+        ),
+        NativeFunction::new("move", &["self"], None, |globals, args, _kwargs| {
             let mstr = Eval::expect_mutable_string(globals, &args[0])?;
             let contents = mstr.replace(String::new());
             Ok(contents.into())
         }),
-        NativeFunction::simple0("pop", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("pop", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_mutable_string(globals, &args[0])?;
             match s.borrow_mut().pop() {
                 Some(ch) => Ok(globals.char_to_val(ch)),
@@ -36,9 +41,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
-    let static_methods = vec![NativeFunction::simple0(
+    let static_methods = vec![NativeFunction::new(
         "__call",
         &["x"],
+        None,
         |globals, args, _kwargs| {
             Ok(Value::MutableString(
                 RefCell::new(RcStr::unwrap_or_clone(Eval::str(globals, &args[0])?)).into(),

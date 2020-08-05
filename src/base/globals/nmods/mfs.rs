@@ -20,13 +20,18 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
 
     map.extend(
         vec![
-            NativeFunction::simple0("copy_file", &["source", "dest"], |globals, args, _| {
-                let source = Eval::expect_pathlike(globals, &args[0])?;
-                let dest = Eval::expect_pathlike(globals, &args[1])?;
-                Eval::try_(globals, fs::copy(source, dest))?;
-                Ok(Value::Nil)
-            }),
-            NativeFunction::simple0("copy", &["source", "dest"], |globals, args, _| {
+            NativeFunction::new(
+                "copy_file",
+                &["source", "dest"],
+                None,
+                |globals, args, _| {
+                    let source = Eval::expect_pathlike(globals, &args[0])?;
+                    let dest = Eval::expect_pathlike(globals, &args[1])?;
+                    Eval::try_(globals, fs::copy(source, dest))?;
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::new("copy", &["source", "dest"], None, |globals, args, _| {
                 let source = Eval::expect_pathlike(globals, &args[0])?;
                 let dest = Eval::expect_pathlike(globals, &args[1])?;
                 copy_tree(globals, source, dest)?;

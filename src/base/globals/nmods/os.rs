@@ -26,11 +26,11 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
 
     map.extend(
         vec![
-            NativeFunction::simple0("getcwd", &[], |globals, _, _| {
+            NativeFunction::new("getcwd", &[], None, |globals, _, _| {
                 let cwd = Eval::try_(globals, std::env::current_dir())?;
                 Ok(cwd.into())
             }),
-            NativeFunction::simple0("env", &["name"], |globals, args, _kwargs| {
+            NativeFunction::new("env", &["name"], None, |globals, args, _kwargs| {
                 let name = Eval::expect_osstr(globals, &args[0])?;
                 match env::var(name) {
                     Ok(value) => Ok(value.into()),

@@ -8,9 +8,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
-    let static_methods = vec![NativeFunction::simple0(
+    let static_methods = vec![NativeFunction::new(
         "__call",
         &["symbollike"],
+        None,
         |globals, args, _kwargs| Ok(Eval::expect_symbollike(globals, &args[0])?.into()),
     )]
     .into_iter()

@@ -9,14 +9,14 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("doc", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("doc", &["self"], None, |globals, args, _kwargs| {
             let func = Eval::expect_native_func(globals, &args[0])?;
             match func.doc() {
                 Some(doc) => Ok(doc.clone().into()),
                 None => Ok(Value::Nil),
             }
         }),
-        NativeFunction::simple0("params", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("params", &["self"], None, |globals, args, _kwargs| {
             let func = Eval::expect_native_func(globals, &args[0])?;
             let pi = func.parameter_info();
             Eval::parameter_info_to_value(globals, pi)

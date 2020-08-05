@@ -8,10 +8,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
-    let static_methods = vec![NativeFunction::sdnew0(
+    let static_methods = vec![NativeFunction::new(
         "__call",
         &["x"],
-        Some("Converts a value to an Int"),
+        "Converts a value to an Int",
         |globals, args, _kwargs| match &args[0] {
             Value::Int(i) => Ok(Value::Float(*i as f64)),
             Value::Float(f) => Ok(Value::Float(*f)),

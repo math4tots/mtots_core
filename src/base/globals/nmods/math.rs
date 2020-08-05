@@ -17,98 +17,98 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
 
     map.extend(
         vec![
-            NativeFunction::simple0("sin", &["x"], |globals, args, _| {
+            NativeFunction::new("sin", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.sin().into())
             }),
-            NativeFunction::simple0("cos", &["x"], |globals, args, _| {
+            NativeFunction::new("cos", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.cos().into())
             }),
-            NativeFunction::simple0("tan", &["x"], |globals, args, _| {
+            NativeFunction::new("tan", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.tan().into())
             }),
-            NativeFunction::simple0("asin", &["x"], |globals, args, _| {
+            NativeFunction::new("asin", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.asin().into())
             }),
-            NativeFunction::simple0("acos", &["x"], |globals, args, _| {
+            NativeFunction::new("acos", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.acos().into())
             }),
-            NativeFunction::simple0("atan", &["x"], |globals, args, _| {
+            NativeFunction::new("atan", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.atan().into())
             }),
-            NativeFunction::simple0("atan2", &["y", "x"], |globals, args, _| {
+            NativeFunction::new("atan2", &["y", "x"], None, |globals, args, _| {
                 let y = Eval::expect_floatlike(globals, &args[0])?;
                 let x = Eval::expect_floatlike(globals, &args[1])?;
                 Ok(y.atan2(x).into())
             }),
-            NativeFunction::simple0("sinh", &["x"], |globals, args, _| {
+            NativeFunction::new("sinh", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.sinh().into())
             }),
-            NativeFunction::simple0("cosh", &["x"], |globals, args, _| {
+            NativeFunction::new("cosh", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.cosh().into())
             }),
-            NativeFunction::simple0("tanh", &["x"], |globals, args, _| {
+            NativeFunction::new("tanh", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.tanh().into())
             }),
-            NativeFunction::simple0("ln", &["x"], |globals, args, _| {
+            NativeFunction::new("ln", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.ln().into())
             }),
-            NativeFunction::simple0("log2", &["x"], |globals, args, _| {
+            NativeFunction::new("log2", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.log2().into())
             }),
-            NativeFunction::simple0("log10", &["x"], |globals, args, _| {
+            NativeFunction::new("log10", &["x"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.log10().into())
             }),
-            NativeFunction::simple0("log", &["x", "base"], |globals, args, _| {
+            NativeFunction::new("log", &["x", "base"], None, |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 let y = Eval::expect_floatlike(globals, &args[1])?;
                 Ok(x.log(y).into())
             }),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "emod",
                 &["a", "b"],
-                Some("Euclidean modulo on integers"),
+                "Euclidean modulo on integers",
                 |globals, args, _| {
                     let x = Eval::expect_int(globals, &args[0])?;
                     let y = Eval::expect_int(globals, &args[1])?;
                     Ok(x.rem_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "ediv",
                 &["a", "b"],
-                Some("Euclidean division on integers"),
+                "Euclidean division on integers",
                 |globals, args, _| {
                     let x = Eval::expect_int(globals, &args[0])?;
                     let y = Eval::expect_int(globals, &args[1])?;
                     Ok(x.div_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "fmod",
                 &["a", "b"],
-                Some("Euclidean modulo on floats"),
+                "Euclidean modulo on floats",
                 |globals, args, _| {
                     let x = Eval::expect_floatlike(globals, &args[0])?;
                     let y = Eval::expect_floatlike(globals, &args[1])?;
                     Ok(x.rem_euclid(y).into())
                 },
             ),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "fdiv",
                 &["a", "b"],
-                Some("Euclidean division on floats"),
+                "Euclidean division on floats",
                 |globals, args, _| {
                     let x = Eval::expect_floatlike(globals, &args[0])?;
                     let y = Eval::expect_floatlike(globals, &args[1])?;

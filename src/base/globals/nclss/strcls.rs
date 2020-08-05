@@ -5,6 +5,7 @@ use crate::GeneratorResult;
 use crate::Globals;
 use crate::NativeFunction;
 use crate::NativeIterator;
+use crate::ParameterInfo;
 use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
@@ -14,13 +15,14 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
             Ok(Value::Int(s.charlen() as i64))
         }),
-        NativeFunction::simple0(
+        NativeFunction::new(
             "starts_with",
             &["self", "prefix"],
+            None,
             |globals, args, _kwargs| {
                 let s = Eval::expect_string(globals, &args[0])?;
                 let prefix = Eval::expect_string(globals, &args[1])?;
@@ -28,9 +30,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(s.starts_with(prefix).into())
             },
         ),
-        NativeFunction::simple0(
+        NativeFunction::new(
             "ends_with",
             &["self", "suffix"],
+            None,
             |globals, args, _kwargs| {
                 let s = Eval::expect_string(globals, &args[0])?;
                 let suffix = Eval::expect_string(globals, &args[1])?;
@@ -38,36 +41,46 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(s.ends_with(suffix).into())
             },
         ),
-        NativeFunction::simple0("lstrip", &["self", "prefix"], |globals, args, _kwargs| {
-            // If self starts with prefix, returns self with prefix removed
-            // Otherwise returns self unchanged
-            let s = Eval::expect_string(globals, &args[0])?;
-            let prefix = Eval::expect_string(globals, &args[1])?;
-            let prefix: &str = prefix;
-            if s.starts_with(prefix) {
-                let stripped = &s[prefix.len()..];
-                Ok(stripped.into())
-            } else {
-                Ok(args[0].clone())
-            }
-        }),
-        NativeFunction::simple0("rstrip", &["self", "suffix"], |globals, args, _kwargs| {
-            // If self ends with suffix, returns self with suffix removed
-            // Otherwise returns self unchanged
-            let s = Eval::expect_string(globals, &args[0])?;
-            let suffix = Eval::expect_string(globals, &args[1])?;
-            let suffix: &str = suffix;
-            if s.ends_with(suffix) {
-                let stripped = &s[..s.len() - suffix.len()];
-                Ok(stripped.into())
-            } else {
-                Ok(args[0].clone())
-            }
-        }),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
+            "lstrip",
+            &["self", "prefix"],
+            None,
+            |globals, args, _kwargs| {
+                // If self starts with prefix, returns self with prefix removed
+                // Otherwise returns self unchanged
+                let s = Eval::expect_string(globals, &args[0])?;
+                let prefix = Eval::expect_string(globals, &args[1])?;
+                let prefix: &str = prefix;
+                if s.starts_with(prefix) {
+                    let stripped = &s[prefix.len()..];
+                    Ok(stripped.into())
+                } else {
+                    Ok(args[0].clone())
+                }
+            },
+        ),
+        NativeFunction::new(
+            "rstrip",
+            &["self", "suffix"],
+            None,
+            |globals, args, _kwargs| {
+                // If self ends with suffix, returns self with suffix removed
+                // Otherwise returns self unchanged
+                let s = Eval::expect_string(globals, &args[0])?;
+                let suffix = Eval::expect_string(globals, &args[1])?;
+                let suffix: &str = suffix;
+                if s.ends_with(suffix) {
+                    let stripped = &s[..s.len() - suffix.len()];
+                    Ok(stripped.into())
+                } else {
+                    Ok(args[0].clone())
+                }
+            },
+        ),
+        NativeFunction::new(
             "chars",
             &["self"],
-            Some("Returns a list of chars of this String"),
+            "Returns a list of chars of this String",
             |globals, args, _kwargs| {
                 let s = Eval::expect_string(globals, &args[0])?;
                 let mut ret = Vec::new();
@@ -77,13 +90,14 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(ret.into())
             },
         ),
-        NativeFunction::simple0("trim", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("trim", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
             Ok(s.trim().into())
         }),
-        NativeFunction::simple0(
+        NativeFunction::new(
             "replace",
             &["self", "old", "new"],
+            None,
             |globals, args, _kwargs| {
                 let s = Eval::expect_string(globals, &args[0])?;
                 let old = Eval::expect_string(globals, &args[1])?;
@@ -92,63 +106,78 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(s.replace(old, new).into())
             },
         ),
-        NativeFunction::simple0("split", &["self", "sep"], |globals, args, _kwargs| {
+        NativeFunction::new("split", &["self", "sep"], None, |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             let sep = Eval::expect_string(globals, &args[1])?.clone();
             Ok(split_by_str(globals, string, sep))
         }),
-        NativeFunction::simple0("words", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("words", &["self"], None, |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             Ok(split_by_ws(globals, string))
         }),
-        NativeFunction::simple0("lines", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("lines", &["self"], None, |globals, args, _kwargs| {
             let string = Eval::expect_string(globals, &args[0])?.clone();
             Ok(split_by_str(globals, string, "\n".into()))
         }),
-        NativeFunction::simple0("has", &["self", "pattern"], |globals, args, _kwargs| {
-            let string = Eval::expect_string(globals, &args[0])?;
-            let pattern = Eval::expect_string(globals, &args[1])?;
-            Ok(string.contains(pattern.str()).into())
-        }),
-        NativeFunction::simple0("join", &["self", "parts"], |globals, args, _kwargs| {
-            let mut ret = String::new();
-            let sep = Eval::expect_string(globals, &args[0])?;
-            let mut first = true;
-            for part in Eval::iterable_to_vec(globals, &args[1])? {
-                if !first {
-                    ret.push_str(sep);
+        NativeFunction::new(
+            "has",
+            &["self", "pattern"],
+            None,
+            |globals, args, _kwargs| {
+                let string = Eval::expect_string(globals, &args[0])?;
+                let pattern = Eval::expect_string(globals, &args[1])?;
+                Ok(string.contains(pattern.str()).into())
+            },
+        ),
+        NativeFunction::new(
+            "join",
+            &["self", "parts"],
+            None,
+            |globals, args, _kwargs| {
+                let mut ret = String::new();
+                let sep = Eval::expect_string(globals, &args[0])?;
+                let mut first = true;
+                for part in Eval::iterable_to_vec(globals, &args[1])? {
+                    if !first {
+                        ret.push_str(sep);
+                    }
+                    ret.push_str(Eval::expect_string(globals, &part)?);
+                    first = false;
                 }
-                ret.push_str(Eval::expect_string(globals, &part)?);
-                first = false;
-            }
-            Ok(ret.into())
-        }),
-        NativeFunction::snew(
+                Ok(ret.into())
+            },
+        ),
+        NativeFunction::new(
             "slice",
-            (&["self", "start"], &[("end", Value::Nil)], None, None),
+            ParameterInfo::builder()
+                .required("self")
+                .required("start")
+                .optional("end", ()),
+            None,
             |globals, args, _kwargs| {
                 let (s, _start, _end) =
                     Eval::expect_str_slice(globals, &args[0], &args[1], &args[2])?;
                 Ok(s.into())
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "__slice",
-            (&["self", "start", "end"], &[], None, None),
+            ["self", "start", "end"],
+            None,
             |globals, args, _kwargs| {
                 let (s, _start, _end) =
                     Eval::expect_str_slice(globals, &args[0], &args[1], &args[2])?;
                 Ok(s.into())
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "find",
-            (
-                &["self", "pattern"],
-                &[("start", Value::Nil), ("end", Value::Nil)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("pattern")
+                .optional("start", ())
+                .optional("end", ()),
+            None,
             |globals, args, _kwargs| {
                 let pattern = Eval::expect_string(globals, &args[1])?;
                 let (s, start, _end) =
@@ -158,14 +187,14 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                     .unwrap_or(Value::Nil))
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "rfind",
-            (
-                &["self", "pattern"],
-                &[("start", Value::Nil), ("end", Value::Nil)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("pattern")
+                .optional("start", ())
+                .optional("end", ()),
+            None,
             |globals, args, _kwargs| {
                 let pattern = Eval::expect_string(globals, &args[1])?;
                 let (s, start, _end) =

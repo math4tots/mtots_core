@@ -21,23 +21,19 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::snew(
+            NativeFunction::new(
                 "spawn",
-                (
-                    &[
-                        "cmd",
-                        "args",
-                        "stdin",
-                        "stdout",
-                        "stderr",
-                        "dir",
-                        "clear_envs",
-                        "envs",
-                    ],
-                    &[],
-                    None,
-                    None,
-                ),
+                &[
+                    "cmd",
+                    "args",
+                    "stdin",
+                    "stdout",
+                    "stderr",
+                    "dir",
+                    "clear_envs",
+                    "envs",
+                ],
+                None,
                 |globals, args, _kwargs| {
                     let cmd = Eval::expect_osstr(globals, &args[0])?;
                     let mut cmd = std::process::Command::new(cmd);
@@ -92,28 +88,24 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(globals.new_handle(child)?.into())
                 },
             ),
-            NativeFunction::snew(
-                "wait",
-                (&["child_proc"], &[], None, None),
-                |globals, args, _kwargs| {
-                    let child =
-                        Eval::unwrap_handle::<Child>(globals, args.into_iter().next().unwrap())?;
-                    let output = match child.wait_with_output() {
-                        Ok(output) => output,
-                        Err(error) => {
-                            return globals.set_io_error(error);
-                        }
-                    };
-                    let status = output
-                        .status
-                        .code()
-                        .map(|c| Value::Int(c as i64))
-                        .unwrap_or(Value::Nil);
-                    let stdout = Value::Bytes(output.stdout.into());
-                    let stderr = Value::Bytes(output.stderr.into());
-                    Ok(vec![status, stdout, stderr].into())
-                },
-            ),
+            NativeFunction::new("wait", ["child_proc"], None, |globals, args, _kwargs| {
+                let child =
+                    Eval::unwrap_handle::<Child>(globals, args.into_iter().next().unwrap())?;
+                let output = match child.wait_with_output() {
+                    Ok(output) => output,
+                    Err(error) => {
+                        return globals.set_io_error(error);
+                    }
+                };
+                let status = output
+                    .status
+                    .code()
+                    .map(|c| Value::Int(c as i64))
+                    .unwrap_or(Value::Nil);
+                let stdout = Value::Bytes(output.stdout.into());
+                let stderr = Value::Bytes(output.stderr.into());
+                Ok(vec![status, stdout, stderr].into())
+            }),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),

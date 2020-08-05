@@ -784,6 +784,9 @@ pub struct ParameterInfo {
     keywords: Option<Symbol>,
 }
 impl ParameterInfo {
+    pub fn builder() -> ParameterInfoBuilder {
+        ParameterInfoBuilder::default()
+    }
     pub fn new(
         required: Vec<Symbol>,
         optional: Vec<(Symbol, Value)>,
@@ -936,39 +939,143 @@ impl ParameterInfo {
     }
 }
 
-impl From<Vec<&'static str>> for ParameterInfo {
-    fn from(reqs: Vec<&'static str>) -> Self {
-        Self::snew(&reqs, &[], None, None)
+#[derive(Default)]
+pub struct ParameterInfoBuilder {
+    required: Vec<Symbol>,
+    optional: Vec<(Symbol, Value)>,
+    variadic: Option<Symbol>,
+    keywords: Option<Symbol>,
+}
+
+impl ParameterInfoBuilder {
+    pub fn required<S: Into<Symbol>>(mut self, s: S) -> Self {
+        self.required.push(s.into());
+        self
+    }
+
+    pub fn optional<S: Into<Symbol>, V: Into<Value>>(mut self, s: S, v: V) -> Self {
+        self.optional.push((s.into(), v.into()));
+        self
+    }
+
+    pub fn variadic<S: Into<Symbol>>(mut self, s: S) -> Self {
+        self.variadic = Some(s.into());
+        self
+    }
+
+    pub fn keywords<S: Into<Symbol>>(mut self, s: S) -> Self {
+        self.keywords = Some(s.into());
+        self
+    }
+
+    pub fn build(self) -> ParameterInfo {
+        ParameterInfo::new(self.required, self.optional, self.variadic, self.keywords)
     }
 }
 
-impl From<&[&str]> for ParameterInfo {
-    fn from(reqs: &[&str]) -> Self {
-        Self::snew(&reqs, &[], None, None)
+impl From<ParameterInfoBuilder> for ParameterInfo {
+    fn from(builder: ParameterInfoBuilder) -> Self {
+        builder.build()
     }
 }
 
-impl From<(&[&str], &[(&str, Value)])> for ParameterInfo {
-    fn from(args: (&[&str], &[(&str, Value)])) -> Self {
-        Self::snew(args.0, args.1, None, None)
+impl From<()> for ParameterInfo {
+    fn from(_: ()) -> Self {
+        Self::empty()
     }
 }
 
-impl From<(&[&str], &[(&str, Value)], &str)> for ParameterInfo {
-    fn from(args: (&[&str], &[(&str, Value)], &str)) -> Self {
-        Self::snew(args.0, args.1, Some(args.2), None)
+impl<S: Into<Symbol> + Clone> From<&[S]> for ParameterInfo {
+    fn from(reqs: &[S]) -> Self {
+        Self::new(
+            reqs.to_vec().into_iter().map(Into::into).collect(),
+            vec![],
+            None,
+            None,
+        )
     }
 }
 
-impl From<(&[&str], &[(&str, Value)], &str, &str)> for ParameterInfo {
-    fn from(args: (&[&str], &[(&str, Value)], &str, &str)) -> Self {
-        Self::snew(args.0, args.1, Some(args.2), Some(args.3))
+impl From<[&str; 0]> for ParameterInfo {
+    fn from(_: [&str; 0]) -> Self {
+        Self::empty()
+    }
+}
+impl From<&[&str; 0]> for ParameterInfo {
+    fn from(_: &[&str; 0]) -> Self {
+        Self::empty()
+    }
+}
+macro_rules! from_arr_for_parameter_info {
+    ($n:tt) => {
+        impl<S: Into<Symbol> + Clone> From<[S; $n]> for ParameterInfo {
+            fn from(reqs: [S; $n]) -> Self {
+                Self::new(
+                    reqs.to_vec().into_iter().map(Into::into).collect(),
+                    vec![],
+                    None,
+                    None,
+                )
+            }
+        }
+        impl<S: Into<Symbol> + Clone> From<&[S; $n]> for ParameterInfo {
+            fn from(reqs: &[S; $n]) -> Self {
+                Self::new(
+                    reqs.to_vec().into_iter().map(Into::into).collect(),
+                    vec![],
+                    None,
+                    None,
+                )
+            }
+        }
+    };
+}
+
+from_arr_for_parameter_info!(1);
+from_arr_for_parameter_info!(2);
+from_arr_for_parameter_info!(3);
+from_arr_for_parameter_info!(4);
+from_arr_for_parameter_info!(5);
+from_arr_for_parameter_info!(6);
+from_arr_for_parameter_info!(7);
+from_arr_for_parameter_info!(8);
+from_arr_for_parameter_info!(9);
+from_arr_for_parameter_info!(10);
+from_arr_for_parameter_info!(11);
+from_arr_for_parameter_info!(12);
+from_arr_for_parameter_info!(13);
+from_arr_for_parameter_info!(14);
+from_arr_for_parameter_info!(15);
+
+pub struct DocStr(Option<RcStr>);
+
+impl From<Option<RcStr>> for DocStr {
+    fn from(opt: Option<RcStr>) -> Self {
+        Self(opt)
     }
 }
 
-impl From<(&[&str], &[(&str, Value)], Option<&str>, Option<&str>)> for ParameterInfo {
-    fn from(args: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>)) -> Self {
-        Self::snew(args.0, args.1, args.2, args.3)
+impl From<()> for DocStr {
+    fn from(_: ()) -> Self {
+        Self(None)
+    }
+}
+
+impl From<&str> for DocStr {
+    fn from(s: &str) -> Self {
+        Self(Some(s.into()))
+    }
+}
+
+impl From<String> for DocStr {
+    fn from(s: String) -> Self {
+        Self(Some(s.into()))
+    }
+}
+
+impl From<RcStr> for DocStr {
+    fn from(s: RcStr) -> Self {
+        Self(Some(s))
     }
 }
 
@@ -1004,62 +1111,18 @@ impl fmt::Debug for NativeFunction {
 impl NativeFunction {
     /// The most direct way to create a new NativeFunction
     /// All other constructors are convenience wrappers around this one
-    pub fn new(
-        name: RcStr,
-        parameter_info: ParameterInfo,
-        doc: Option<RcStr>,
-        body: NativeFunctionBody,
-    ) -> Self {
+    pub fn new<N, P, D>(name: N, parameter_info: P, doc: D, body: NativeFunctionBody) -> Self
+    where
+        N: Into<RcStr>,
+        P: Into<ParameterInfo>,
+        D: Into<DocStr>,
+    {
         Self {
-            name,
-            parameter_info,
-            doc,
+            name: name.into(),
+            parameter_info: parameter_info.into(),
+            doc: doc.into().0,
             body,
         }
-    }
-    pub fn new0<N: Into<RcStr>, P: Into<ParameterInfo>, D: Into<Option<RcStr>>>(
-        name: N,
-        parameter_info: P,
-        doc: D,
-        body: NativeFunctionBody,
-    ) -> Self {
-        Self::new(name.into(), parameter_info.into(), doc.into(), body)
-    }
-    pub fn snew(
-        name: &str,
-        parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
-        body: NativeFunctionBody,
-    ) -> NativeFunction {
-        Self::sdnew(name, parameter_info, None, body)
-    }
-    pub fn sdnew(
-        name: &str,
-        parameter_info: (&[&str], &[(&str, Value)], Option<&str>, Option<&str>),
-        doc: Option<&str>,
-        body: NativeFunctionBody,
-    ) -> NativeFunction {
-        Self::new(
-            name.into(),
-            parameter_info.into(),
-            doc.map(RcStr::from),
-            body,
-        )
-    }
-    pub fn sdnew0(
-        name: &str,
-        params: &[&str],
-        doc: Option<&str>,
-        body: NativeFunctionBody,
-    ) -> NativeFunction {
-        Self::sdnew(name, (params, &[], None, None), doc, body)
-    }
-    pub fn simple0(name: &str, params: &[&str], body: NativeFunctionBody) -> NativeFunction {
-        Self::new(
-            name.into(),
-            ParameterInfo::snew(params, &[], None, None),
-            None,
-            body,
-        )
     }
     pub fn name(&self) -> &RcStr {
         &self.name

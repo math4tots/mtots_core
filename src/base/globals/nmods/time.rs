@@ -17,12 +17,12 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
 
     map.extend(
         vec![
-            NativeFunction::simple0("now", &[], |_globals, _args, _kwargs| {
+            NativeFunction::new("now", &[], None, |_globals, _args, _kwargs| {
                 // Returns the current time as a float -- secs since UNIX EPOCH
                 let ts = diff_system_times(SystemTime::UNIX_EPOCH, SystemTime::now());
                 Ok(ts.into())
             }),
-            NativeFunction::simple0("sleep", &["sec"], |globals, args, _kwargs| {
+            NativeFunction::new("sleep", &["sec"], None, |globals, args, _kwargs| {
                 // Sleeps for given number of secs (expects int or float)
                 let sec = Eval::expect_floatlike(globals, &args[0])?;
                 std::thread::sleep(std::time::Duration::from_secs_f64(sec));

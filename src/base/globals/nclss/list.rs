@@ -2,6 +2,7 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 
@@ -9,16 +10,21 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_list(globals, &args[0])?;
             Ok(Value::Int(list.len() as i64))
         }),
-        NativeFunction::simple0("__getitem", &["self", "i"], |globals, args, _kwargs| {
-            let list = Eval::expect_list(globals, &args[0])?;
-            let i = Eval::expect_index(globals, &args[1], list.len())?;
-            Ok(list[i].clone())
-        }),
-        NativeFunction::simple0("map", &["self", "f"], |globals, args, _kwargs| {
+        NativeFunction::new(
+            "__getitem",
+            &["self", "i"],
+            None,
+            |globals, args, _kwargs| {
+                let list = Eval::expect_list(globals, &args[0])?;
+                let i = Eval::expect_index(globals, &args[1], list.len())?;
+                Ok(list[i].clone())
+            },
+        ),
+        NativeFunction::new("map", &["self", "f"], None, |globals, args, _kwargs| {
             let list = Eval::expect_list(globals, &args[0])?;
             let f = &args[1];
             let mut ret = Vec::new();
@@ -28,7 +34,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
-        NativeFunction::simple0("filter", &["self", "f"], |globals, args, _kwargs| {
+        NativeFunction::new("filter", &["self", "f"], None, |globals, args, _kwargs| {
             let list = Eval::expect_list(globals, &args[0])?;
             let f = &args[1];
             let mut ret = Vec::new();
@@ -41,14 +47,16 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             }
             Ok(ret.into())
         }),
-        NativeFunction::simple0("reversed", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("reversed", &["self"], None, |globals, args, _kwargs| {
             let mut list = Eval::move_or_clone_list(globals, args.into_iter().next().unwrap())?;
             list.reverse();
             Ok(list.into())
         }),
-        NativeFunction::sdnew(
+        NativeFunction::new(
             "zip",
-            (&["self"], &[], Some("iterables"), None),
+            ParameterInfo::builder()
+                .required("self")
+                .variadic("iterables"),
             None,
             |globals, args, _kwargs| {
                 let iterators = {
@@ -72,9 +80,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "any",
-            (&["self"], &[("f", Value::Nil)], None, None),
+            ParameterInfo::builder().required("self").optional("f", ()),
+            None,
             |globals, args, _kwargs| {
                 let list = Eval::expect_list(globals, &args[0])?;
                 let f = &args[1];
@@ -92,9 +101,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(false.into())
             },
         ),
-        NativeFunction::snew(
+        NativeFunction::new(
             "all",
-            (&["self"], &[("f", Value::Nil)], None, None),
+            ParameterInfo::builder().required("self").optional("f", ()),
+            None,
             |globals, args, _kwargs| {
                 let list = Eval::expect_list(globals, &args[0])?;
                 let f = &args[1];
@@ -112,10 +122,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(true.into())
             },
         ),
-        NativeFunction::simple0("iter", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("iter", &["self"], None, |globals, args, _kwargs| {
             Eval::iter(globals, &args[0])
         }),
-        NativeFunction::simple0("has", &["self", "x"], |globals, args, _kwargs| {
+        NativeFunction::new("has", &["self", "x"], None, |globals, args, _kwargs| {
             let list = Eval::expect_list(globals, &args[0])?;
             let x = &args[1];
             for y in list.iter() {
@@ -125,10 +135,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             }
             Ok(false.into())
         }),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "__slice",
             &["self", "start", "end"],
-            Some("Creates a new list consisting of a subrange of this list"),
+            "Creates a new list consisting of a subrange of this list",
             |globals, args, _kwargs| {
                 let list = Eval::expect_list(globals, &args[0])?;
                 let (start, end) =
@@ -142,12 +152,15 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .collect();
 
     let static_methods = vec![
-        NativeFunction::simple0("__call", &["iterable"], |globals, args, _kwargs| {
+        NativeFunction::new("__call", &["iterable"], None, |globals, args, _kwargs| {
             Eval::list_from_iterable(globals, &args[0])
         }),
-        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
-            Eval::list_from_iterable(globals, &args[0])
-        }),
+        NativeFunction::new(
+            "from_iterable",
+            &["iterable"],
+            None,
+            |globals, args, _kwargs| Eval::list_from_iterable(globals, &args[0]),
+        ),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

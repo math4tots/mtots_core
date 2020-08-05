@@ -9,30 +9,40 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::sdnew0("len", &["self"], None, |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
             Ok((bytes.borrow().len() as i64).into())
         }),
-        NativeFunction::simple0("__getitem", &["self", "i"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
-            let i = Eval::expect_index(globals, &args[1], bytes.borrow().len())?;
-            Ok((bytes.borrow()[i] as i64).into())
-        }),
-        NativeFunction::simple0("extend", &["self", "other"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
-            let other = Eval::expect_bytes_from_pattern(globals, &args[1])?;
-            bytes.borrow_mut().extend(other);
-            Ok(Value::Nil)
-        }),
-        NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new(
+            "__getitem",
+            &["self", "i"],
+            None,
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
+                let i = Eval::expect_index(globals, &args[1], bytes.borrow().len())?;
+                Ok((bytes.borrow()[i] as i64).into())
+            },
+        ),
+        NativeFunction::new(
+            "extend",
+            &["self", "other"],
+            None,
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
+                let other = Eval::expect_bytes_from_pattern(globals, &args[1])?;
+                bytes.borrow_mut().extend(other);
+                Ok(Value::Nil)
+            },
+        ),
+        NativeFunction::new("move", &["self"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
             let bytes = bytes.replace(vec![]);
             Ok(bytes.into())
         }),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "__slice",
             &["self", "start", "end"],
-            Some("Creates a new bytes object consisting of a subrange of this object"),
+            "Creates a new bytes object consisting of a subrange of this object",
             |globals, args, _kwargs| {
                 let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
                 let (start, end) =
@@ -46,14 +56,19 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .collect();
 
     let static_methods = vec![
-        NativeFunction::simple0("__call", &["pattern"], |globals, args, _kwargs| {
+        NativeFunction::new("__call", &["pattern"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
             Ok(Value::MutableBytes(Rc::new(RefCell::new(bytes))))
         }),
-        NativeFunction::simple0("from_iterable", &["iterable"], |globals, args, _kwargs| {
-            let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
-            Ok(Value::MutableBytes(Rc::new(RefCell::new(bytes))))
-        }),
+        NativeFunction::new(
+            "from_iterable",
+            &["iterable"],
+            None,
+            |globals, args, _kwargs| {
+                let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
+                Ok(Value::MutableBytes(Rc::new(RefCell::new(bytes))))
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))

@@ -1,3 +1,4 @@
+use crate::ParameterInfo;
 use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
@@ -9,35 +10,39 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("move", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("move", &["self"], None, |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             let map = map.replace(VMap::new());
             Ok(Value::Map(map.into()))
         }),
-        NativeFunction::simple0("len", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
             Ok(Value::Int(map.borrow().len() as i64))
         }),
-        NativeFunction::simple0("__getitem", &["self", "key"], |globals, args, _kwargs| {
-            let map = Eval::expect_mutable_map(globals, &args[0])?;
-            let val = map.borrow().s_get(globals, &args[1])?.cloned();
-            if let Some(val) = val {
-                Ok(val)
-            } else {
-                let keystr = Eval::repr(globals, &args[1])?;
-                globals.set_key_error(
-                    &format!("Key {:?} not found in given MutableMap", keystr,).into(),
-                )
-            }
-        }),
-        NativeFunction::snew(
+        NativeFunction::new(
+            "__getitem",
+            &["self", "key"],
+            None,
+            |globals, args, _kwargs| {
+                let map = Eval::expect_mutable_map(globals, &args[0])?;
+                let val = map.borrow().s_get(globals, &args[1])?.cloned();
+                if let Some(val) = val {
+                    Ok(val)
+                } else {
+                    let keystr = Eval::repr(globals, &args[1])?;
+                    globals.set_key_error(
+                        &format!("Key {:?} not found in given MutableMap", keystr,).into(),
+                    )
+                }
+            },
+        ),
+        NativeFunction::new(
             "get",
-            (
-                &["self", "key"],
-                &[("default", Value::Uninitialized)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("key")
+                .optional("default", Value::Uninitialized),
+            None,
             |globals, args, _kwargs| {
                 let map = Eval::expect_mutable_map(globals, &args[0])?;
                 let val = map.borrow().s_get(globals, &args[1])?.cloned();
@@ -53,9 +58,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::simple0(
+        NativeFunction::new(
             "__setitem",
             &["self", "key", "val"],
+            None,
             |globals, args, _kwargs| {
                 let mut args = args.into_iter();
                 let map = args.next().unwrap();
@@ -66,19 +72,25 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(Value::Nil)
             },
         ),
-        NativeFunction::simple0("has_key", &["self", "key"], |globals, args, _kwargs| {
-            let map = Eval::expect_mutable_map(globals, &args[0])?;
-            let has_key = map.borrow().s_get(globals, &args[1])?.is_some();
-            Ok(has_key.into())
-        }),
+        NativeFunction::new(
+            "has_key",
+            &["self", "key"],
+            None,
+            |globals, args, _kwargs| {
+                let map = Eval::expect_mutable_map(globals, &args[0])?;
+                let has_key = map.borrow().s_get(globals, &args[1])?.is_some();
+                Ok(has_key.into())
+            },
+        ),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
-    let static_methods = vec![NativeFunction::simple0(
+    let static_methods = vec![NativeFunction::new(
         "__call",
         &["x"],
+        None,
         |globals, args, _kwargs| Eval::mutable_map_from_iterable(globals, &args[0]),
     )]
     .into_iter()

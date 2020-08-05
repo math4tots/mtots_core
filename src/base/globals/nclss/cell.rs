@@ -9,12 +9,12 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::simple0("get", &["self"], |globals, args, _kwargs| {
+        NativeFunction::new("get", &["self"], None, |globals, args, _kwargs| {
             // Gets the value currently stored in this cell
             let cell = Eval::expect_cell(globals, &args[0])?;
             Ok(cell.borrow().clone())
         }),
-        NativeFunction::simple0("set", &["self", "x"], |globals, args, _kwargs| {
+        NativeFunction::new("set", &["self", "x"], None, |globals, args, _kwargs| {
             // Sets a new value to the cell
             let cell = Eval::expect_cell(globals, &args[0])?;
             *cell.borrow_mut() = args[1].clone();
@@ -25,9 +25,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     .map(|f| (Symbol::from(f.name()), Value::from(f)))
     .collect();
 
-    let static_methods = vec![NativeFunction::simple0(
+    let static_methods = vec![NativeFunction::new(
         "__call",
         &["x"],
+        None,
         |_globals, args, _kwargs| {
             // Creates a new cell initialized with the given value
             Ok(Value::Cell(Rc::new(RefCell::new(args[0].clone()))))

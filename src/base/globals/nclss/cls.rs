@@ -2,6 +2,7 @@ use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 use std::collections::HashMap;
@@ -9,22 +10,17 @@ use std::rc::Rc;
 
 pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
-        NativeFunction::snew(
-            "is_trait",
-            (&["self"], &[], None, None),
-            |globals, args, _kwargs| {
-                let cls = Eval::expect_class(globals, &args[0])?;
-                Ok(cls.is_trait().into())
-            },
-        ),
-        NativeFunction::snew(
+        NativeFunction::new("is_trait", ["self"], None, |globals, args, _kwargs| {
+            let cls = Eval::expect_class(globals, &args[0])?;
+            Ok(cls.is_trait().into())
+        }),
+        NativeFunction::new(
             "get_method",
-            (
-                &["self", "name"],
-                &[("default", Value::Uninitialized)],
-                None,
-                None,
-            ),
+            ParameterInfo::builder()
+                .required("self")
+                .required("name")
+                .optional("default", Value::Uninitialized),
+            None,
             |globals, args, _kwargs| {
                 let cls = Eval::expect_class(globals, &args[0])?;
                 let method_name = Eval::expect_symbollike(globals, &args[1])?;
@@ -44,10 +40,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "keys",
             &["self"],
-            Some("Returns method names as a List of Symbols"),
+            "Returns method names as a List of Symbols",
             |globals, args, _kwargs| {
                 let cls = Eval::expect_class(globals, &args[0])?;
                 let mut names = Vec::new();
@@ -57,10 +53,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(names.into())
             },
         ),
-        NativeFunction::sdnew0(
+        NativeFunction::new(
             "static_keys",
             &["self"],
-            Some("Returns static method names as a List of Symbols"),
+            "Returns static method names as a List of Symbols",
             |globals, args, _kwargs| {
                 let cls = Eval::expect_class(globals, &args[0])?;
                 let mut names = Vec::new();
@@ -70,17 +66,13 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(names.into())
             },
         ),
-        NativeFunction::snew(
-            "doc",
-            (&["self"], &[], None, None),
-            |globals, args, _kwargs| {
-                let cls = Eval::expect_class(globals, &args[0])?;
-                match cls.doc() {
-                    Some(doc) => Ok(doc.clone().into()),
-                    None => Ok(Value::Nil),
-                }
-            },
-        ),
+        NativeFunction::new("doc", ["self"], None, |globals, args, _kwargs| {
+            let cls = Eval::expect_class(globals, &args[0])?;
+            match cls.doc() {
+                Some(doc) => Ok(doc.clone().into()),
+                None => Ok(Value::Nil),
+            }
+        }),
     ]
     .into_iter()
     .map(|f| (Symbol::from(f.name()), Value::from(f)))
