@@ -44,7 +44,7 @@ pub enum Value {
     Set(Rc<Set>),
     Map(Rc<Map>),
     Function(Rc<Function>),
-    Builtin(Rc<Builtin>),
+    NativeFunction(Rc<NativeFunction>),
     Generator(Rc<RefCell<Generator>>),
     Class(Rc<Class>),
     Module(Rc<Module>),
@@ -62,7 +62,7 @@ impl Value {
             Self::Set(set) => set.borrow().len() > 0,
             Self::Map(map) => map.borrow().len() > 0,
             Self::Function(_)
-            | Self::Builtin(_)
+            | Self::NativeFunction(_)
             | Self::Generator(_)
             | Self::Class(_)
             | Self::Module(_) => true,
@@ -172,7 +172,7 @@ impl Value {
     ) -> Result<Value> {
         match self {
             Self::Function(func) => func.apply(globals, args, kwargs),
-            Self::Builtin(func) => func.apply(globals, args, kwargs),
+            Self::NativeFunction(func) => func.apply(globals, args, kwargs),
             _ => Err(rterr!("{:?} is not a function", self)),
         }
     }

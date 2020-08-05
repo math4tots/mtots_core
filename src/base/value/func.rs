@@ -166,16 +166,20 @@ impl ArgSpecBuilder {
     }
 }
 
-pub type BuiltinBody = fn(&mut Globals, args: Vec<Value>) -> Result<Value>;
+pub type NativeFunctionBody = fn(&mut Globals, args: Vec<Value>) -> Result<Value>;
 
-pub struct Builtin {
+pub struct NativeFunction {
     name: RcStr,
     argspec: ArgSpec,
-    body: BuiltinBody,
+    body: NativeFunctionBody,
 }
 
-impl Builtin {
-    pub fn new<S: Into<RcStr>, AS: Into<ArgSpec>>(name: S, argspec: AS, body: BuiltinBody) -> Self {
+impl NativeFunction {
+    pub fn new<S: Into<RcStr>, AS: Into<ArgSpec>>(
+        name: S,
+        argspec: AS,
+        body: NativeFunctionBody,
+    ) -> Self {
         Self {
             name: name.into(),
             argspec: argspec.into(),
@@ -196,15 +200,15 @@ impl Builtin {
     }
 }
 
-impl cmp::PartialEq for Builtin {
+impl cmp::PartialEq for NativeFunction {
     fn eq(&self, other: &Self) -> bool {
         self.body as *const std::ffi::c_void == other.body as *const std::ffi::c_void
     }
 }
 
-impl fmt::Debug for Builtin {
+impl fmt::Debug for NativeFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<builtin {}>", self.name())
+        write!(f, "<NativeFunction {}>", self.name())
     }
 }
 

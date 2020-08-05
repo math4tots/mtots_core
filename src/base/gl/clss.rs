@@ -10,7 +10,7 @@ pub struct ClassManager {
     pub Set: Rc<Class>,
     pub Map: Rc<Class>,
     pub Function: Rc<Class>,
-    pub Builtin: Rc<Class>,
+    pub NativeFunction: Rc<Class>,
     pub Generator: Rc<Class>,
     pub Class: Rc<Class>,
     pub Module: Rc<Class>,
@@ -27,7 +27,7 @@ impl ClassManager {
         let Set = Class::new("Set".into(), HashMap::new(), HashMap::new());
         let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
         let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
-        let Builtin = Class::new("Builtin".into(), HashMap::new(), HashMap::new());
+        let NativeFunction = Class::new("NativeFunction".into(), HashMap::new(), HashMap::new());
         let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());
         let Module = Class::new("Module".into(), HashMap::new(), HashMap::new());
@@ -40,7 +40,7 @@ impl ClassManager {
             Set,
             Map,
             Function,
-            Builtin,
+            NativeFunction,
             Generator,
             Class,
             Module,
@@ -58,7 +58,7 @@ impl ClassManager {
             Value::Set(..) => &self.Set,
             Value::Map(..) => &self.Map,
             Value::Function(..) => &self.Function,
-            Value::Builtin(..) => &self.Builtin,
+            Value::NativeFunction(..) => &self.NativeFunction,
             Value::Generator(..) => &self.Generator,
             Value::Class(..) => &self.Class,
             Value::Module(..) => &self.Module,
@@ -75,7 +75,7 @@ impl ClassManager {
             &self.Set,
             &self.Map,
             &self.Function,
-            &self.Builtin,
+            &self.NativeFunction,
             &self.Generator,
             &self.Class,
             &self.Module,

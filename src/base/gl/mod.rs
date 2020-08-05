@@ -1,6 +1,5 @@
 use crate::annotate;
 use crate::compile;
-use crate::Builtin;
 use crate::Class;
 use crate::Error;
 use crate::LexErrorKind;
@@ -8,6 +7,7 @@ use crate::Lexer;
 use crate::Mark;
 use crate::Module;
 use crate::ModuleDisplay;
+use crate::NativeFunction;
 use crate::Parser;
 use crate::RcStr;
 use crate::Result;

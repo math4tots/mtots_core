@@ -126,21 +126,21 @@ impl From<Function> for Value {
     }
 }
 
-impl From<Rc<Builtin>> for Value {
-    fn from(f: Rc<Builtin>) -> Self {
-        Self::Builtin(f)
+impl From<Rc<NativeFunction>> for Value {
+    fn from(f: Rc<NativeFunction>) -> Self {
+        Self::NativeFunction(f)
     }
 }
 
-impl From<&Rc<Builtin>> for Value {
-    fn from(f: &Rc<Builtin>) -> Self {
-        Self::Builtin(f.clone())
+impl From<&Rc<NativeFunction>> for Value {
+    fn from(f: &Rc<NativeFunction>) -> Self {
+        Self::NativeFunction(f.clone())
     }
 }
 
-impl From<Builtin> for Value {
-    fn from(f: Builtin) -> Self {
-        Self::Builtin(f.into())
+impl From<NativeFunction> for Value {
+    fn from(f: NativeFunction) -> Self {
+        Self::NativeFunction(f.into())
     }
 }
 

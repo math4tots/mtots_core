@@ -8,12 +8,12 @@ impl Globals {
         }
 
         let funcs = vec![
-            Builtin::new("print", ["x"], |_globals, args| {
+            NativeFunction::new("print", ["x"], |_globals, args| {
                 let x = args.into_iter().next().unwrap();
                 println!("{}", x);
                 Ok(Value::Nil)
             }),
-            Builtin::new("str", ["x"], |_globals, args| {
+            NativeFunction::new("str", ["x"], |_globals, args| {
                 Ok(args.into_iter().next().unwrap().into_rcstr().into())
             }),
         ];
