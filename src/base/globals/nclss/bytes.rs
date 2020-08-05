@@ -246,7 +246,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 "The first parameter n specifies the number of bytes to use\n",
                 "The second parameter specifies the actual value to encode\n",
                 "For integers, n must be one of 1, 2, 4, 8\n",
-                "For floats, n must be ine of 4 or 8\n",
+                "For floats, n must be one of 4 or 8\n",
             ),
             |globals, args, _kwargs| {
                 let n = Eval::expect_uint(globals, &args[0])?;
