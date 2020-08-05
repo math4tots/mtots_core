@@ -22,4 +22,4 @@ mod opc;
 
 pub use code::*;
 pub use frame::*;
-pub use opc::*;
+pub(crate) use opc::*;

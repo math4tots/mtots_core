@@ -168,6 +168,15 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::CallMethod(owner, method_name, args) => {
+                self.expr(owner, true)?;
+                self.args(args)?;
+                let info = args.call_method_info(method_name.clone());
+                self.add(Opcode::CallMethod(info.into()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Assign(target, valexpr) => {
                 self.expr(valexpr, true)?;
                 self.target(target, !used)?;
@@ -194,6 +203,12 @@ impl Builder {
                     self.add(Opcode::Nil, mark.clone());
                 }
                 self.add(Opcode::Return, mark);
+            }
+            ExprDesc::Import(name) => {
+                self.add(Opcode::Import(name.clone()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::Function {
                 is_generator: _,

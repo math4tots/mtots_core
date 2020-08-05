@@ -1,4 +1,5 @@
 use crate::ArgSpec;
+use crate::CallMethodDesc;
 use crate::CallFunctionDesc;
 use crate::Mark;
 use crate::RcStr;
@@ -158,11 +159,17 @@ impl Args {
             kwargs,
         }
     }
-    pub fn call_function_info(&self) -> CallFunctionDesc {
+    pub(crate) fn call_function_info(&self) -> CallFunctionDesc {
         CallFunctionDesc {
             argc: self.args.len(),
             kwargs: self.kwargs.iter().map(|(name, _)| name.clone()).collect(),
-            method: self.method.clone(),
+        }
+    }
+    pub(crate) fn call_method_info(&self, method_name: RcStr) -> CallMethodDesc {
+        CallMethodDesc {
+            argc: self.args.len(),
+            kwargs: self.kwargs.iter().map(|(name, _)| name.clone()).collect(),
+            method_name,
         }
     }
 }

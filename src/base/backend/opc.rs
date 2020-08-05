@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Debug)]
-pub enum Opcode {
+pub(crate) enum Opcode {
     Pop,
     Dup,
     Unpack(u32),
@@ -20,10 +20,12 @@ pub enum Opcode {
 
     Binop(Binop),
 
+    Import(RcStr),
     Return,
     Jump(usize),
     JumpIfFalse(usize),
     CallFunction(Box<CallFunctionDesc>),
+    CallMethod(Box<CallMethodDesc>),
 
     NewFunction(Box<NewFunctionDesc>),
 }
@@ -39,14 +41,20 @@ impl Opcode {
 }
 
 #[derive(Debug)]
-pub struct CallFunctionDesc {
+pub(crate) struct CallFunctionDesc {
     pub argc: usize,
     pub kwargs: Vec<RcStr>,
-    pub method: Option<RcStr>,
 }
 
 #[derive(Debug)]
-pub struct NewFunctionDesc {
+pub(crate) struct CallMethodDesc {
+    pub argc: usize,
+    pub kwargs: Vec<RcStr>,
+    pub method_name: RcStr,
+}
+
+#[derive(Debug)]
+pub(crate) struct NewFunctionDesc {
     pub code: Rc<Code>,
     pub argspec: Rc<ArgSpec>,
 
@@ -188,6 +196,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let value = frame.pop();
             return StepResult::Return(value);
         }
+        Opcode::Import(path) => {
+            let module = get1!(globals.load(path).map(Clone::clone));
+            frame.push(module.into());
+        }
         Opcode::Jump(dest) => {
             frame.jump(*dest);
         }
@@ -204,15 +216,21 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 Some(desc.kwargs.iter().map(Clone::clone).zip(values).collect())
             };
             let args = frame.popn(desc.argc);
-            if let Some(method) = &desc.method {
-                let owner = frame.pop();
-                let result = get1!(owner.apply_method(globals, method, args, kwargs));
-                frame.push(result);
+            let func = frame.pop();
+            let result = get1!(func.apply(globals, args, kwargs));
+            frame.push(result);
+        }
+        Opcode::CallMethod(desc) => {
+            let kwargs = if desc.kwargs.is_empty() {
+                None
             } else {
-                let func = frame.pop();
-                let result = get1!(func.apply(globals, args, kwargs));
-                frame.push(result);
-            }
+                let values = frame.popn(desc.kwargs.len());
+                Some(desc.kwargs.iter().map(Clone::clone).zip(values).collect())
+            };
+            let args = frame.popn(desc.argc);
+            let owner = frame.pop();
+            let result = get1!(owner.apply_method(globals, &desc.method_name, args, kwargs));
+            frame.push(result);
         }
         Opcode::NewFunction(desc) => {
             let bindings: Vec<_> = desc

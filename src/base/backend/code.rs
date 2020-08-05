@@ -20,7 +20,7 @@ impl fmt::Debug for Code {
 }
 
 impl Code {
-    pub fn new(
+    pub(crate) fn new(
         name: RcStr,
         ops: Vec<Opcode>,
         params: Vec<Variable>,
@@ -38,7 +38,7 @@ impl Code {
     pub fn name(&self) -> &RcStr {
         &self.name
     }
-    pub fn ops(&self) -> &Vec<Opcode> {
+    pub(crate) fn ops(&self) -> &Vec<Opcode> {
         &self.ops
     }
     pub fn params(&self) -> &Vec<Variable> {
