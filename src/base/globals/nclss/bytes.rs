@@ -74,24 +74,24 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                     }
                 };
                 match (nbytes, endian) {
-                    (1, _) => Ok((bytes[i] as i8).into()),
+                    (1, _) => Ok((bytes[i] as i8 as i64).into()),
                     (2, Endian::Little) => {
-                        Ok((i16::from_le_bytes(bytes[i..i + 2].try_into().unwrap())).into())
+                        Ok((i16::from_le_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
                     }
                     (2, Endian::Big) => {
-                        Ok((i16::from_be_bytes(bytes[i..i + 2].try_into().unwrap())).into())
+                        Ok((i16::from_be_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
                     }
                     (4, Endian::Little) => {
-                        Ok((i32::from_le_bytes(bytes[i..i + 4].try_into().unwrap())).into())
+                        Ok((i32::from_le_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
                     }
                     (4, Endian::Big) => {
-                        Ok((i32::from_be_bytes(bytes[i..i + 4].try_into().unwrap())).into())
+                        Ok((i32::from_be_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
                     }
                     (8, Endian::Little) => {
-                        Ok((i64::from_le_bytes(bytes[i..i + 8].try_into().unwrap())).into())
+                        Ok((i64::from_le_bytes(bytes[i..i + 8].try_into().unwrap()) as i64).into())
                     }
                     (8, Endian::Big) => {
-                        Ok((i64::from_be_bytes(bytes[i..i + 8].try_into().unwrap())).into())
+                        Ok((i64::from_be_bytes(bytes[i..i + 8].try_into().unwrap()) as i64).into())
                     }
                     _ => globals.set_exc_str(&format!(
                         "nbytes for int must be 1, 2, 4 or 8 but got {}",
@@ -135,18 +135,18 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 };
                 // nbytes = 8 for uint may not fit in i64
                 match (nbytes, endian) {
-                    (1, _) => Ok((bytes[i]).into()),
+                    (1, _) => Ok((bytes[i] as i64).into()),
                     (2, Endian::Little) => {
-                        Ok((u16::from_le_bytes(bytes[i..i + 2].try_into().unwrap())).into())
+                        Ok((u16::from_le_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
                     }
                     (2, Endian::Big) => {
-                        Ok((u16::from_be_bytes(bytes[i..i + 2].try_into().unwrap())).into())
+                        Ok((u16::from_be_bytes(bytes[i..i + 2].try_into().unwrap()) as i64).into())
                     }
                     (4, Endian::Little) => {
-                        Ok((u32::from_le_bytes(bytes[i..i + 4].try_into().unwrap())).into())
+                        Ok((u32::from_le_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
                     }
                     (4, Endian::Big) => {
-                        Ok((u32::from_be_bytes(bytes[i..i + 4].try_into().unwrap())).into())
+                        Ok((u32::from_be_bytes(bytes[i..i + 4].try_into().unwrap()) as i64).into())
                     }
                     _ => globals.set_exc_str(&format!(
                         "nbytes for uint must be 1, 2 or 4 but got {}",

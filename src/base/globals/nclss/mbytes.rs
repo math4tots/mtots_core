@@ -11,7 +11,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
-            Ok(bytes.borrow().len().into())
+            Ok((bytes.borrow().len() as i64).into())
         }),
         NativeFunction::new(
             "__getitem",
@@ -20,7 +20,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             |globals, args, _kwargs| {
                 let bytes = Eval::expect_mutable_bytes(globals, &args[0])?;
                 let i = Eval::expect_index(globals, &args[1], bytes.borrow().len())?;
-                Ok(bytes.borrow()[i].into())
+                Ok((bytes.borrow()[i] as i64).into())
             },
         ),
         NativeFunction::new(

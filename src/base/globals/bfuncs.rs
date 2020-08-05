@@ -186,7 +186,7 @@ pub(super) fn new() -> NativeFunctions {
                 chars.len()
             ));
         }
-        Ok((chars[0] as u32).into())
+        Ok((chars[0] as u32 as i64).into())
     })
     .into();
 
@@ -202,7 +202,7 @@ pub(super) fn new() -> NativeFunctions {
 
     let hash = NativeFunction::new("hash", ["x"], None, |globals, args, _kwargs| {
         let hash = Eval::hash(globals, &args[0])?;
-        Ok(Value::from(hash))
+        Ok((hash as i64).into())
     })
     .into();
 

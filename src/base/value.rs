@@ -131,9 +131,14 @@ impl Value {
     }
 
     pub fn int(&self) -> Option<i64> {
-        match self {
-            Value::Number(x) if x.fract() == 0.0 => Some(*x as i64),
-            _ => None,
+        if let Value::Number(x) = self {
+            if x.fract() == 0.0 {
+                Some(*x as i64)
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 
