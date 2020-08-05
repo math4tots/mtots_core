@@ -183,44 +183,58 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 "Create little endian bytes from an integer or float\n",
                 "The first parameter n specifies the number of bytes to use\n",
                 "The second parameter specifies the actual value to encode\n",
-                "n must be one of 1, 2, 4, 8\n",
+                "For integers, n must be one of 1, 2, 4, 8\n",
+                "For floats, n must be ine of 4 or 8\n",
             ),
             |globals, args, _kwargs| {
                 let n = Eval::expect_uint(globals, &args[0])?;
-                let i = Eval::expect_int(globals, &args[1])?;
-                match n {
-                    1 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i8(globals, i)?.to_le_bytes()
+                match (n, &args[1]) {
+                    (1, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i8(globals, *i)?.to_le_bytes()
                         } else {
-                            Eval::check_u8(globals, i)?.to_le_bytes()
+                            Eval::check_u8(globals, *i)?.to_le_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    2 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i16(globals, i)?.to_le_bytes()
+                    (2, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i16(globals, *i)?.to_le_bytes()
                         } else {
-                            Eval::check_u16(globals, i)?.to_le_bytes()
+                            Eval::check_u16(globals, *i)?.to_le_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    4 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i32(globals, i)?.to_le_bytes()
+                    (4, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i32(globals, *i)?.to_le_bytes()
                         } else {
-                            Eval::check_u32(globals, i)?.to_le_bytes()
+                            Eval::check_u32(globals, *i)?.to_le_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    8 => {
+                    (8, Value::Int(i)) => {
                         let bytes: &[u8] = &i.to_le_bytes();
                         Ok(bytes.to_vec().into())
                     }
-                    _ => globals.set_exc_str(&format!(
-                        "n must be 1, 2, 4 or 8, but got {}",
+                    (4, Value::Float(f)) => {
+                        let bytes: &[u8] = &(*f as f32).to_le_bytes();
+                        Ok(bytes.to_vec().into())
+                    }
+                    (8, Value::Float(f)) => {
+                        let bytes: &[u8] = &f.to_le_bytes();
+                        Ok(bytes.to_vec().into())
+                    }
+                    (_, Value::Int(_)) => globals.set_exc_str(&format!(
+                        "n must be 1, 2, 4 or 8 for int val, but got {}",
                         n,
                     )),
+                    (_, Value::Float(_)) => globals
+                        .set_exc_str(&format!("n must be 4 or 8 for float val, but got {}", n,)),
+                    (_, val) => {
+                        Eval::expect_int(globals, val)?;
+                        panic!("Should have returned an error")
+                    }
                 }
             },
         ),
@@ -236,40 +250,53 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
             ),
             |globals, args, _kwargs| {
                 let n = Eval::expect_uint(globals, &args[0])?;
-                let i = Eval::expect_int(globals, &args[1])?;
-                match n {
-                    1 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i8(globals, i)?.to_be_bytes()
+                match (n, &args[1]) {
+                    (1, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i8(globals, *i)?.to_be_bytes()
                         } else {
-                            Eval::check_u8(globals, i)?.to_be_bytes()
+                            Eval::check_u8(globals, *i)?.to_be_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    2 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i16(globals, i)?.to_be_bytes()
+                    (2, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i16(globals, *i)?.to_be_bytes()
                         } else {
-                            Eval::check_u16(globals, i)?.to_be_bytes()
+                            Eval::check_u16(globals, *i)?.to_be_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    4 => {
-                        let bytes: &[u8] = &if i < 0 {
-                            Eval::check_i32(globals, i)?.to_be_bytes()
+                    (4, Value::Int(i)) => {
+                        let bytes: &[u8] = &if *i < 0 {
+                            Eval::check_i32(globals, *i)?.to_be_bytes()
                         } else {
-                            Eval::check_u32(globals, i)?.to_be_bytes()
+                            Eval::check_u32(globals, *i)?.to_be_bytes()
                         };
                         Ok(bytes.to_vec().into())
                     }
-                    8 => {
+                    (8, Value::Int(i)) => {
                         let bytes: &[u8] = &i.to_be_bytes();
                         Ok(bytes.to_vec().into())
                     }
-                    _ => globals.set_exc_str(&format!(
-                        "n must be 1, 2, 4 or 8, but got {}",
+                    (4, Value::Float(f)) => {
+                        let bytes: &[u8] = &(*f as f32).to_be_bytes();
+                        Ok(bytes.to_vec().into())
+                    }
+                    (8, Value::Float(f)) => {
+                        let bytes: &[u8] = &f.to_be_bytes();
+                        Ok(bytes.to_vec().into())
+                    }
+                    (_, Value::Int(_)) => globals.set_exc_str(&format!(
+                        "n must be 1, 2, 4 or 8 for int val, but got {}",
                         n,
                     )),
+                    (_, Value::Float(_)) => globals
+                        .set_exc_str(&format!("n must be 4 or 8 for float val, but got {}", n,)),
+                    (_, val) => {
+                        Eval::expect_int(globals, val)?;
+                        panic!("Should have returned an error")
+                    }
                 }
             },
         ),

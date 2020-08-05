@@ -8,8 +8,6 @@ use std::rc::Rc;
 
 pub struct NativeFunctions {
     print: Rc<NativeFunction>,
-    int: Rc<NativeFunction>,
-    float: Rc<NativeFunction>,
     str_: Rc<NativeFunction>,
     repr: Rc<NativeFunction>,
     type_: Rc<NativeFunction>,
@@ -36,8 +34,6 @@ impl NativeFunctions {
     pub fn for_builtins(&self) -> Vec<&Rc<NativeFunction>> {
         vec![
             &self.print,
-            &self.int,
-            &self.float,
             &self.str_,
             &self.repr,
             &self.type_,
@@ -70,26 +66,6 @@ pub(super) fn new() -> NativeFunctions {
         let s = Eval::str(globals, &args[0])?;
         println!("{}", s);
         Ok(Value::Nil)
-    })
-    .into();
-
-    let int = NativeFunction::new("int", ["x"], None, |globals, args, _kwargs| {
-        let i = match args.into_iter().next().unwrap() {
-            Value::Number(n) => n as i64,
-            Value::String(string) => globals.converr(string.parse::<i64>())?,
-            x => Eval::expect_int(globals, &x)?,
-        };
-        Ok(Value::from(i))
-    })
-    .into();
-
-    let float = NativeFunction::new("float", ["x"], None, |globals, args, _kwargs| {
-        let i = match args.into_iter().next().unwrap() {
-            Value::Number(f) => f,
-            Value::String(string) => globals.converr(string.parse::<f64>())?,
-            arg => Eval::expect_floatlike(globals, &arg)?,
-        };
-        Ok(Value::from(i))
     })
     .into();
 
@@ -404,8 +380,6 @@ pub(super) fn new() -> NativeFunctions {
 
     NativeFunctions {
         print,
-        int,
-        float,
         str_,
         repr,
         type_,

@@ -11,7 +11,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let set = Eval::expect_set(globals, &args[0])?;
-            Ok(Value::from(set.len() as f64))
+            Ok(Value::Int(set.len() as i64))
         }),
         NativeFunction::new("has", &["self", "key"], None, |globals, args, _kwargs| {
             let set = Eval::expect_set(globals, &args[0])?;

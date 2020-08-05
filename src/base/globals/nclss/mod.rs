@@ -15,6 +15,7 @@ mod exc;
 mod flt;
 mod func;
 mod gobj;
+mod int;
 mod iterable;
 mod iterator;
 mod list;
@@ -51,7 +52,8 @@ pub struct BuiltinClasses {
     pub Iterator: Rc<Class>,
     pub Nil: Rc<Class>,
     pub Bool: Rc<Class>,
-    pub Number: Rc<Class>,
+    pub Int: Rc<Class>,
+    pub Float: Rc<Class>,
     pub Symbol: Rc<Class>,
     pub String: Rc<Class>,
     pub Bytes: Rc<Class>,
@@ -86,7 +88,8 @@ impl BuiltinClasses {
             &self.Iterator,
             &self.Iterable,
             &self.Bool,
-            &self.Number,
+            &self.Int,
+            &self.Float,
             &self.Symbol,
             &self.String,
             &self.Bytes,
@@ -116,7 +119,8 @@ impl Globals {
         let Iterator = iterator::mkcls(Iterable.clone());
         let Nil = nil::mkcls(Object.clone());
         let Bool = bewl::mkcls(Object.clone());
-        let Number = flt::mkcls(Object.clone());
+        let Int = int::mkcls(Object.clone());
+        let Float = flt::mkcls(Object.clone());
         let Symbol = sym::mkcls(Object.clone());
         let String = strcls::mkcls(Object.clone());
         let Bytes = bytes::mkcls(Iterable.clone());
@@ -148,7 +152,8 @@ impl Globals {
             Iterator,
             Nil,
             Bool,
-            Number,
+            Int,
+            Float,
             Symbol,
             String,
             Bytes,

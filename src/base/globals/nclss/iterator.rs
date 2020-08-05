@@ -115,7 +115,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 Ok(NativeIterator::new(move |globals, input_value| {
                     match Eval::resume(globals, &iterator, input_value) {
                         GeneratorResult::Yield(iterator_yield_value) => {
-                            let i_val = Value::from(i);
+                            let i_val = Value::Int(i);
                             i += 1;
                             GeneratorResult::Yield(vec![i_val, iterator_yield_value].into())
                         }

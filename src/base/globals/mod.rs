@@ -336,14 +336,6 @@ impl Globals {
         std::mem::replace(&mut self.exc, None).expect("Tried to get an error when none is present")
     }
 
-    /// Convert an arbitrary error type
-    pub fn converr<T, E: std::error::Error>(&mut self, r: Result<T, E>) -> Result<T, ErrorIndicator> {
-        match r {
-            Ok(t) => Ok(t),
-            Err(error) => self.set_exc_str(&format!("{:?}", error)),
-        }
-    }
-
     pub fn set_exc<T>(&mut self, exc: Exception) -> Result<T, ErrorIndicator> {
         if let Some(old_exc) = &self.exc {
             panic!(

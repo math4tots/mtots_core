@@ -692,7 +692,7 @@ fn consteval(expr: &Expression) -> Result<ConstValue, Error> {
     Ok(match expr.data() {
         ExpressionData::Nil => ConstValue::Nil,
         ExpressionData::Bool(x) => ConstValue::Bool(*x),
-        ExpressionData::Int(x) => ConstValue::Float((*x as f64).to_bits()),
+        ExpressionData::Int(x) => ConstValue::Int(*x),
         ExpressionData::Float(x) => ConstValue::Float(x.to_bits()),
         ExpressionData::String(x) => ConstValue::String(x.clone()),
         _ => {
