@@ -70,6 +70,24 @@ impl Value {
             | Self::Module(_) => true,
         }
     }
+    pub fn debug_typename(&self) -> String {
+        match self {
+            Self::Invalid => panic!("Value::Invalid::debug_typename"),
+            Self::Nil => "Nil".into(),
+            Self::Bool(_) => "Bool".into(),
+            Self::Number(_) => "Number".into(),
+            Self::String(_) => "String".into(),
+            Self::List(_) => "List".into(),
+            Self::Set(_) => "Set".into(),
+            Self::Map(_) => "Map".into(),
+            Self::Function(_) => "Function".into(),
+            Self::NativeFunction(_) => "NativeFunction".into(),
+            Self::Generator(_) => "Generator".into(),
+            Self::NativeGenerator(_) => "NativeGenerator".into(),
+            Self::Class(m) => format!("{:?}", m),
+            Self::Module(m) => format!("{:?}", m),
+        }
+    }
     pub fn bool(&self) -> Result<bool> {
         if let Self::Bool(x) = self {
             Ok(*x)
@@ -130,6 +148,13 @@ impl Value {
             Ok(r.unwrap_or_clone())
         } else {
             Err(rterr!("Expected string"))
+        }
+    }
+    pub fn iter(self, _globals: &mut Globals) -> Result<Self> {
+        match self {
+            Self::List(list) => Ok(List::generator(list).into()),
+            Self::Generator(_) | Self::NativeGenerator(_) => Ok(self),
+            _ => Err(rterr!("Expected iterable but got {}", self.debug_typename())),
         }
     }
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {

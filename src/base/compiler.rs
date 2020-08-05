@@ -144,6 +144,27 @@ impl Builder {
                     self.patch_jump(id);
                 }
             }
+            ExprDesc::For(target, container, body) => {
+                self.expr(container, true)?;
+                self.add(Opcode::Iter, mark.clone());
+                let start_label = self.len();
+                self.add(Opcode::Next, mark.clone());
+                let end_jump_id = self.add(Opcode::JumpIfFalse(INVALID_JUMP), mark.clone());
+                self.target(target, true)?;
+                self.expr(body, false)?;
+                self.add(Opcode::Jump(start_label), mark.clone());
+                self.patch_jump(end_jump_id);
+                if used {
+                    // pop the exhausted container while retaining the final
+                    // return value from the generator
+                    self.add(Opcode::Swap01, mark.clone());
+                    self.add(Opcode::Pop, mark);
+                } else {
+                    // pop both the exhausted container and the returned value
+                    self.add(Opcode::Pop, mark.clone());
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::While(cond, body) => {
                 let start_label = self.len();
                 self.expr(cond, true)?;

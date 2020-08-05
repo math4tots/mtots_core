@@ -4,6 +4,7 @@ use super::*;
 pub(crate) enum Opcode {
     Pop,
     Dup,
+    Swap01,
     Unpack(u32),
 
     Nil,
@@ -21,6 +22,9 @@ pub(crate) enum Opcode {
     TeeAttr(RcStr),
 
     Binop(Binop),
+
+    Iter,
+    Next,
 
     Import(RcStr),
     Yield,
@@ -127,6 +131,9 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::Dup => {
             frame.push(frame.peek().clone());
         }
+        Opcode::Swap01 => {
+            frame.swap01();
+        }
         Opcode::Unpack(len) => {
             let packed = frame.pop();
             let vec = get1!(packed.unpack(globals));
@@ -201,6 +208,31 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 _ => panic!("TODO step Binop {:?}", op),
             };
             frame.push(result);
+        }
+        Opcode::Iter => {
+            let container = frame.pop();
+            let iter = get0!(container.iter(globals));
+            frame.push(iter);
+        }
+        Opcode::Next => {
+            // peeks at the top of stack (should be an iterator)
+            // and pushes two values: the value, and true/false depending
+            // on whether there was a next value
+            let iter = frame.peek();
+            match iter.resume(globals, Value::Nil) {
+                ResumeResult::Yield(value) => {
+                    frame.push(value);
+                    frame.push(true.into());
+                }
+                ResumeResult::Return(value) => {
+                    frame.push(value);
+                    frame.push(false.into());
+                }
+                ResumeResult::Err(error) => {
+                    addtrace!();
+                    return StepResult::Err(error);
+                }
+            }
         }
         Opcode::Yield => {
             let value = frame.pop();

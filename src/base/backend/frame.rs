@@ -35,6 +35,11 @@ impl Frame {
         self.stack.len()
     }
     #[inline(always)]
+    pub(super) fn swap01(&mut self) {
+        let len = self.stack.len();
+        self.stack.swap(len - 2, len - 1);
+    }
+    #[inline(always)]
     pub(super) fn push(&mut self, value: Value) {
         self.stack.push(value);
     }

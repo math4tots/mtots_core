@@ -18,6 +18,17 @@ impl List {
     pub fn into_inner(self) -> Vec<Value> {
         self.vec.into_inner()
     }
+    pub fn generator(list: Rc<Self>) -> NativeGenerator {
+        let mut i = 0;
+        NativeGenerator::new("list-iterator", move |_globals, _arg| {
+            if let Some(x) = list.borrow().get(i).cloned() {
+                i += 1;
+                ResumeResult::Yield(x)
+            } else {
+                ResumeResult::Return(Value::Nil)
+            }
+        })
+    }
 }
 
 #[derive(PartialEq, Eq)]

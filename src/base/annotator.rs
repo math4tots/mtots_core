@@ -68,6 +68,11 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 get(other, out)?;
             }
         }
+        ExprDesc::For(target, container, body) => {
+            gettarget(target, out)?;
+            get(container, out)?;
+            get(body, out)?;
+        }
         ExprDesc::While(cond, body) => {
             get(cond, out)?;
             get(body, out)?;

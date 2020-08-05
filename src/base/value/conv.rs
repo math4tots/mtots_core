@@ -150,6 +150,12 @@ impl From<Generator> for Value {
     }
 }
 
+impl From<NativeGenerator> for Value {
+    fn from(gen: NativeGenerator) -> Self {
+        Self::NativeGenerator(Rc::new(RefCell::new(gen)))
+    }
+}
+
 impl From<Rc<Class>> for Value {
     fn from(cls: Rc<Class>) -> Self {
         Self::Class(cls)
