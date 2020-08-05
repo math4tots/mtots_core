@@ -1,8 +1,8 @@
-use crate::ParameterInfo;
 use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
+use crate::ParameterInfo;
 use crate::Symbol;
 use crate::Value;
 
@@ -56,7 +56,10 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
         ),
         NativeFunction::new(
             "get",
-            ParameterInfo::builder().required("self").required("key").optional("default", Value::Uninitialized),
+            ParameterInfo::builder()
+                .required("self")
+                .required("key")
+                .optional("default", Value::Uninitialized),
             None,
             |globals, args, _kwargs| {
                 let map = Eval::expect_map(globals, &args[0])?;

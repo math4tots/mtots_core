@@ -217,10 +217,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                         let bytes: &[u8] = &i.to_le_bytes();
                         Ok(bytes.to_vec().into())
                     }
-                    _ => globals.set_exc_str(&format!(
-                        "n must be 1, 2, 4 or 8, but got {}",
-                        n,
-                    )),
+                    _ => globals.set_exc_str(&format!("n must be 1, 2, 4 or 8, but got {}", n,)),
                 }
             },
         ),
@@ -266,10 +263,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                         let bytes: &[u8] = &i.to_be_bytes();
                         Ok(bytes.to_vec().into())
                     }
-                    _ => globals.set_exc_str(&format!(
-                        "n must be 1, 2, 4 or 8, but got {}",
-                        n,
-                    )),
+                    _ => globals.set_exc_str(&format!("n must be 1, 2, 4 or 8, but got {}", n,)),
                 }
             },
         ),

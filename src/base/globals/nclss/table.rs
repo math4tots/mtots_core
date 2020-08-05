@@ -13,7 +13,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_table(globals, &args[0])?;
-            Ok(Value::from(s.len() as f64))
+            Ok(Value::from(s.len()))
         }),
         NativeFunction::new("keys", ["self"], None, |globals, args, _kwargs| {
             // returns a sorted list of all keys of the table
