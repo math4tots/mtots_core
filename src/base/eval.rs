@@ -1730,7 +1730,7 @@ impl Eval {
         let iterator = Self::iter(globals, pairs)?;
         let mut map = HashMap::new();
         while let Some(pair) = Self::next(globals, &iterator)? {
-            let (key, val) = Self::unpack_pair(globals, &pair)?;
+            let [key, val] = Self::unpack2(globals, &pair)?;
             let key = Self::expect_symbol(globals, &key)?;
             map.insert(key, val);
         }
@@ -1840,7 +1840,7 @@ impl Eval {
         let iterator = Self::iter(globals, pairs)?;
         let mut map = VMap::new();
         while let Some(pair) = Self::next(globals, &iterator)? {
-            let (key, val) = Self::unpack_pair(globals, &pair)?;
+            let [key, val] = Self::unpack2(globals, &pair)?;
             map.s_insert(globals, key, val)?;
         }
         Ok(map)
@@ -1861,34 +1861,28 @@ impl Eval {
         Ok(ret)
     }
 
-    pub fn unpack_pair(globals: &mut Globals, iterable: &Value) -> EvalResult<(Value, Value)> {
-        let mut pair = Self::unpack(globals, iterable, 2)?.into_iter();
-        let first = pair.next().unwrap();
-        let second = pair.next().unwrap();
-        Ok((first, second))
+    pub fn unpack2(globals: &mut Globals, iterable: &Value) -> EvalResult<[Value; 2]> {
+        let mut iter = Self::unpack(globals, iterable, 2)?.into_iter();
+        let arg1 = iter.next().unwrap();
+        let arg2 = iter.next().unwrap();
+        Ok([arg1, arg2])
     }
 
-    pub fn unpack_triple(
-        globals: &mut Globals,
-        iterable: &Value,
-    ) -> EvalResult<(Value, Value, Value)> {
-        let mut triple = Self::unpack(globals, iterable, 3)?.into_iter();
-        let first = triple.next().unwrap();
-        let second = triple.next().unwrap();
-        let third = triple.next().unwrap();
-        Ok((first, second, third))
+    pub fn unpack3(globals: &mut Globals, iterable: &Value) -> EvalResult<[Value; 3]> {
+        let mut iter = Self::unpack(globals, iterable, 3)?.into_iter();
+        let arg1 = iter.next().unwrap();
+        let arg2 = iter.next().unwrap();
+        let arg3 = iter.next().unwrap();
+        Ok([arg1, arg2, arg3])
     }
 
-    pub fn unpack4(
-        globals: &mut Globals,
-        iterable: &Value,
-    ) -> EvalResult<(Value, Value, Value, Value)> {
-        let mut quadruple = Self::unpack(globals, iterable, 4)?.into_iter();
-        let first = quadruple.next().unwrap();
-        let second = quadruple.next().unwrap();
-        let third = quadruple.next().unwrap();
-        let fourth = quadruple.next().unwrap();
-        Ok((first, second, third, fourth))
+    pub fn unpack4(globals: &mut Globals, iterable: &Value) -> EvalResult<[Value; 4]> {
+        let mut iter = Self::unpack(globals, iterable, 4)?.into_iter();
+        let arg1 = iter.next().unwrap();
+        let arg2 = iter.next().unwrap();
+        let arg3 = iter.next().unwrap();
+        let arg4 = iter.next().unwrap();
+        Ok([arg1, arg2, arg3, arg4])
     }
 
     pub fn fmtstr(globals: &mut Globals, fmt: &str, args: &Vec<Value>) -> EvalResult<String> {
