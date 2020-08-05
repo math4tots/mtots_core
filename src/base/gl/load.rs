@@ -2,7 +2,6 @@ use super::*;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use std::path::MAIN_SEPARATOR;
 
 impl Globals {
     pub fn load(&mut self, name: &RcStr) -> Result<&Rc<Module>> {
@@ -36,7 +35,7 @@ impl Globals {
         let relpaths = vec![
             {
                 let mut path = PathBuf::new();
-                for part in name.split(MAIN_SEPARATOR) {
+                for part in name.split('.') {
                     path.push(part);
                 }
                 path.push("__init.u");
@@ -44,7 +43,7 @@ impl Globals {
             },
             {
                 let mut path = PathBuf::new();
-                let mut iter = name.split(MAIN_SEPARATOR).peekable();
+                let mut iter = name.split('.').peekable();
                 while let Some(part) = iter.next() {
                     if iter.peek().is_some() {
                         path.push(part);

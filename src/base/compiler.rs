@@ -193,6 +193,19 @@ impl Builder {
                 self.expr(rhs, true)?;
                 self.add(Opcode::Binop(*op), mark);
             }
+            ExprDesc::LogicalBinop(op, lhs, rhs) => {
+                self.expr(lhs, true)?;
+                let jump_id = match op {
+                    LogicalBinop::And => {
+                        self.add(Opcode::TeeJumpIfFalse(INVALID_JUMP), mark.clone())
+                    }
+                    LogicalBinop::Or => {
+                        self.add(Opcode::TeeJumpIfTrue(INVALID_JUMP), mark.clone())
+                    }
+                };
+                self.expr(rhs, true)?;
+                self.patch_jump(jump_id);
+            }
             ExprDesc::Attr(owner, attr) => {
                 self.expr(owner, true)?;
                 self.add(Opcode::GetAttr(attr.clone()), mark.clone());

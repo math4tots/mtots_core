@@ -87,6 +87,10 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             get(lhs, out)?;
             get(rhs, out)?;
         }
+        ExprDesc::LogicalBinop(_op, lhs, rhs) => {
+            get(lhs, out)?;
+            get(rhs, out)?;
+        }
         ExprDesc::Attr(owner, _attr) => {
             get(owner, out)?;
         }
