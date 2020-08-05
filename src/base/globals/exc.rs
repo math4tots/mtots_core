@@ -43,9 +43,7 @@ impl ExceptionRegistry {
                 }
                 ParameterInfo::new(names_as_symbols, vec![], None, None)
             }
-            None => ParameterInfo::builder()
-                .optional("optarg", Value::Uninitialized)
-                .build(),
+            None => ParameterInfo::builder().optional("optarg", Value::Uninitialized).build(),
         };
         let rc = Rc::new(ExceptionKind {
             id,

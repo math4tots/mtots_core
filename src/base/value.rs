@@ -563,61 +563,61 @@ impl From<bool> for Value {
 
 impl From<isize> for Value {
     fn from(x: isize) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<i64> for Value {
     fn from(x: i64) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<i32> for Value {
     fn from(x: i32) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<i16> for Value {
     fn from(x: i16) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<i8> for Value {
     fn from(x: i8) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<usize> for Value {
     fn from(x: usize) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<u64> for Value {
     fn from(x: u64) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<u32> for Value {
     fn from(x: u32) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<u16> for Value {
     fn from(x: u16) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
 impl From<u8> for Value {
     fn from(x: u8) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
@@ -629,7 +629,7 @@ impl From<f64> for Value {
 
 impl From<f32> for Value {
     fn from(x: f32) -> Value {
-        Self::Number(x as f64)
+        Value::Number(x as f64)
     }
 }
 
@@ -1312,7 +1312,12 @@ impl fmt::Debug for NativeClosure {
     }
 }
 impl NativeClosure {
-    pub fn new<N, P, F, D>(name: N, parameter_info: P, doc: D, body: F) -> NativeClosure
+    pub fn new<N, P, F, D>(
+        name: N,
+        parameter_info: P,
+        doc: D,
+        body: F,
+    ) -> NativeClosure
     where
         N: Into<RcStr>,
         P: Into<ParameterInfo>,

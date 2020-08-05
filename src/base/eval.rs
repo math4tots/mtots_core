@@ -1245,7 +1245,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Number(a), Value::Number(b)) => Value::Number((a) / (b)),
+            (Value::Number(a), Value::Number(b)) => Value::Number((a as f64) / (b as f64)),
             (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
                 let name = globals.symbol_dunder_div();
                 Eval::call_method(globals, name, vec![a, b])
@@ -1786,7 +1786,7 @@ impl Eval {
         if ret.len() != n {
             return globals.set_exc(Exception::new(
                 globals.builtin_exceptions().UnpackError.clone(),
-                vec![Value::from(n), Value::from(ret.len())],
+                vec![Value::from(n as f64), Value::from(ret.len() as f64)],
             ));
         }
         Ok(ret)

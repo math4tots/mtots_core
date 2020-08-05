@@ -337,10 +337,7 @@ impl Globals {
     }
 
     /// Convert an arbitrary error type
-    pub fn converr<T, E: std::error::Error>(
-        &mut self,
-        r: Result<T, E>,
-    ) -> Result<T, ErrorIndicator> {
+    pub fn converr<T, E: std::error::Error>(&mut self, r: Result<T, E>) -> Result<T, ErrorIndicator> {
         match r {
             Ok(t) => Ok(t),
             Err(error) => self.set_exc_str(&format!("{:?}", error)),

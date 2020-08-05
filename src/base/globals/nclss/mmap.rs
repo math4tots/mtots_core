@@ -1,8 +1,8 @@
+use crate::ParameterInfo;
 use crate::Class;
 use crate::ClassKind;
 use crate::Eval;
 use crate::NativeFunction;
-use crate::ParameterInfo;
 use crate::Symbol;
 use crate::VMap;
 use crate::Value;

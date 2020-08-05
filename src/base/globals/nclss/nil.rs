@@ -22,32 +22,22 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 }
             },
         ),
-        NativeFunction::new(
-            "vmap",
-            &["self", "x", "y"],
-            None,
-            |_globals, args, _kwargs| {
-                // Returns nil if x is nil, otherwise y
-                if let Value::Nil = &args[1] {
-                    Ok(Value::Nil)
-                } else {
-                    Ok(args[2].clone())
-                }
-            },
-        ),
-        NativeFunction::new(
-            "get",
-            &["self", "x", "y"],
-            None,
-            |_globals, args, _kwargs| {
-                // Returns x if x is not nil, and y if x is nil
-                if let Value::Nil = &args[1] {
-                    Ok(args[2].clone())
-                } else {
-                    Ok(args[1].clone())
-                }
-            },
-        ),
+        NativeFunction::new("vmap", &["self", "x", "y"], None, |_globals, args, _kwargs| {
+            // Returns nil if x is nil, otherwise y
+            if let Value::Nil = &args[1] {
+                Ok(Value::Nil)
+            } else {
+                Ok(args[2].clone())
+            }
+        }),
+        NativeFunction::new("get", &["self", "x", "y"], None, |_globals, args, _kwargs| {
+            // Returns x if x is not nil, and y if x is nil
+            if let Value::Nil = &args[1] {
+                Ok(args[2].clone())
+            } else {
+                Ok(args[1].clone())
+            }
+        }),
         NativeFunction::new(
             "fget",
             &["self", "x", "f"],
