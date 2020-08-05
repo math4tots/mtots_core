@@ -1,10 +1,10 @@
 extern crate mtots_core;
-use mtots_core::Value;
-use mtots_core::Result;
 use mtots_core::Globals;
 use mtots_core::RcStr;
-use std::path::Path;
+use mtots_core::Result;
+use mtots_core::Value;
 use std::io::Write;
+use std::path::Path;
 
 fn main() {
     let mut source_roots = Vec::new();
@@ -116,7 +116,7 @@ fn run_path(mut globals: Globals, pathstr: String) {
         run_module(globals, &"__main".into());
     } else {
         let data = std::fs::read_to_string(path).unwrap();
-        let r = globals.exec_str("__main", &data);
+        let r = globals.exec_str("__main", Some(&pathstr), &data);
         ordie(&mut globals, r);
     }
 }

@@ -14,6 +14,7 @@ mod tests {
         globals
             .exec_str(
                 "[test]",
+                None,
                 r###"
                 print("Hello world")
                 "###,

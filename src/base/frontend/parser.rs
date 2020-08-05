@@ -1,5 +1,4 @@
 use crate::ArgSpec;
-use crate::LogicalBinop;
 use crate::Args;
 use crate::AssignTarget;
 use crate::AssignTargetDesc;
@@ -8,6 +7,7 @@ use crate::ConstVal;
 use crate::Error;
 use crate::Expr;
 use crate::ExprDesc;
+use crate::LogicalBinop;
 use crate::Mark;
 use crate::ModuleDisplay;
 use crate::Punctuator;
@@ -1097,7 +1097,10 @@ fn mklbinop(state: &mut ParserState, lhs: Expr, prec: Prec, op: LogicalBinop) ->
     let mark = state.mark();
     state.gettok();
     let rhs = state.expr(prec)?;
-    Ok(Expr::new(mark, ExprDesc::LogicalBinop(op, lhs.into(), rhs.into())))
+    Ok(Expr::new(
+        mark,
+        ExprDesc::LogicalBinop(op, lhs.into(), rhs.into()),
+    ))
 }
 
 fn break_assignment(expr: Expr) -> Option<(RcStr, Expr)> {

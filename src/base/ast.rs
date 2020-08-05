@@ -1,6 +1,6 @@
 use crate::ArgSpec;
-use crate::CallMethodDesc;
 use crate::CallFunctionDesc;
+use crate::CallMethodDesc;
 use crate::Mark;
 use crate::RcStr;
 use std::cell::RefCell;

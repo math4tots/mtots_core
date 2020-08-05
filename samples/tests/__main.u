@@ -1,6 +1,5 @@
 # cls && time cargo run -- samples/tests
 import a.test
 
-if __name == __main() {
-    test::run(__file.parent(), 'lang')
-}
+test::run(__file.parent(), 'lang')
+

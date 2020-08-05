@@ -7,15 +7,23 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Source {
     name: RcStr,
+    path: Option<RcStr>,
     data: RcStr,
 }
 
 impl Source {
-    pub fn new(name: RcStr, data: RcStr) -> Self {
-        Self { name, data }
+    pub fn new(name: RcStr, path: Option<RcStr>, data: RcStr) -> Self {
+        Self { name, path, data }
     }
+    // the name of this source
+    // this is the name you would use to import this module (e.g. 'a.foo.bar')
     pub fn name(&self) -> &RcStr {
         &self.name
+    }
+    // the path where this source was found, if available
+    // Sometimes there's no good path for a source (e.g. REPL, one-of strings)
+    pub fn path(&self) -> &Option<RcStr> {
+        &self.path
     }
     pub fn data(&self) -> &RcStr {
         &self.data
@@ -49,7 +57,18 @@ impl Mark {
     pub fn format(&self) -> String {
         let mut ret = String::new();
         let out = &mut ret;
-        writeln!(out, "in {:?} on line {}", self.source.name, self.lineno()).unwrap();
+        writeln!(
+            out,
+            "in {:?}{} on line {}",
+            self.source.name,
+            if let Some(pathstr) = self.source.path() {
+                format!(" (file {})", pathstr)
+            } else {
+                "".to_owned()
+            },
+            self.lineno()
+        )
+        .unwrap();
         let start = self.source.data[..self.pos]
             .rfind('\n')
             .map(|x| x + 1)

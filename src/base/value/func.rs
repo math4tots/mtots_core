@@ -245,6 +245,7 @@ impl Function {
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
         let args = self.argspec.apply(args, kwargs)?;
-        self.code.apply_for_function(globals, self.bindings.clone(), args)
+        self.code
+            .apply_for_function(globals, self.bindings.clone(), args)
     }
 }

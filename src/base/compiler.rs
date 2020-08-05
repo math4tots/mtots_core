@@ -193,7 +193,10 @@ impl Builder {
             ExprDesc::Return(valexpr) => {
                 match self.type_ {
                     Type::Module => {
-                        return Err(Error::rt(format!("Return is not allowed here").into(), vec![mark]));
+                        return Err(Error::rt(
+                            format!("Return is not allowed here").into(),
+                            vec![mark],
+                        ));
                     }
                     Type::Function => {}
                 }

@@ -1,4 +1,5 @@
 use crate::ArgSpec;
+use crate::Binop;
 use crate::Error;
 use crate::Function;
 use crate::Globals;
@@ -10,7 +11,6 @@ use crate::Value;
 use crate::VarSpec;
 use crate::Variable;
 use crate::VariableType;
-use crate::Binop;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;

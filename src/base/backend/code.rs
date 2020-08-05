@@ -112,10 +112,7 @@ impl Code {
 
     /// For repl
     /// runs this code object while using the given map essentially as a dynamic module scope
-    pub fn apply_for_repl(
-        &self,
-        globals: &mut Globals,
-    ) -> Result<Value> {
+    pub fn apply_for_repl(&self, globals: &mut Globals) -> Result<Value> {
         assert_eq!(self.params.len(), 0);
         let repl_scope = globals.repl_scope_mut();
         let mut input_bindings = Vec::new();

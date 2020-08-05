@@ -166,28 +166,28 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
 
             macro_rules! operr {
                 () => {
-                    err!("Binop {:?} not supported for {:?}", op, lhs.get_class(globals))
+                    err!(
+                        "Binop {:?} not supported for {:?}",
+                        op,
+                        lhs.get_class(globals)
+                    )
                 };
             }
 
             let result = match op {
-                Binop::Add => {
-                    match lhs {
-                        Value::Number(a) => Value::Number(a + get0!(rhs.number())),
-                        Value::String(a) => Value::String({
-                            let mut string = a.unwrap_or_clone();
-                            string.push_str(get0!(rhs.string()));
-                            string.into()
-                        }),
-                        _ => operr!(),
-                    }
-                }
-                Binop::Lt => {
-                    match lhs {
-                        Value::Number(a) => Value::Bool(a < get0!(rhs.number())),
-                        _ => operr!(),
-                    }
-                }
+                Binop::Add => match lhs {
+                    Value::Number(a) => Value::Number(a + get0!(rhs.number())),
+                    Value::String(a) => Value::String({
+                        let mut string = a.unwrap_or_clone();
+                        string.push_str(get0!(rhs.string()));
+                        string.into()
+                    }),
+                    _ => operr!(),
+                },
+                Binop::Lt => match lhs {
+                    Value::Number(a) => Value::Bool(a < get0!(rhs.number())),
+                    _ => operr!(),
+                },
                 _ => panic!("TODO step Binop {:?}", op),
             };
             frame.push(result);

@@ -87,18 +87,22 @@ impl Globals {
     }
     pub fn exec(&mut self, source: Rc<Source>) -> Result<Rc<Module>> {
         let name = source.name().clone();
+        let pathstr = source.path().clone().map(RcStr::from);
         let mut display = self.parse(source)?;
         annotate(&mut display)?;
         let code = compile(&display)?;
         let mut map = self.builtins.clone();
         map.insert("__name".into(), name.into());
+        if let Some(pathstr) = pathstr {
+            map.insert("__file".into(), pathstr.into());
+        }
         code.apply_for_module(self, &map)
     }
-    pub fn exec_str(&mut self, name: &str, data: &str) -> Result<Rc<Module>> {
-        self.exec(Source::new(name.into(), data.into()).into())
+    pub fn exec_str(&mut self, name: &str, path: Option<&str>, data: &str) -> Result<Rc<Module>> {
+        self.exec(Source::new(name.into(), path.map(RcStr::from), data.into()).into())
     }
     pub fn exec_repl(&mut self, data: &str) -> Result<Value> {
-        let mut display = self.parse(Rc::new(Source::new("[repl]".into(), data.into())))?;
+        let mut display = self.parse(Rc::new(Source::new("[repl]".into(), None, data.into())))?;
         annotate(&mut display)?;
         let code = compile(&display)?;
         code.apply_for_repl(self)
