@@ -810,22 +810,6 @@ impl ParameterInfo {
             keywords,
         }
     }
-    /// Like new, but accepts &str values
-    pub fn snew(
-        req: &[&str],
-        opt: &[(&str, Value)],
-        var: Option<&str>,
-        key: Option<&str>,
-    ) -> ParameterInfo {
-        let req = req.iter().map(Symbol::from).collect();
-        let opt = opt
-            .iter()
-            .map(|(s, v)| (Symbol::from(s), v.clone()))
-            .collect();
-        let var = var.map(Symbol::from);
-        let key = key.map(Symbol::from);
-        Self::new(req, opt, var, key)
-    }
     pub fn empty() -> ParameterInfo {
         Self::new(vec![], vec![], None, None)
     }
