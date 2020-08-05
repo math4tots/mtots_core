@@ -1,0 +1,53 @@
+# cargo run libs/ -m a.test -- folder_with_test_sources/ [package_to_test]
+import a.os
+import a.os::PIPE
+import a.os::UTF8
+import a.os::Process
+
+def main() {
+    args = __args()
+    if args.len() is 1 {
+        [root_dir] = args
+        test_pkg = ''
+    } else {
+        [root_dir, test_pkg] = args
+    }
+    run(root_dir, test_pkg)
+}
+
+def run(root_dir, test_pkg=nil) {
+    if test_pkg is nil { test_pkg = '' }
+    root_dir = Path(root_dir).canon()
+    for module_name in _get_module_names(root_dir, test_pkg) {
+        print(module_name)
+        module = __import(module_name)
+        keys = module.keys().filter(def(k) = str(k).starts_with('__test_')).to(List)
+        if keys {
+            for attr in keys {
+                attr_str = str(attr)
+                print('  ' + attr_str)
+                module.get(attr)()
+            }
+        } else {
+            print('  no tests')
+        }
+    }
+}
+
+def* _get_module_names(root, package_name) {
+    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name.replace('.', os::sep))) {
+        if filepaths.map(def(fp) = fp.basename()).has('__init.u') {
+            yield str(dirpath.relpath(root)).replace(os::sep, '.')
+        }
+        for filepath in sorted(filepaths) {
+            basename = filepath.basename()
+            if basename.ends_with('.u') and basename != '__init.u' {
+                yield str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
+            }
+        }
+    }
+}
+
+if __name == __main() {
+    main()
+}

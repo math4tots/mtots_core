@@ -187,9 +187,3 @@ impl From<&str> for RcStr {
         s.to_owned().into()
     }
 }
-
-impl From<&&str> for RcStr {
-    fn from(s: &&str) -> Self {
-        s.to_owned().into()
-    }
-}

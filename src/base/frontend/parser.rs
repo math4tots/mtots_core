@@ -1,29 +1,74 @@
-use crate::ArgSpec;
-use crate::Args;
-use crate::AssignTarget;
-use crate::AssignTargetDesc;
+use crate::ArgumentList;
 use crate::Binop;
-use crate::ConstVal;
-use crate::Error;
-use crate::Expr;
-use crate::ExprDesc;
-use crate::LogicalBinop;
-use crate::Mark;
-use crate::ModuleDisplay;
+use crate::ClassKind;
+use crate::Expression;
+use crate::ExpressionData;
+use crate::ExpressionKind;
 use crate::Punctuator;
 use crate::RcStr;
-use crate::Result;
-use crate::Source;
+use crate::Symbol;
 use crate::Token;
 use crate::TokenKind;
 use crate::Unop;
 use std::convert::TryFrom;
-use std::rc::Rc;
 
 const PREC_STEP: i32 = 10;
 
+#[derive(Debug)]
+pub struct ParseError {
+    offset: usize,
+    lineno: usize,
+    kind: ParseErrorKind,
+}
+
+#[derive(Debug)]
+pub enum ParseErrorKind {
+    InvalidToken {
+        expected: TokenKind,
+        but_got: TokenKind,
+    },
+    ExpectedExpression {
+        but_got: TokenKind,
+    },
+    ExpectedParameter {
+        but_got: TokenKind,
+    },
+    ExpectedDelimiter {
+        but_got: TokenKind,
+    },
+    ExpectedString {
+        but_got: TokenKind,
+    },
+    InvalidParameterOrder {
+        parameter_kind: ParameterKind,
+        cannot_come_after: ParameterKind,
+    },
+    IllegalDuplicateParameterKind(ParameterKind),
+    MultipleVariadicArgs,
+    MultipleKeywordTableArgs,
+    IllegalArgumentOrder,
+    UnrecognizedEscapeSequence(String),
+    InvalidEscape(String),
+    EscapeAtEndOfString,
+    ExpectedPotentiallyMutableExpression(ExpressionKind),
+    ExpectedClassMember {
+        but_got: ExpressionKind,
+    },
+    FieldListInTrait,
+}
+
+impl ParseError {
+    pub fn move_(self) -> (usize, usize, ParseErrorKind) {
+        (self.offset, self.lineno, self.kind)
+    }
+
+    pub fn lineno(&self) -> usize {
+        self.lineno
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum ParameterKind {
+pub enum ParameterKind {
     Required,
     Optional,
     Variadic,
@@ -41,10 +86,11 @@ impl ParameterKind {
     }
 }
 
-pub(crate) struct Parser {
+pub struct Parser {
     prectable: Vec<Prec>,
-    prefix_table: Vec<Option<for<'a> fn(&mut ParserState<'a>) -> Result<Expr>>>,
-    infix_table: Vec<Option<fn(&mut ParserState, Expr, Prec) -> Result<Expr>>>,
+    prefix_table: Vec<Option<for<'a> fn(&mut ParserState<'a>) -> Result<Expression, ParseError>>>,
+    infix_table:
+        Vec<Option<fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>>>,
 }
 
 impl Parser {
@@ -59,12 +105,10 @@ impl Parser {
 
     pub fn parse_tokens<'a>(
         &self,
-        source: Rc<Source>,
         tokens: Vec<Token<'a>>,
         posinfo: Vec<(usize, usize)>,
-    ) -> Result<ModuleDisplay> {
+    ) -> Result<Expression, ParseError> {
         let mut state = ParserState {
-            source,
             i: 0,
             tokens,
             posinfo,
@@ -79,30 +123,26 @@ impl Parser {
 type Prec = i32;
 
 struct ParserState<'a> {
-    source: Rc<Source>,
     i: usize,
     tokens: Vec<Token<'a>>,
     posinfo: Vec<(usize, usize)>,
     prectable: &'a Vec<Prec>,
-    prefix_table: &'a Vec<Option<fn(&mut ParserState) -> Result<Expr>>>,
-    infix_table: &'a Vec<Option<fn(&mut ParserState, Expr, Prec) -> Result<Expr>>>,
+    prefix_table: &'a Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseError>>>,
+    infix_table:
+        &'a Vec<Option<fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>>>,
 }
 
 impl<'a> ParserState<'a> {
-    fn mark(&self) -> Mark {
-        Mark::new(
-            self.source.clone(),
-            self.posinfo[self.i].0,
-            self.posinfo[self.i].1,
-        )
-    }
-
     fn peek(&self) -> Token<'a> {
         self.tokens[self.i]
     }
 
     fn peek1(&self) -> Option<Token<'a>> {
         self.tokens.get(self.i + 1).cloned()
+    }
+
+    fn pos(&self) -> (usize, usize) {
+        self.posinfo[self.i]
     }
 
     fn gettok(&mut self) -> Token<'a> {
@@ -120,25 +160,28 @@ impl<'a> ParserState<'a> {
         }
     }
 
-    fn expect(&mut self, expected: TokenKind) -> Result<Token<'a>> {
+    fn expect(&mut self, expected: TokenKind) -> Result<Token<'a>, ParseError> {
         if self.peek().kind() == expected {
             Ok(self.gettok())
         } else {
-            let mark = self.mark();
-            Err(Error::rt(
-                format!(
-                    "Invalid token: expected {:?}, but got {:?}",
+            let (offset, lineno) = self.pos();
+            Err(ParseError {
+                offset,
+                lineno,
+                kind: ParseErrorKind::InvalidToken {
                     expected,
-                    self.peek().kind()
-                )
-                .into(),
-                vec![mark],
-            ))
+                    but_got: self.peek().kind(),
+                },
+            })
         }
     }
 
-    fn expect_name(&mut self) -> Result<&'a str> {
+    fn expect_name(&mut self) -> Result<&'a str, ParseError> {
         Ok(self.expect(TokenKind::Name)?.name().unwrap())
+    }
+
+    fn expect_symbol(&mut self) -> Result<&'a str, ParseError> {
+        Ok(self.expect(TokenKind::Symbol)?.symbol().unwrap())
     }
 
     fn consume_docstring(&mut self) -> Option<RcStr> {
@@ -149,16 +192,46 @@ impl<'a> ParserState<'a> {
         }
     }
 
-    fn expect_delim(&mut self) -> Result<()> {
+    fn consume_fields(&mut self) -> Result<Option<Vec<Symbol>>, ParseError> {
+        if self.consume(TokenKind::Punctuator(Punctuator::LBracket)) {
+            let mut fields = Vec::new();
+            while !self.consume(TokenKind::Punctuator(Punctuator::RBracket)) {
+                fields.push(self.expect_name_as_symbol()?);
+                if !self.consume(TokenKind::Punctuator(Punctuator::Comma)) {
+                    self.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
+                    break;
+                }
+            }
+            self.skip_delim();
+            Ok(Some(fields))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn expect_name_as_symbol(&mut self) -> Result<Symbol, ParseError> {
+        let rcstr: RcStr = self.expect_name()?.into();
+        Ok(Symbol::from(rcstr))
+    }
+
+    fn expect_symbol_as_symbol(&mut self) -> Result<Symbol, ParseError> {
+        let rcstr: RcStr = self.expect_symbol()?.into();
+        Ok(Symbol::from(rcstr))
+    }
+
+    fn expect_delim(&mut self) -> Result<(), ParseError> {
         if self.at_delim() {
             self.skip_delim();
             Ok(())
         } else {
-            let mark = self.mark();
-            Err(Error::rt(
-                format!("Expected delimiter, but got {:?}", self.peek().kind()).into(),
-                vec![mark],
-            ))
+            let (offset, lineno) = self.pos();
+            Err(ParseError {
+                offset,
+                lineno,
+                kind: ParseErrorKind::ExpectedDelimiter {
+                    but_got: self.peek().kind(),
+                },
+            })
         }
     }
 
@@ -188,7 +261,7 @@ impl<'a> ParserState<'a> {
         }
     }
 
-    fn expect_string(&mut self) -> Result<RcStr> {
+    fn expect_string(&mut self) -> Result<RcStr, ParseError> {
         match self.peek() {
             Token::NormalString(s) => {
                 self.gettok();
@@ -197,9 +270,19 @@ impl<'a> ParserState<'a> {
                     Ok(value) => Ok(value.into()),
                     Err(error) => {
                         let InterpretationError { offset, kind } = error;
-                        let mark = self.mark();
-                        let mark = Mark::new(mark.source().clone(), mark.pos() + offset, 0);
-                        Err(Error::rt(format!("{:?}", kind).into(), vec![mark]))
+                        let (start_offset, start_lineno) = self.pos();
+                        Err(ParseError {
+                            offset: start_offset + offset,
+                            lineno: start_lineno,
+                            kind: match kind {
+                                InterpretationErrorKind::EscapeAtEndOfString => {
+                                    ParseErrorKind::EscapeAtEndOfString
+                                }
+                                InterpretationErrorKind::InvalidEscape(s) => {
+                                    ParseErrorKind::InvalidEscape(s)
+                                }
+                            },
+                        })
                     }
                 }
             }
@@ -228,25 +311,26 @@ impl<'a> ParserState<'a> {
                 Ok(ret.into())
             }
             _ => {
-                let mark = self.mark();
-                Err(Error::rt(
-                    format!("Expected string but got {:?}", self.peek().kind()).into(),
-                    vec![mark],
-                ))
+                let (offset, lineno) = self.pos();
+                Err(ParseError {
+                    offset,
+                    lineno,
+                    kind: ParseErrorKind::ExpectedString {
+                        but_got: self.peek().kind(),
+                    },
+                })
             }
         }
     }
 
-    fn parse(&mut self) -> Result<ModuleDisplay> {
-        let mark = self.mark();
+    fn parse(&mut self) -> Result<Expression, ParseError> {
         let mut exprs = Vec::new();
         self.skip_delim();
         while self.peek().kind() != TokenKind::EOF {
             exprs.push(self.stmt()?);
             self.expect_delim()?;
         }
-        let body = Expr::new(mark, ExprDesc::Block(exprs));
-        Ok(ModuleDisplay::new(self.source.name().clone(), body))
+        Ok(Expression::new(0, 1, ExpressionData::Block(exprs)))
     }
 
     fn prec(&self, kind: TokenKind) -> Prec {
@@ -257,8 +341,8 @@ impl<'a> ParserState<'a> {
         self.prec(self.peek().kind())
     }
 
-    fn block_ex(&mut self, nil_appended: bool) -> Result<(Option<RcStr>, Expr)> {
-        let mark = self.mark();
+    fn block_ex(&mut self, nil_appended: bool) -> Result<(Option<RcStr>, Expression), ParseError> {
+        let (offset, lineno) = self.pos();
         self.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
         let mut exprs = Vec::new();
         self.skip_delim();
@@ -266,31 +350,34 @@ impl<'a> ParserState<'a> {
             exprs.push(self.stmt()?);
             self.expect_delim()?;
         }
-        let docstr = if let Some(ExprDesc::String(s)) = exprs.get(0).map(|e| e.desc()) {
+        let docstr = if let Some(ExpressionData::String(s)) = exprs.get(0).map(|e| e.data()) {
             Some(s.clone())
         } else {
             None
         };
         if nil_appended {
-            exprs.push(Expr::new(mark.clone(), ExprDesc::Nil));
+            exprs.push(Expression::new(offset, lineno, ExpressionData::Nil));
         }
-        Ok((docstr, Expr::new(mark, ExprDesc::Block(exprs))))
+        Ok((
+            docstr,
+            Expression::new(offset, lineno, ExpressionData::Block(exprs)),
+        ))
     }
 
-    fn block(&mut self) -> Result<Expr> {
+    fn block(&mut self) -> Result<Expression, ParseError> {
         Ok(self.block_ex(false)?.1)
     }
 
-    fn block_with_doc(&mut self) -> Result<(Option<RcStr>, Expr)> {
+    fn block_with_doc(&mut self) -> Result<(Option<RcStr>, Expression), ParseError> {
         self.block_ex(false)
     }
 
-    fn nil_appended_block_with_doc(&mut self) -> Result<(Option<RcStr>, Expr)> {
+    fn nil_appended_block_with_doc(&mut self) -> Result<(Option<RcStr>, Expression), ParseError> {
         self.block_ex(true)
     }
 
     /// parse an expression with the given precedence
-    fn expr(&mut self, prec: Prec) -> Result<Expr> {
+    fn expr(&mut self, prec: Prec) -> Result<Expression, ParseError> {
         let mut expr = self.prefix()?;
         while self.cprec() > prec {
             expr = self.infix(expr)?;
@@ -301,37 +388,41 @@ impl<'a> ParserState<'a> {
     /// parse a statement
     /// a statement is basically an expression, except that named functions
     /// will automatically be assigned to a variable of the same name
-    fn stmt(&mut self) -> Result<Expr> {
+    fn stmt(&mut self) -> Result<Expression, ParseError> {
         let expr = self.expr(0)?;
 
         // If we see an assignment followed by a '#' string on the next line,
         // we assume that the string is meant to be a doc for the assignment
         if let Some(name) = Self::get_assign_name(&expr) {
             if let Some(doc) = self.followup_doc()? {
-                let mark = self.mark();
-                return Ok(Expr::new(mark, ExprDesc::AssignDoc(expr.into(), name, doc)));
+                let offset = expr.offset();
+                let lineno = expr.lineno();
+                return Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::AssignWithDoc(expr.into(), name, doc),
+                ));
             }
         }
 
-        Ok(match expr.desc() {
-            ExprDesc::Function {
-                name: Some(name), ..
-            } => assign_name(name.clone(), expr),
-            // ExprDesc::ClassDisplay(_, name, ..) => assign_name(name.clone(), expr),
+        Ok(match expr.data() {
+            ExpressionData::FunctionDisplay(_, Some(name), ..) => assign_name(name.clone(), expr),
+            ExpressionData::ClassDisplay(_, name, ..) => assign_name(name.clone(), expr),
+            ExpressionData::ExceptionKindDisplay(name, ..) => assign_name(name.clone(), expr),
             _ => expr,
         })
     }
 
-    fn get_assign_name(expr: &Expr) -> Option<RcStr> {
-        if let ExprDesc::Assign(target, _) = expr.desc() {
-            if let AssignTargetDesc::Name(name) = target.desc() {
+    fn get_assign_name(expr: &Expression) -> Option<RcStr> {
+        if let ExpressionData::Assign(target, _) = expr.data() {
+            if let ExpressionData::Name(name) = target.data() {
                 return Some(name.clone());
             }
         }
         None
     }
 
-    fn followup_doc(&mut self) -> Result<Option<RcStr>> {
+    fn followup_doc(&mut self) -> Result<Option<RcStr>, ParseError> {
         if self.peek() == Token::Newline(1)
             && self
                 .peek1()
@@ -345,41 +436,53 @@ impl<'a> ParserState<'a> {
         }
     }
 
-    fn prefix(&mut self) -> Result<Expr> {
+    fn prefix(&mut self) -> Result<Expression, ParseError> {
         let key = self.peek().kind().id();
         if let Some(f) = self.prefix_table[key] {
             f(self)
         } else {
-            let mark = self.mark();
-            Err(Error::rt(
-                format!("Expected expression but got {:?}", self.peek().kind()).into(),
-                vec![mark],
-            ))
+            let (offset, lineno) = self.pos();
+            Err(ParseError {
+                offset,
+                lineno,
+                kind: ParseErrorKind::ExpectedExpression {
+                    but_got: self.peek().kind(),
+                },
+            })
         }
     }
 
-    fn infix(&mut self, expr: Expr) -> Result<Expr> {
+    fn infix(&mut self, expr: Expression) -> Result<Expression, ParseError> {
         let key = self.peek().kind().id();
         let prec = self.cprec();
         self.infix_table[key].unwrap()(self, expr, prec)
     }
 
-    fn params(&mut self) -> Result<ArgSpec> {
-        let mark = self.mark();
+    fn params(
+        &mut self,
+    ) -> Result<
+        (
+            Vec<RcStr>,
+            Vec<(RcStr, Expression)>,
+            Option<RcStr>,
+            Option<RcStr>,
+        ),
+        ParseError,
+    > {
         self.expect(TokenKind::Punctuator(Punctuator::LParen))?;
         let mut req = Vec::new(); // required params
         let mut opt = Vec::new(); // optional params
         let mut variadic = None;
-        let mut keywords: Option<RcStr> = None;
+        let mut keywords = None;
         let mut last_kind = ParameterKind::Required;
         while !self.consume(TokenKind::Punctuator(Punctuator::RParen)) {
-            let mark = self.mark();
+            let (offset, lineno) = self.pos();
             let kind = match self.gettok() {
                 Token::Name(name) => {
                     if self.consume(TokenKind::Punctuator(Punctuator::Eq)) {
                         // optional parameter
                         let expr = self.expr(0)?;
-                        opt.push((name.into(), to_constval(expr)?));
+                        opt.push((name.into(), expr));
                         ParameterKind::Optional
                     } else {
                         // required parameter
@@ -398,23 +501,31 @@ impl<'a> ParserState<'a> {
                     ParameterKind::Keywords
                 }
                 token => {
-                    return Err(Error::rt(
-                        format!("Expected parameter but got {:?}", token).into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::ExpectedParameter {
+                            but_got: token.kind(),
+                        },
+                    })
                 }
             };
             if last_kind > kind {
-                return Err(Error::rt(
-                    format!("InvalidParameterOrder").into(),
-                    vec![mark],
-                ));
+                return Err(ParseError {
+                    offset,
+                    lineno,
+                    kind: ParseErrorKind::InvalidParameterOrder {
+                        parameter_kind: kind,
+                        cannot_come_after: last_kind,
+                    },
+                });
             }
             if !kind.multiple_allowed() && last_kind == kind {
-                return Err(Error::rt(
-                    format!("IllegalDuplicateParameterKind({:?})", kind).into(),
-                    vec![mark],
-                ));
+                return Err(ParseError {
+                    offset,
+                    lineno,
+                    kind: ParseErrorKind::IllegalDuplicateParameterKind(kind),
+                });
             }
             last_kind = kind;
             if !self.consume(TokenKind::Punctuator(Punctuator::Comma)) {
@@ -422,45 +533,41 @@ impl<'a> ParserState<'a> {
                 break;
             }
         }
-        if keywords.is_some() {
-            return Err(Error::rt(
-                format!("**kwargs parameter not supported").into(),
-                vec![mark],
-            ));
-        }
-        Ok(ArgSpec::new(req, opt, variadic))
+        Ok((req, opt, variadic, keywords))
     }
 
-    fn args(&mut self) -> Result<Args> {
-        let mark = self.mark();
+    fn args(&mut self) -> Result<ArgumentList, ParseError> {
         self.expect(TokenKind::Punctuator(Punctuator::LParen))?;
         let mut pos = Vec::new();
         let mut key = Vec::new();
         let mut variadic = None;
         let mut kwtable = None;
         while !self.consume(TokenKind::Punctuator(Punctuator::RParen)) {
-            let mark = self.mark();
+            let (offset, lineno) = self.pos();
             if self.consume(TokenKind::Punctuator(Punctuator::Star)) {
                 // kwtables have to come after vararg arguments
                 if kwtable.is_some() {
-                    return Err(Error::rt(
-                        format!("Illegal argument order").into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::IllegalArgumentOrder,
+                    });
                 }
                 if variadic.is_some() {
-                    return Err(Error::rt(
-                        format!("Multiple variadic arguments are not allowed").into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::MultipleVariadicArgs,
+                    });
                 }
                 variadic = Some(self.expr(0)?);
             } else if self.consume(TokenKind::Punctuator(Punctuator::Star2)) {
                 if kwtable.is_some() {
-                    return Err(Error::rt(
-                        format!("Multiple keyword talbe arguments are not allowed").into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::MultipleKeywordTableArgs,
+                    });
                 }
                 kwtable = Some(self.expr(0)?);
             } else if self.peek().kind() == TokenKind::Name
@@ -469,10 +576,11 @@ impl<'a> ParserState<'a> {
             {
                 // variadic and kwtables have to come after vararg arguments
                 if variadic.is_some() || kwtable.is_some() {
-                    return Err(Error::rt(
-                        format!("Illegal argument order").into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::IllegalArgumentOrder,
+                    });
                 }
                 let name = self.expect_name()?;
                 self.expect(TokenKind::Punctuator(Punctuator::Eq))?;
@@ -481,10 +589,11 @@ impl<'a> ParserState<'a> {
             } else {
                 // keyword, variadic and kwtables have to come after vararg arguments
                 if !key.is_empty() || variadic.is_some() || kwtable.is_some() {
-                    return Err(Error::rt(
-                        format!("Illegal argument order").into(),
-                        vec![mark],
-                    ));
+                    return Err(ParseError {
+                        offset,
+                        lineno,
+                        kind: ParseErrorKind::IllegalArgumentOrder,
+                    });
                 }
                 pos.push(self.expr(0)?);
             }
@@ -494,13 +603,7 @@ impl<'a> ParserState<'a> {
                 break;
             }
         }
-        if variadic.is_some() || kwtable.is_some() {
-            return Err(Error::rt(
-                format!("*varargs/**kw style arguments are not supported").into(),
-                vec![mark],
-            ));
-        }
-        Ok(Args::new(pos, key))
+        Ok(ArgumentList::new(pos, key, variadic, kwtable))
     }
 }
 
@@ -508,47 +611,73 @@ impl<'a> ParserState<'a> {
 /// a prefix table maps
 ///     token kinds to a <parsing callback> that can parse an expression
 ///     that starts with the given token kind
-fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
-    let entries: Vec<(&[&'static str], fn(&mut ParserState) -> Result<Expr>)> = vec![
+fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expression, ParseError>>> {
+    let entries: Vec<(
+        &[&'static str],
+        fn(&mut ParserState) -> Result<Expression, ParseError>,
+    )> = vec![
         (&["nil"], |state: &mut ParserState| {
-            mk1tokexpr(state, ExprDesc::Nil)
+            mk1tokexpr(state, ExpressionData::Nil)
         }),
         (&["true"], |state: &mut ParserState| {
-            mk1tokexpr(state, ExprDesc::Bool(true))
+            mk1tokexpr(state, ExpressionData::Bool(true))
         }),
         (&["false"], |state: &mut ParserState| {
-            mk1tokexpr(state, ExprDesc::Bool(false))
+            mk1tokexpr(state, ExpressionData::Bool(false))
         }),
         (&["Int"], |state: &mut ParserState| {
             let value = state.peek().int().unwrap();
-            mk1tokexpr(state, ExprDesc::Number(value as f64))
+            mk1tokexpr(state, ExpressionData::Int(value))
         }),
         (&["Float"], |state: &mut ParserState| {
             let value = state.peek().float().unwrap();
-            mk1tokexpr(state, ExprDesc::Number(value))
+            mk1tokexpr(state, ExpressionData::Float(value))
+        }),
+        (&["Symbol"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            let symbol = state.expect_symbol_as_symbol()?;
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Symbol(symbol),
+            ))
         }),
         (
             &["NormalString", "RawString", "LineString"],
             |state: &mut ParserState| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 let s = state.expect_string()?;
-                Ok(Expr::new(mark, ExprDesc::String(s.into())))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::String(s.into()),
+                ))
             },
         ),
         (&["Name"], |state: &mut ParserState| {
             let name = state.peek().name().unwrap();
-            mk1tokexpr(state, ExprDesc::Name(name.into()))
+            mk1tokexpr(state, ExpressionData::Name(name.into()))
+        }),
+        (&["new"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            state.gettok();
+            let args = state.args()?;
+            Ok(Expression::new(offset, lineno, ExpressionData::New(args)))
         }),
         (&["{"], |state: &mut ParserState| state.block()),
         (&["("], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let expr = state.expr(0)?;
             state.expect(TokenKind::Punctuator(Punctuator::RParen))?;
-            Ok(Expr::new(mark, ExprDesc::Parentheses(expr.into())))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Parentheses(expr.into()),
+            ))
         }),
         (&["["], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             // For the special case of the empty map, we have to do an extra token of
             // lookahead, because ':' is permitted at the beginning of an expression
@@ -560,10 +689,18 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                 // Empty map
                 state.expect(TokenKind::Punctuator(Punctuator::Colon))?;
                 state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
-                Ok(Expr::new(mark, ExprDesc::Map(vec![])))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::MapDisplay(vec![]),
+                ))
             } else if state.consume(TokenKind::Punctuator(Punctuator::RBracket)) {
                 // Empty list
-                Ok(Expr::new(mark, ExprDesc::List(vec![])))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::ListDisplay(vec![]),
+                ))
             } else {
                 let first = state.expr(0)?;
                 if state.consume(TokenKind::Punctuator(Punctuator::Colon)) {
@@ -583,7 +720,11 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                         let val = state.expr(0)?;
                         pairs.push((key, val));
                     }
-                    Ok(Expr::new(mark, ExprDesc::Map(pairs)))
+                    Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::MapDisplay(pairs),
+                    ))
                 } else {
                     // list
                     let mut exprs = vec![first];
@@ -597,12 +738,16 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                         }
                         exprs.push(state.expr(0)?);
                     }
-                    Ok(Expr::new(mark, ExprDesc::List(exprs)))
+                    Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::ListDisplay(exprs),
+                    ))
                 }
             }
         }),
         (&["if"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let cond = state.expr(0)?;
             let body = state.block()?;
@@ -617,10 +762,14 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             } else {
                 None
             };
-            Ok(Expr::new(mark, ExprDesc::If(pairs, other)))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::If(pairs, other),
+            ))
         }),
         (&["switch"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let target = state.expr(0)?;
             state.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
@@ -641,35 +790,48 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                     state.expect_delim()?;
                 }
             }
-            Ok(Expr::new(
-                mark,
-                ExprDesc::Switch(target.into(), pairs, other),
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Switch(target.into(), pairs, other),
             ))
         }),
         (&["for"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
-            let target = to_target(state.expr(0)?)?;
+            let target = state.expr(0)?.into();
             state.expect(TokenKind::Punctuator(Punctuator::In))?;
             let iterable = state.expr(0)?.into();
             let body = state.block()?.into();
-            Ok(Expr::new(mark, ExprDesc::For(target, iterable, body)))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::For(target, iterable, body),
+            ))
         }),
         (&["while"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let cond = state.expr(0)?.into();
             let body = state.block()?.into();
-            Ok(Expr::new(mark, ExprDesc::While(cond, body)))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::While(cond, body),
+            ))
         }),
         (&["del"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let varname = state.expect_name()?;
-            Ok(Expr::new(mark, ExprDesc::Del(varname.into())))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Del(varname.into()),
+            ))
         }),
         (&["nonlocal"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let mut names = Vec::new();
             while state.peek().kind() == TokenKind::Name {
@@ -678,31 +840,43 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                     break;
                 }
             }
-            Ok(Expr::new(mark, ExprDesc::Nonlocal(names)))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Nonlocal(names),
+            ))
         }),
         (&["yield"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let expr = state.expr(0)?;
-            Ok(Expr::new(mark, ExprDesc::Yield(expr.into())))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Yield(expr.into()),
+            ))
         }),
         (&["return"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let expr = if state.at_delim() {
                 None
             } else {
                 Some(state.expr(0)?.into())
             };
-            Ok(Expr::new(mark, ExprDesc::Return(expr)))
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::Return(expr),
+            ))
         }),
         (&["def"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
 
             // 'def break' is special syntax to indicate a breakpoint
             if state.consume(TokenKind::Punctuator(Punctuator::Break)) {
-                return Ok(Expr::new(mark, ExprDesc::BreakPoint));
+                return Ok(Expression::new(offset, lineno, ExpressionData::BreakPoint));
             }
 
             // otherwise we're dealing with a function definition
@@ -712,12 +886,13 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             } else {
                 None
             };
-            let params = if state.peek().kind() == TokenKind::Punctuator(Punctuator::LParen) {
-                state.params()?
-            } else {
-                ArgSpec::empty()
-            };
-            let (docstr, body) = if state.consume(TokenKind::Punctuator(Punctuator::Eq)) {
+            let (req, opt, var, kw) =
+                if state.peek().kind() == TokenKind::Punctuator(Punctuator::LParen) {
+                    state.params()?
+                } else {
+                    (vec![], vec![], None, None)
+                };
+            let (doc, body) = if state.consume(TokenKind::Punctuator(Punctuator::Eq)) {
                 if state.peek() == Token::Punctuator(Punctuator::LBrace) {
                     state.block_with_doc()?
                 } else {
@@ -726,21 +901,69 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             } else {
                 state.nil_appended_block_with_doc()?
             };
-            Ok(Expr::new(
-                mark,
-                ExprDesc::Function {
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::FunctionDisplay(
                     is_generator,
                     name,
-                    params,
-                    docstr,
-                    body: body.into(),
-                    varspec: None,
-                },
+                    req,
+                    opt,
+                    var,
+                    kw,
+                    doc,
+                    body.into(),
+                ),
             ))
         }),
-        (&["class"], |state: &mut ParserState| {
-            let mark = state.mark();
-            state.expect(TokenKind::Punctuator(Punctuator::Class))?;
+        (&["except"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            state.gettok();
+            let short_name = state.expect_name()?.into();
+            let base = if state.consume(TokenKind::Punctuator(Punctuator::LParen)) {
+                let base = state.expr(0)?;
+                state.expect(TokenKind::Punctuator(Punctuator::RParen))?;
+                Some(base.into())
+            } else {
+                None
+            };
+            let (docstring, fields, template) = {
+                state.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
+                state.skip_delim();
+                let docstring = state.consume_docstring();
+
+                let fields = state.consume_fields()?;
+
+                state.expect(TokenKind::Punctuator(Punctuator::Def))?;
+                let template = state.expr(0)?.into();
+                state.expect_delim()?;
+                state.expect(TokenKind::Punctuator(Punctuator::RBrace))?;
+
+                (docstring, fields, template)
+            };
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::ExceptionKindDisplay(
+                    short_name,
+                    base,
+                    docstring.into(),
+                    fields,
+                    template,
+                ),
+            ))
+        }),
+        (&["class", "trait", "case"], |state: &mut ParserState| {
+            let (offset, lineno) = state.pos();
+            let class_kind = if state.consume(TokenKind::Punctuator(Punctuator::Trait)) {
+                ClassKind::Trait
+            } else if state.consume(TokenKind::Punctuator(Punctuator::Class)) {
+                ClassKind::UserDefinedClass
+            } else {
+                state.expect(TokenKind::Punctuator(Punctuator::Case))?;
+                state.expect(TokenKind::Punctuator(Punctuator::Class))?;
+                ClassKind::UserDefinedCaseClass
+            };
             let short_name = state.expect_name()?.into();
             let bases = {
                 let mut bases = Vec::new();
@@ -755,8 +978,9 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                 }
                 bases
             };
-            let (docstr, methods, static_methods) = {
+            let (docstring, fields, methods, static_methods) = {
                 let mut docstring = None;
+                let mut fields = None;
                 let mut methods = Vec::new();
                 let mut static_methods = Vec::new();
                 if state.consume(TokenKind::Punctuator(Punctuator::LBrace)) {
@@ -766,27 +990,45 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
 
                     state.skip_delim();
 
+                    let (offset, lineno) = state.pos();
+                    fields = match state.consume_fields()? {
+                        Some(fields) => {
+                            if let ClassKind::Trait = class_kind {
+                                return Err(ParseError {
+                                    offset,
+                                    lineno,
+                                    kind: ParseErrorKind::FieldListInTrait,
+                                });
+                            }
+                            Some(fields)
+                        }
+                        None => None,
+                    };
+
                     while !state.consume(TokenKind::Punctuator(Punctuator::RBrace)) {
                         if state.consume(TokenKind::Punctuator(Punctuator::New)) {
-                            let mark = state.mark();
-                            let params = state.params()?;
+                            let (offset, lineno) = state.pos();
+                            let (req, opt, var, kw) = state.params()?;
                             state.expect(TokenKind::Punctuator(Punctuator::Eq))?;
-                            let (docstr, body) =
+                            let (doc, body) =
                                 if state.peek() == Token::Punctuator(Punctuator::LBrace) {
                                     state.block_with_doc()?
                                 } else {
                                     (None, state.expr(0)?)
                                 };
-                            let member = Expr::new(
-                                mark,
-                                ExprDesc::Function {
-                                    is_generator: false,
-                                    name: Some("__call".into()),
-                                    params,
-                                    docstr,
-                                    body: body.into(),
-                                    varspec: None,
-                                },
+                            let member = Expression::new(
+                                offset,
+                                lineno,
+                                ExpressionData::FunctionDisplay(
+                                    false,
+                                    Some("__call".into()),
+                                    req,
+                                    opt,
+                                    var,
+                                    kw,
+                                    doc,
+                                    body.into(),
+                                ),
                             );
                             static_methods.push((RcStr::from("__call"), member));
                         } else {
@@ -796,14 +1038,19 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                                 &mut methods
                             };
                             let stmt = state.stmt()?;
-                            let mark = state.mark();
+                            let offset = stmt.offset();
+                            let lineno = stmt.lineno();
+                            let stmt_kind = stmt.kind();
                             let (name, member) = match break_assignment(stmt) {
                                 Some((name, member)) => (name, member),
                                 None => {
-                                    return Err(Error::rt(
-                                        format!("Expected class member").into(),
-                                        vec![mark],
-                                    ))
+                                    return Err(ParseError {
+                                        offset,
+                                        lineno,
+                                        kind: ParseErrorKind::ExpectedClassMember {
+                                            but_got: stmt_kind,
+                                        },
+                                    });
                                 }
                             };
                             out.push((name, member));
@@ -811,21 +1058,24 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                         state.expect_delim()?;
                     }
                 }
-                (docstring, methods, static_methods)
+                (docstring, fields, methods, static_methods)
             };
-            Ok(Expr::new(
-                mark,
-                ExprDesc::Class {
-                    name: short_name,
+            Ok(Expression::new(
+                offset,
+                lineno,
+                ExpressionData::ClassDisplay(
+                    class_kind,
+                    short_name,
                     bases,
-                    docstr,
+                    docstring,
+                    fields,
                     methods,
                     static_methods,
-                },
+                ),
             ))
         }),
         (&["import"], |state: &mut ParserState| {
-            let mark = state.mark();
+            let (offset, lineno) = state.pos();
             state.gettok();
             let mut name = String::new();
             while state.consume(TokenKind::Punctuator(Punctuator::Dot)) {
@@ -849,9 +1099,13 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             } else {
                 last_part
             };
-            let raw_import = Expr::new(mark.clone(), ExprDesc::Import(name.into()));
+            let raw_import = Expression::new(offset, lineno, ExpressionData::Import(name.into()));
             let field_applied = match field {
-                Some(field) => Expr::new(mark, ExprDesc::Attr(raw_import.into(), field.into())),
+                Some(field) => Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::StaticAttribute(raw_import.into(), field.into()),
+                ),
                 None => raw_import,
             };
             Ok(assign_name(alias.into(), field_applied))
@@ -867,6 +1121,47 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             // the '**' exponent operator
             let prec = state.prec(TokenKind::Punctuator(Punctuator::Star2)) - PREC_STEP / 2;
             mkunop(state, prec, op)
+        }),
+        (&["@"], |state| {
+            // '@' should bind tighter than '.'
+            let prec = state.prec(TokenKind::Punctuator(Punctuator::Dot)) + PREC_STEP / 2;
+            let (offset, lineno) = state.pos();
+            state.gettok();
+            let expr = state.expr(prec)?;
+            let kind = expr.kind();
+            Ok(Expression::new(
+                offset,
+                lineno,
+                match expr.data_move() {
+                    ExpressionData::String(s) => ExpressionData::MutableString(s),
+                    ExpressionData::ListDisplay(exprs) => ExpressionData::MutableListDisplay(exprs),
+                    ExpressionData::MapDisplay(pairs) => ExpressionData::MutableMapDisplay(pairs),
+                    ExpressionData::ClassDisplay(
+                        ClassKind::UserDefinedClass,
+                        name,
+                        bases,
+                        docstr,
+                        fields,
+                        methods,
+                        smethods,
+                    ) => ExpressionData::ClassDisplay(
+                        ClassKind::UserDefinedMutableClass,
+                        name,
+                        bases,
+                        docstr,
+                        fields,
+                        methods,
+                        smethods,
+                    ),
+                    _ => {
+                        return Err(ParseError {
+                            offset,
+                            lineno,
+                            kind: ParseErrorKind::ExpectedPotentiallyMutableExpression(kind),
+                        })
+                    }
+                },
+            ))
         }),
     ];
 
@@ -890,24 +1185,28 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
 ///     token kinds to a <parsing callback> that can parse
 ///     the rest of the expression given the left hand side
 fn geninfix() -> (
-    Vec<Option<fn(&mut ParserState, Expr, Prec) -> Result<Expr>>>,
+    Vec<Option<fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>>>,
     Vec<Prec>,
 ) {
-    let entries: &[&[(&[&str], fn(&mut ParserState, Expr, Prec) -> Result<Expr>)]] = &[
+    let entries: &[&[(
+        &[&str],
+        fn(&mut ParserState, Expression, Prec) -> Result<Expression, ParseError>,
+    )]] = &[
         &[
             (&["="], |state, lhs, prec| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 state.gettok();
                 let rhs = state.expr(prec - 1)?;
-                Ok(Expr::new(
-                    mark,
-                    ExprDesc::Assign(to_target(lhs)?, rhs.into()),
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::Assign(lhs.into(), rhs.into()),
                 ))
             }),
             (
                 &["+=", "-=", "*=", "/=", "//=", "%=", "**="],
                 |state, lhs, prec| {
-                    let mark = state.mark();
+                    let (offset, lineno) = state.pos();
                     let op = match state.gettok() {
                         Token::Punctuator(Punctuator::PlusEq) => Binop::Add,
                         Token::Punctuator(Punctuator::MinusEq) => Binop::Sub,
@@ -919,18 +1218,19 @@ fn geninfix() -> (
                         tok => panic!("Unhandled augassign binop {:?}", tok),
                     };
                     let rhs = state.expr(prec - 1)?;
-                    Ok(Expr::new(
-                        mark,
-                        ExprDesc::AugAssign(to_target(lhs)?, op, rhs.into()),
+                    Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::AugAssign(lhs.into(), op, rhs.into()),
                     ))
                 },
             ),
         ],
         &[(&["or"], |state, lhs, prec| {
-            mklbinop(state, lhs, prec, LogicalBinop::Or)
+            mkbinop(state, lhs, prec, Binop::Or)
         })],
         &[(&["and"], |state, lhs, prec| {
-            mklbinop(state, lhs, prec, LogicalBinop::And)
+            mkbinop(state, lhs, prec, Binop::And)
         })],
         &[
             (&["<"], |state, lhs, prec| {
@@ -952,7 +1252,7 @@ fn geninfix() -> (
                 mkbinop(state, lhs, prec, Binop::Ne)
             }),
             (&["is"], |state, lhs, prec| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 state.gettok();
                 let op = if state.consume(TokenKind::Punctuator(Punctuator::Not)) {
                     Binop::IsNot
@@ -960,7 +1260,11 @@ fn geninfix() -> (
                     Binop::Is
                 };
                 let rhs = state.expr(prec)?;
-                Ok(Expr::new(mark, ExprDesc::Binop(op, lhs.into(), rhs.into())))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::Binop(op, lhs.into(), rhs.into()),
+                ))
             }),
         ],
         &[
@@ -990,7 +1294,7 @@ fn geninfix() -> (
         })],
         &[
             (&["["], |state, lhs, _prec| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 state.gettok();
                 if state.consume(TokenKind::Punctuator(Punctuator::Colon)) {
                     // slice with start omitted
@@ -1000,7 +1304,11 @@ fn geninfix() -> (
                         Some(state.expr(0)?.into())
                     };
                     state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
-                    Ok(Expr::new(mark, ExprDesc::Slice(lhs.into(), None, end)))
+                    Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::Slice(lhs.into(), None, end),
+                    ))
                 } else {
                     let expr = state.expr(0)?;
                     if state.consume(TokenKind::Punctuator(Punctuator::Colon)) {
@@ -1012,42 +1320,60 @@ fn geninfix() -> (
                             Some(state.expr(0)?.into())
                         };
                         state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
-                        Ok(Expr::new(mark, ExprDesc::Slice(lhs.into(), start, end)))
+                        Ok(Expression::new(
+                            offset,
+                            lineno,
+                            ExpressionData::Slice(lhs.into(), start, end),
+                        ))
                     } else {
                         // a simple subscript expression
                         state.expect(TokenKind::Punctuator(Punctuator::RBracket))?;
-                        Ok(Expr::new(
-                            mark,
-                            ExprDesc::Subscript(lhs.into(), expr.into()),
+                        Ok(Expression::new(
+                            offset,
+                            lineno,
+                            ExpressionData::Subscript(lhs.into(), expr.into()),
                         ))
                     }
                 }
             }),
             (&["("], |state, lhs, _prec| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 let arglist = state.args()?;
-                match lhs.desc() {
-                    ExprDesc::Attr(..) => match lhs.unpack() {
-                        (mark, ExprDesc::Attr(owner, name)) => {
-                            Ok(Expr::new(mark, ExprDesc::CallMethod(owner, name, arglist)))
-                        }
+                match lhs.data() {
+                    ExpressionData::Attribute(..) => match lhs.data_move() {
+                        ExpressionData::Attribute(owner, name) => Ok(Expression::new(
+                            offset,
+                            lineno,
+                            ExpressionData::MethodCall(owner, name, arglist),
+                        )),
                         _ => panic!("FUBAR"),
                     },
-                    _ => Ok(Expr::new(mark, ExprDesc::CallFunction(lhs.into(), arglist))),
+                    _ => Ok(Expression::new(
+                        offset,
+                        lineno,
+                        ExpressionData::FunctionCall(lhs.into(), arglist),
+                    )),
                 }
             }),
             (&["."], |state, lhs, _prec| {
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 state.gettok();
                 let name = state.expect_name()?;
-                Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::Attribute(lhs.into(), name.into()),
+                ))
             }),
             (&["::"], |state, lhs, _prec| {
-                // TODO: Consider making behavior for this different
-                let mark = state.mark();
+                let (offset, lineno) = state.pos();
                 state.gettok();
                 let name = state.expect_name()?;
-                Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
+                Ok(Expression::new(
+                    offset,
+                    lineno,
+                    ExpressionData::StaticAttribute(lhs.into(), name.into()),
+                ))
             }),
         ],
     ];
@@ -1073,40 +1399,43 @@ fn geninfix() -> (
 }
 
 /// for making one token expressions
-fn mk1tokexpr(state: &mut ParserState, data: ExprDesc) -> Result<Expr> {
-    let mark = state.mark();
+fn mk1tokexpr(state: &mut ParserState, data: ExpressionData) -> Result<Expression, ParseError> {
+    let (offset, lineno) = state.pos();
     state.gettok();
-    Ok(Expr::new(mark, data))
+    Ok(Expression::new(offset, lineno, data))
 }
 
-fn mkunop(state: &mut ParserState, prec: Prec, op: Unop) -> Result<Expr> {
-    let mark = state.mark();
+fn mkunop(state: &mut ParserState, prec: Prec, op: Unop) -> Result<Expression, ParseError> {
+    let (offset, lineno) = state.pos();
     state.gettok();
     let expr = state.expr(prec)?;
-    Ok(Expr::new(mark, ExprDesc::Unop(op, expr.into())))
-}
-
-fn mkbinop(state: &mut ParserState, lhs: Expr, prec: Prec, op: Binop) -> Result<Expr> {
-    let mark = state.mark();
-    state.gettok();
-    let rhs = state.expr(prec)?;
-    Ok(Expr::new(mark, ExprDesc::Binop(op, lhs.into(), rhs.into())))
-}
-
-fn mklbinop(state: &mut ParserState, lhs: Expr, prec: Prec, op: LogicalBinop) -> Result<Expr> {
-    let mark = state.mark();
-    state.gettok();
-    let rhs = state.expr(prec)?;
-    Ok(Expr::new(
-        mark,
-        ExprDesc::LogicalBinop(op, lhs.into(), rhs.into()),
+    Ok(Expression::new(
+        offset,
+        lineno,
+        ExpressionData::Unop(op, expr.into()),
     ))
 }
 
-fn break_assignment(expr: Expr) -> Option<(RcStr, Expr)> {
-    match expr.unpack() {
-        (_mark, ExprDesc::Assign(target, expr)) => match target.unpack() {
-            (_mark, AssignTargetDesc::Name(name)) => Some((name, *expr)),
+fn mkbinop(
+    state: &mut ParserState,
+    lhs: Expression,
+    prec: Prec,
+    op: Binop,
+) -> Result<Expression, ParseError> {
+    let (offset, lineno) = state.pos();
+    state.gettok();
+    let rhs = state.expr(prec)?;
+    Ok(Expression::new(
+        offset,
+        lineno,
+        ExpressionData::Binop(op, lhs.into(), rhs.into()),
+    ))
+}
+
+fn break_assignment(expr: Expression) -> Option<(RcStr, Expression)> {
+    match expr.data_move() {
+        ExpressionData::Assign(target, expr) => match target.data_move() {
+            ExpressionData::Name(name) => Some((name, *expr)),
             _ => None,
         },
         _ => None,
@@ -1118,13 +1447,12 @@ struct InterpretationError {
     kind: InterpretationErrorKind,
 }
 
-#[derive(Debug)]
 enum InterpretationErrorKind {
     InvalidEscape(String),
     EscapeAtEndOfString,
 }
 
-fn interpret_string(s: &str) -> std::result::Result<String, InterpretationError> {
+fn interpret_string(s: &str) -> Result<String, InterpretationError> {
     enum Mode {
         Normal,
         Escape,
@@ -1270,44 +1598,15 @@ fn interpret_string(s: &str) -> std::result::Result<String, InterpretationError>
     Ok(ret)
 }
 
-fn assign_name(name: RcStr, expr: Expr) -> Expr {
-    let mark = expr.mark().clone();
-    Expr::new(
-        mark.clone(),
-        ExprDesc::Assign(
-            AssignTarget::new(mark, AssignTargetDesc::Name(name)),
+fn assign_name(name: RcStr, expr: Expression) -> Expression {
+    let offset = expr.offset();
+    let lineno = expr.lineno();
+    Expression::new(
+        offset,
+        lineno,
+        ExpressionData::Assign(
+            Expression::new(offset, lineno, ExpressionData::Name(name)).into(),
             expr.into(),
         ),
     )
-}
-
-fn to_constval(expr: Expr) -> Result<ConstVal> {
-    match expr.desc() {
-        ExprDesc::Nil => Ok(ConstVal::Nil),
-        ExprDesc::Bool(b) => Ok(ConstVal::Bool(*b)),
-        ExprDesc::Number(x) => Ok(ConstVal::Number(*x)),
-        ExprDesc::String(x) => Ok(ConstVal::String(x.clone())),
-        _ => Err(Error::rt(
-            "Expected constant expression".into(),
-            vec![expr.mark().clone()],
-        )),
-    }
-}
-
-fn to_target(expr: Expr) -> Result<AssignTarget> {
-    let (mark, desc) = expr.unpack();
-    let desc = match desc {
-        ExprDesc::Name(name) => AssignTargetDesc::Name(name),
-        ExprDesc::List(vec) => {
-            AssignTargetDesc::List(vec.into_iter().map(to_target).collect::<Result<_>>()?)
-        }
-        ExprDesc::Attr(owner, name) => AssignTargetDesc::Attr(owner, name),
-        _ => {
-            return Err(Error::rt(
-                "The target expression is not assignable".into(),
-                vec![mark],
-            ))
-        }
-    };
-    Ok(AssignTarget::new(mark, desc))
 }
