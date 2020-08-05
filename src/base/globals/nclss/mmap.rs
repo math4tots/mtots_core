@@ -17,7 +17,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
         }),
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let map = Eval::expect_mutable_map(globals, &args[0])?;
-            Ok(Value::Int(map.borrow().len() as i64))
+            Ok(Value::from(map.borrow().len()))
         }),
         NativeFunction::new(
             "__getitem",

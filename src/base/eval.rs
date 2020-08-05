@@ -1855,7 +1855,7 @@ impl Eval {
         if ret.len() != n {
             return globals.set_exc(Exception::new(
                 globals.builtin_exceptions().UnpackError.clone(),
-                vec![Value::Int(n as i64), Value::Int(ret.len() as i64)],
+                vec![Value::from(n), Value::from(ret.len())],
             ));
         }
         Ok(ret)

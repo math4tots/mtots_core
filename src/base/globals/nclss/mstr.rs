@@ -12,7 +12,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_mutable_string(globals, &args[0])?;
-            Ok(Value::Int(s.borrow().len() as i64))
+            Ok(Value::from(s.borrow().len()))
         }),
         NativeFunction::new(
             "extend",
