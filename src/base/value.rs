@@ -472,9 +472,63 @@ impl From<bool> for ConstValue {
     }
 }
 
+impl From<isize> for ConstValue {
+    fn from(x: isize) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
 impl From<i64> for ConstValue {
     fn from(x: i64) -> ConstValue {
         ConstValue::Int(x)
+    }
+}
+
+impl From<i32> for ConstValue {
+    fn from(x: i32) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<i16> for ConstValue {
+    fn from(x: i16) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<i8> for ConstValue {
+    fn from(x: i8) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<usize> for ConstValue {
+    fn from(x: usize) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<u64> for ConstValue {
+    fn from(x: u64) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<u32> for ConstValue {
+    fn from(x: u32) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<u16> for ConstValue {
+    fn from(x: u16) -> ConstValue {
+        ConstValue::Int(x as i64)
+    }
+}
+
+impl From<u8> for ConstValue {
+    fn from(x: u8) -> ConstValue {
+        ConstValue::Int(x as i64)
     }
 }
 
