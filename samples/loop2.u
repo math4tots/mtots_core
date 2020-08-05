@@ -4,6 +4,9 @@
 # a loop to take
 
 def main() {
+
+    print([1, 2, 3])
+
     print(range(10))
 }
 

@@ -46,6 +46,11 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 out.read.insert(name.clone(), mark);
             }
         }
+        ExprDesc::List(exprs) => {
+            for expr in exprs {
+                get(expr, out)?;
+            }
+        }
         ExprDesc::Parentheses(expr) => {
             get(expr, out)?;
         }

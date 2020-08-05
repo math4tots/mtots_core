@@ -11,6 +11,8 @@ pub(crate) enum Opcode {
     Number(f64),
     String(RcStr),
 
+    NewList(u32),
+
     GetVar(Box<Variable>),
     SetVar(Box<Variable>),
     TeeVar(Box<Variable>),
@@ -136,6 +138,11 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::Bool(b) => frame.push(Value::Bool(*b)),
         Opcode::Number(x) => frame.push(Value::Number(*x)),
         Opcode::String(x) => frame.push(Value::String(x.clone())),
+        Opcode::NewList(len) => {
+            let len = *len as usize;
+            let vec = frame.popn(len);
+            frame.push(vec.into());
+        }
         Opcode::GetVar(var) => {
             let value = get0!(frame.getvar(var));
             frame.push(value);

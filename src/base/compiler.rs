@@ -92,6 +92,12 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::List(exprs) => {
+                for item in exprs {
+                    self.expr(item, true)?;
+                }
+                self.add(Opcode::NewList(exprs.len() as u32), mark);
+            }
             ExprDesc::Parentheses(expr) => {
                 self.expr(expr, used)?;
             }
