@@ -12,7 +12,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let list = Eval::expect_map(globals, &args[0])?;
-            Ok(Value::from(list.len() as i64))
+            Ok(Value::from(list.len()))
         }),
         NativeFunction::new("map", &["self", "f"], None, |globals, args, _kwargs| {
             let list = Eval::expect_list(globals, &args[0])?;

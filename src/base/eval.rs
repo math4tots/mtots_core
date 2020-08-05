@@ -297,11 +297,13 @@ impl Eval {
         if let Value::Number(i) = value {
             if *i < 0.0 {
                 globals.set_exc_str(&format!("Expected non-negative int, but got {}", i))
+            } else if i.fract() != 0.0 {
+                globals.set_kind_error(ValueKind::Int, value.kind())
             } else {
                 Ok(*i as usize)
             }
         } else {
-            globals.set_kind_error(ValueKind::Number, value.kind())
+            globals.set_kind_error(ValueKind::Int, value.kind())
         }
     }
 
@@ -359,7 +361,7 @@ impl Eval {
     /// Like expect_index, but returns an Option
     pub fn try_index(value: &Value, len: usize) -> Option<usize> {
         match value {
-            Value::Number(i) => {
+            Value::Number(i) if i.fract() == 0.0 => {
                 let mut i = *i as i64;
                 if i < 0 {
                     i += len as i64;
@@ -448,7 +450,7 @@ impl Eval {
 
     fn add_bytes(globals: &mut Globals, bytes: &mut Vec<u8>, value: &Value) -> EvalResult<()> {
         match value {
-            Value::Number(i) => {
+            Value::Number(i) if i.fract() == 0.0 => {
                 let i = Self::check_u8(globals, *i as i64)?;
                 bytes.push(i);
                 Ok(())
@@ -1195,9 +1197,8 @@ impl Eval {
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a * b),
-            (Value::String(s), Value::Number(n)) => {
-                // TODO: consider throwing instead if n is < 0
-                let n = std::cmp::max(0, n as i64) as usize;
+            (Value::String(s), b@Value::Number(_)) => {
+                let n = Self::expect_usize(globals, &b)?;
                 s.repeat(n).into()
             }
             (Value::List(list), Value::Number(n)) => {
