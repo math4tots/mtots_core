@@ -11,7 +11,7 @@ class SomeClass(SomeTrait) {}
 
 def __test_str() {
     assert_eq(str(Object), '<trait Object>')
-    assert_eq(str(Float), '<class Float>')
+    assert_eq(str(Number), '<class Number>')
     assert_eq(str(SomeTrait), '<trait %s::SomeTrait>' % [__name])
     assert_eq(str(SomeClass), '<class %s::SomeClass>' % [__name])
 

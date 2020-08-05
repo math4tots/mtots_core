@@ -30,8 +30,7 @@ pub enum Value {
     Uninitialized,
     Nil,
     Bool(bool),
-    Int(i64),
-    Float(f64),
+    Number(f64),
     Symbol(Symbol),
     String(RcStr),
     Bytes(Rc<Vec<u8>>),
@@ -68,6 +67,14 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn from_i64(i: i64) -> Self {
+        Self::Number(i as f64)
+    }
+
+    pub fn from_f64(f: f64) -> Self {
+        Self::Number(f)
+    }
+
     pub fn is(&self, other: &Value) -> bool {
         fn ptr<T: ?Sized>(p: &Rc<T>) -> *const T {
             let p: &T = &*p;
@@ -77,8 +84,7 @@ impl Value {
             (Value::Uninitialized, Value::Uninitialized) => true,
             (Value::Nil, Value::Nil) => true,
             (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Int(a), Value::Int(b)) => a == b,
-            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
             (Value::Symbol(a), Value::Symbol(b)) => a == b,
             (Value::String(a), Value::String(b)) => a.as_ptr() == b.as_ptr(),
             (Value::Bytes(a), Value::Bytes(b)) => ptr(a) == ptr(b),
@@ -125,15 +131,19 @@ impl Value {
     }
 
     pub fn int(&self) -> Option<i64> {
-        if let Value::Int(x) = self {
-            Some(*x)
+        if let Value::Number(x) = self {
+            if x.fract() == 0.0 {
+                Some(*x as i64)
+            } else {
+                None
+            }
         } else {
             None
         }
     }
 
     pub fn float(&self) -> Option<f64> {
-        if let Value::Float(x) = self {
+        if let Value::Number(x) = self {
             Some(*x)
         } else {
             None
@@ -142,8 +152,7 @@ impl Value {
 
     pub fn floatlike(&self) -> Option<f64> {
         match self {
-            Value::Int(x) => Some(*x as f64),
-            Value::Float(x) => Some(*x),
+            Value::Number(x) => Some(*x),
             _ => None,
         }
     }
@@ -324,8 +333,7 @@ impl Value {
             Value::Uninitialized => ValueKind::Uninitialized,
             Value::Nil => ValueKind::Nil,
             Value::Bool(..) => ValueKind::Bool,
-            Value::Int(..) => ValueKind::Int,
-            Value::Float(..) => ValueKind::Float,
+            Value::Number(..) => ValueKind::Number,
             Value::Symbol(..) => ValueKind::Symbol,
             Value::String(..) => ValueKind::String,
             Value::Bytes(..) => ValueKind::Bytes,
@@ -368,8 +376,7 @@ impl fmt::Display for Value {
         match self {
             Value::Nil => write!(f, "nil"),
             Value::Bool(x) => write!(f, "{}", if *x { "true" } else { "false" }),
-            Value::Int(x) => write!(f, "{}", x),
-            Value::Float(x) => write!(f, "{}", x),
+            Value::Number(x) => write!(f, "{}", x),
             Value::Symbol(x) => write!(f, "{}", x),
             Value::String(s) => write!(f, "{}", s),
             Value::Bytes(s) => write!(f, "Bytes({:?})", s),
@@ -400,7 +407,7 @@ pub enum ValueKind {
     Nil,
     Bool,
     Int,
-    Float,
+    Number,
     Symbol,
     String,
     Bytes,
@@ -435,7 +442,6 @@ pub enum ConstValue {
     Uninitialized,
     Nil,
     Bool(bool),
-    Int(i64),
     Float(u64),
     Symbol(Symbol),
     String(RcStr),
@@ -450,8 +456,7 @@ impl<T: Into<ConstValue>> From<T> for Value {
             ConstValue::Uninitialized => Value::Uninitialized,
             ConstValue::Nil => Value::Nil,
             ConstValue::Bool(x) => Value::Bool(x),
-            ConstValue::Int(x) => Value::Int(x),
-            ConstValue::Float(x) => Value::Float(f64::from_bits(x)),
+            ConstValue::Float(x) => Value::Number(f64::from_bits(x)),
             ConstValue::Symbol(x) => Value::Symbol(x),
             ConstValue::String(x) => Value::String(x),
             ConstValue::Path(x) => Value::Path(x),
@@ -474,7 +479,7 @@ impl From<bool> for ConstValue {
 
 impl From<i64> for ConstValue {
     fn from(x: i64) -> ConstValue {
-        ConstValue::Int(x)
+        ConstValue::Float((x as f64).to_bits())
     }
 }
 

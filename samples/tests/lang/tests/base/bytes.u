@@ -64,14 +64,14 @@ def __test_le_be() {
         Bytes([0, 0, 0, 0, 0, 0, 0, 14]),
     )
 
-    assert_eq(
-        BE(8, 4.4),
-        Bytes([64, 17, 153, 153, 153, 153, 153, 154]),
-    )
-    assert_eq(
-        LE(8, 4.4),
-        Bytes([154, 153, 153, 153, 153, 153, 17, 64]),
-    )
+    # floats used to be supported when int and floats were
+    # separated, but now it doesn't really make sense
+    assert_raises(RuntimeError, def {
+        assert_eq(
+            BE(8, 4.4),
+            Bytes([64, 17, 153, 153, 153, 153, 153, 154]),
+        )
+    })
 
     # Should throw on invalid bytecount
     # (For floats, bytecount must be 4 or 8,

@@ -1,5 +1,4 @@
 /// Operations on Value objects
-use crate::divmod;
 use crate::ArgumentError;
 use crate::Class;
 use crate::ClassKind;
@@ -165,8 +164,7 @@ impl Eval {
             Value::Uninitialized => return globals.set_exc_legacy(EvalError::UninitializedValue),
             Value::Nil => &globals.builtin_classes().Nil,
             Value::Bool(_) => &globals.builtin_classes().Bool,
-            Value::Int(_) => &globals.builtin_classes().Int,
-            Value::Float(_) => &globals.builtin_classes().Float,
+            Value::Number(_) => &globals.builtin_classes().Number,
             Value::Symbol(_) => &globals.builtin_classes().Symbol,
             Value::String(_) => &globals.builtin_classes().String,
             Value::Bytes(_) => &globals.builtin_classes().Bytes,
@@ -206,8 +204,8 @@ impl Eval {
     }
 
     pub fn expect_uint(globals: &mut Globals, value: &Value) -> EvalResult<u64> {
-        if let Value::Int(i) = value {
-            if *i < 0 {
+        if let Value::Number(i) = value {
+            if *i < 0.0 {
                 globals.set_exc_str(&format!("Expected non-negative int, but got {}", i))
             } else {
                 Ok(*i as u64)
@@ -296,14 +294,14 @@ impl Eval {
     }
 
     pub fn expect_usize(globals: &mut Globals, value: &Value) -> EvalResult<usize> {
-        if let Value::Int(i) = value {
-            if *i < 0 {
+        if let Value::Number(i) = value {
+            if *i < 0.0 {
                 globals.set_exc_str(&format!("Expected non-negative int, but got {}", i))
             } else {
                 Ok(*i as usize)
             }
         } else {
-            globals.set_kind_error(ValueKind::Int, value.kind())
+            globals.set_kind_error(ValueKind::Number, value.kind())
         }
     }
 
@@ -361,8 +359,8 @@ impl Eval {
     /// Like expect_index, but returns an Option
     pub fn try_index(value: &Value, len: usize) -> Option<usize> {
         match value {
-            Value::Int(i) => {
-                let mut i = *i;
+            Value::Number(i) => {
+                let mut i = *i as i64;
                 if i < 0 {
                     i += len as i64;
                 }
@@ -391,7 +389,7 @@ impl Eval {
         if let Some(float) = value.float() {
             Ok(float)
         } else {
-            globals.set_kind_error(ValueKind::Float, value.kind())
+            globals.set_kind_error(ValueKind::Number, value.kind())
         }
     }
 
@@ -399,7 +397,7 @@ impl Eval {
         if let Some(float) = value.floatlike() {
             Ok(float)
         } else {
-            globals.set_kind_error(ValueKind::Float, value.kind())
+            globals.set_kind_error(ValueKind::Number, value.kind())
         }
     }
 
@@ -450,8 +448,8 @@ impl Eval {
 
     fn add_bytes(globals: &mut Globals, bytes: &mut Vec<u8>, value: &Value) -> EvalResult<()> {
         match value {
-            Value::Int(i) => {
-                let i = Self::check_u8(globals, *i)?;
+            Value::Number(i) => {
+                let i = Self::check_u8(globals, *i as i64)?;
                 bytes.push(i);
                 Ok(())
             }
@@ -837,8 +835,7 @@ impl Eval {
             Value::Uninitialized => return globals.set_exc_legacy(EvalError::UninitializedValue),
             Value::Nil => false,
             Value::Bool(x) => *x,
-            Value::Int(x) => *x != 0,
-            Value::Float(x) => *x != 0.0,
+            Value::Number(x) => *x != 0.0,
             Value::Symbol(x) => x.str().len() != 0,
             Value::String(x) => !x.is_empty(),
             Value::Bytes(x) => !x.is_empty(),
@@ -887,10 +884,7 @@ impl Eval {
             (Value::Uninitialized, Value::Uninitialized) => true,
             (Value::Nil, Value::Nil) => true,
             (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Int(a), Value::Int(b)) => a == b,
-            (Value::Float(a), Value::Float(b)) => a == b,
-            (Value::Int(a), Value::Float(b)) => (*a as f64) == *b,
-            (Value::Float(a), Value::Int(b)) => *a == (*b as f64),
+            (Value::Number(a), Value::Number(b)) => a == b,
             (Value::Symbol(a), Value::Symbol(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Bytes(a), Value::Bytes(b)) => a == b,
@@ -965,8 +959,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match x {
-            Value::Int(x) => Value::Int(-*x),
-            Value::Float(x) => Value::Float(-*x),
+            Value::Number(x) => Value::Number(-*x),
             _ => return Self::handle_unsupported_op(globals, debuginfo, "-", vec![x]),
         })
     }
@@ -980,7 +973,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match x {
-            Value::Int(x) => Value::Int(*x),
+            Value::Number(x) => Value::Number(*x),
             _ => return Self::handle_unsupported_op(globals, debuginfo, "+", vec![x]),
         })
     }
@@ -1000,10 +993,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<bool> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => a < b,
-            (Value::Float(a), Value::Float(b)) => a < b,
-            (Value::Int(a), Value::Float(b)) => (*a as f64) < *b,
-            (Value::Float(a), Value::Int(b)) => *a < (*b as f64),
+            (Value::Number(a), Value::Number(b)) => a < b,
             (Value::Symbol(a), Value::Symbol(b)) => a < b,
             (Value::String(a), Value::String(b)) => a < b,
             (Value::Bytes(a), Value::Bytes(b)) => a < b,
@@ -1028,8 +1018,7 @@ impl Eval {
         Ok(match x {
             Value::Nil => compute_hash(()),
             Value::Bool(x) => compute_hash(x),
-            Value::Int(x) => compute_int_hash(*x),
-            Value::Float(x) => compute_float_hash(x),
+            Value::Number(x) => compute_float_hash(x),
             Value::Symbol(x) => compute_hash(x),
             Value::String(x) => compute_hash(x),
             Value::Path(x) => compute_hash(x),
@@ -1091,16 +1080,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => {
-                if b >= 0 && b <= (std::u32::MAX as i64) {
-                    Value::Int(a.pow(b as u32))
-                } else {
-                    Value::Float((a as f64).powf(b as f64))
-                }
-            }
-            (Value::Float(a), Value::Float(b)) => Value::Float(a.powf(b)),
-            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64).powf(b)),
-            (Value::Float(a), Value::Int(b)) => Value::Float(a.powf(b as f64)),
+            (Value::Number(a), Value::Number(b)) => Value::Number(a.powf(b)),
             (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "**", vec![&a, &b]),
         })
     }
@@ -1119,10 +1099,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
-            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) + b),
-            (Value::Float(a), Value::Int(b)) => Value::Float(a + (b as f64)),
+            (Value::Number(a), Value::Number(b)) => Value::Number(a + b),
             (Value::String(a), Value::String(b)) => {
                 let mut ab = RcStr::unwrap_or_clone(a);
                 ab.push_str(b.str());
@@ -1182,10 +1159,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a - b),
-            (Value::Float(a), Value::Float(b)) => Value::Float(a - b),
-            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) - b),
-            (Value::Float(a), Value::Int(b)) => Value::Float(a - (b as f64)),
+            (Value::Number(a), Value::Number(b)) => Value::Number(a - b),
             (Value::Table(a), b) => {
                 let mut map = unwrap_or_clone_rc(a).map_move();
                 let iter = Self::iter(globals, &b)?;
@@ -1220,18 +1194,15 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-            (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
-            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) * b),
-            (Value::Float(a), Value::Int(b)) => Value::Float(a * (b as f64)),
-            (Value::String(s), Value::Int(n)) => {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a * b),
+            (Value::String(s), Value::Number(n)) => {
                 // TODO: consider throwing instead if n is < 0
-                let n = std::cmp::max(0, n) as usize;
+                let n = std::cmp::max(0, n as i64) as usize;
                 s.repeat(n).into()
             }
-            (Value::List(list), Value::Int(n)) => {
+            (Value::List(list), Value::Number(n)) => {
                 Self::wrap_debuginfo(globals, debuginfo, |globals| {
-                    let n = Self::expect_usize(globals, &Value::Int(n))?;
+                    let n = Self::expect_usize(globals, &Value::Number(n))?;
                     let mut ret = Vec::new();
                     for _ in 0..n {
                         ret.extend(list.iter().map(|v| v.clone()));
@@ -1239,9 +1210,9 @@ impl Eval {
                     Ok(ret.into())
                 })?
             }
-            (Value::MutableList(list), Value::Int(n)) => {
+            (Value::MutableList(list), Value::Number(n)) => {
                 Self::wrap_debuginfo(globals, debuginfo, |globals| {
-                    let n = Self::expect_usize(globals, &Value::Int(n))?;
+                    let n = Self::expect_usize(globals, &Value::Number(n))?;
                     let mut ret = Vec::new();
                     for _ in 0..n {
                         ret.extend(list.borrow().iter().map(|v| v.clone()));
@@ -1274,10 +1245,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Float((a as f64) / (b as f64)),
-            (Value::Float(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
-            (Value::Float(a), Value::Int(b)) => Value::Float((a as f64) / (b as f64)),
-            (Value::Int(a), Value::Float(b)) => Value::Float((a as f64) / (b as f64)),
+            (Value::Number(a), Value::Number(b)) => Value::Number((a as f64) / (b as f64)),
             (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
                 let name = globals.symbol_dunder_div();
                 Eval::call_method(globals, name, vec![a, b])
@@ -1292,38 +1260,6 @@ impl Eval {
         })
     }
 
-    pub fn floordiv(globals: &mut Globals, a: Value, b: Value) -> EvalResult<Value> {
-        Self::floordiv0(globals, a, b, None)
-    }
-    #[inline(always)]
-    pub fn floordiv0(
-        globals: &mut Globals,
-        a: Value,
-        b: Value,
-        debuginfo: Option<(&Code, usize)>,
-    ) -> EvalResult<Value> {
-        Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(divmod(a, b).0),
-            (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "fdiv", vec![&a, &b]),
-        })
-    }
-
-    pub fn mod_(globals: &mut Globals, a: Value, b: Value) -> EvalResult<Value> {
-        Self::mod0(globals, a, b, None)
-    }
-    #[inline(always)]
-    pub fn mod0(
-        globals: &mut Globals,
-        a: Value,
-        b: Value,
-        debuginfo: Option<(&Code, usize)>,
-    ) -> EvalResult<Value> {
-        Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(divmod(a, b).1),
-            (a, b) => return Self::handle_unsupported_op(globals, debuginfo, "mod", vec![&a, &b]),
-        })
-    }
-
     pub fn truncdiv(globals: &mut Globals, a: Value, b: Value) -> EvalResult<Value> {
         Self::truncdiv0(globals, a, b, None)
     }
@@ -1335,10 +1271,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
-            (Value::Float(a), Value::Float(b)) => Value::Int((a / b).trunc() as i64),
-            (Value::Int(a), Value::Float(b)) => Value::Int(((a as f64) / b).trunc() as i64),
-            (Value::Float(a), Value::Int(b)) => Value::Int((a / (b as f64)).trunc() as i64),
+            (Value::Number(a), Value::Number(b)) => Value::Number((a / b).trunc()),
             (a @ Value::UserObject(_), b) => Self::wrap_debuginfo(globals, debuginfo, |globals| {
                 let name = globals.symbol_dunder_truncdiv();
                 Eval::call_method(globals, name, vec![a, b])
@@ -1364,8 +1297,7 @@ impl Eval {
         debuginfo: Option<(&Code, usize)>,
     ) -> EvalResult<Value> {
         Ok(match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(a % b),
-            (Value::Float(a), Value::Float(b)) => Value::Float(a % b),
+            (Value::Number(a), Value::Number(b)) => Value::Number(a % b),
             (Value::String(s), Value::List(args)) => {
                 Self::wrap_debuginfo(globals, debuginfo, |globals| {
                     Eval::fmtstr(globals, s.str(), &args)
@@ -1553,8 +1485,7 @@ impl Eval {
             Value::Uninitialized => return globals.set_exc_legacy(EvalError::UninitializedValue),
             Value::Nil => "nil".into(),
             Value::Bool(x) => if *x { "true" } else { "false" }.into(),
-            Value::Int(x) => format!("{}", x).into(),
-            Value::Float(x) => format!("{}", x).into(),
+            Value::Number(x) => format!("{}", x).into(),
             Value::Symbol(x) => format!(":{}", x.str()).into(),
             Value::String(x) => reprstr(x).into(),
             Value::Bytes(x) => format!("Bytes({:?})", x).into(),
@@ -1855,7 +1786,7 @@ impl Eval {
         if ret.len() != n {
             return globals.set_exc(Exception::new(
                 globals.builtin_exceptions().UnpackError.clone(),
-                vec![Value::Int(n as i64), Value::Int(ret.len() as i64)],
+                vec![Value::from(n as f64), Value::from(ret.len() as f64)],
             ));
         }
         Ok(ret)
@@ -2180,16 +2111,8 @@ fn compute_hash<T: Hash>(t: T) -> u64 {
     s.finish()
 }
 
-fn compute_int_hash(i: i64) -> u64 {
-    compute_hash(i)
-}
-
 fn compute_float_hash(f: &f64) -> u64 {
-    if f.fract() == 0.0 {
-        compute_int_hash(*f as i64)
-    } else {
-        compute_hash(f.to_bits())
-    }
+    compute_hash(f.to_bits())
 }
 
 impl FailableHash<Globals, Value, ErrorIndicator> for Eval {

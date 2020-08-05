@@ -17,7 +17,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let methods = vec![
         NativeFunction::new("len", &["self"], None, |globals, args, _kwargs| {
             let s = Eval::expect_string(globals, &args[0])?;
-            Ok(Value::Int(s.charlen() as i64))
+            Ok(Value::from(s.charlen() as f64))
         }),
         NativeFunction::new(
             "starts_with",
@@ -183,7 +183,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 let (s, start, _end) =
                     Eval::expect_str_slice(globals, &args[0], &args[2], &args[3])?;
                 Ok(s.find(pattern.str())
-                    .map(|i| Value::Int((start + i) as i64))
+                    .map(|i| Value::from((start + i) as f64))
                     .unwrap_or(Value::Nil))
             },
         ),
@@ -200,7 +200,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
                 let (s, start, _end) =
                     Eval::expect_str_slice(globals, &args[0], &args[2], &args[3])?;
                 Ok(s.rfind(pattern.str())
-                    .map(|i| Value::Int((start + i) as i64))
+                    .map(|i| Value::from((start + i) as f64))
                     .unwrap_or(Value::Nil))
             },
         ),

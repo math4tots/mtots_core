@@ -11,12 +11,11 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
     let static_methods = vec![NativeFunction::new(
         "__call",
         &["x"],
-        "Converts a value to an Int",
+        "Converts a value to a Number",
         |globals, args, _kwargs| match &args[0] {
-            Value::Int(i) => Ok(Value::Float(*i as f64)),
-            Value::Float(f) => Ok(Value::Float(*f)),
+            Value::Number(f) => Ok(Value::Number(*f)),
             Value::String(s) => match s.str().parse() {
-                Ok(i) => Ok(Value::Float(i)),
+                Ok(i) => Ok(Value::Number(i)),
                 Err(error) => {
                     globals.set_exc_str(&format!("Float parse failed: {:?}, {:?}", s, error))
                 }
@@ -30,7 +29,7 @@ pub(super) fn mkcls(base: Rc<Class>) -> Rc<Class> {
 
     Class::new0(
         ClassKind::NativeClass,
-        "Float".into(),
+        "Number".into(),
         vec![base],
         None,
         HashMap::new(),

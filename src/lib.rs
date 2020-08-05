@@ -29,7 +29,6 @@ use base::SourceName;
 use base::Token;
 use base::TokenKind;
 use base::Unop;
-use util::divmod;
 use util::gsort;
 use util::FailableEq;
 use util::FailableHash;

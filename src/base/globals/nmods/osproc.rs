@@ -100,7 +100,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let status = output
                     .status
                     .code()
-                    .map(|c| Value::Int(c as i64))
+                    .map(|c| Value::from(c as f64))
                     .unwrap_or(Value::Nil);
                 let stdout = Value::Bytes(output.stdout.into());
                 let stderr = Value::Bytes(output.stderr.into());
