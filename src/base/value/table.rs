@@ -1,32 +1,32 @@
 use super::*;
 
 #[derive(PartialEq)]
-pub struct Object {
+pub struct Table {
     cls: Rc<Class>,
     map: HashMap<RcStr, RefCell<Value>>,
 }
 
-impl cmp::PartialOrd for Object {
+impl cmp::PartialOrd for Table {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         (self as *const Self).partial_cmp(&(other as *const Self))
     }
 }
 
-impl fmt::Debug for Object {
+impl fmt::Debug for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<{} object>", self.cls.name())
+        write!(f, "<{} table>", self.cls.name())
     }
 }
 
-impl Object {
-    pub fn builder(cls: Rc<Class>) -> ObjectBuilder {
-        ObjectBuilder {
+impl Table {
+    pub fn builder(cls: Rc<Class>) -> TableBuilder {
+        TableBuilder {
             cls,
             map: HashMap::new(),
         }
     }
     pub fn new(cls: Rc<Class>, map: HashMap<RcStr, RefCell<Value>>) -> Self {
-        Self {
+        Table {
             cls,
             map,
         }
@@ -39,31 +39,31 @@ impl Object {
     }
 }
 
-pub struct ObjectBuilder {
+pub struct TableBuilder {
     cls: Rc<Class>,
     map: HashMap<RcStr, RefCell<Value>>,
 }
 
-impl ObjectBuilder {
-    pub fn build(self) -> Object {
-        Object::new(self.cls, self.map)
+impl TableBuilder {
+    pub fn build(self) -> Table {
+        Table::new(self.cls, self.map)
     }
 }
 
-impl From<Object> for Value {
-    fn from(obj: Object) -> Self {
-        Self::Object(Rc::new(obj))
+impl From<Table> for Value {
+    fn from(obj: Table) -> Self {
+        Self::Table(Rc::new(obj))
     }
 }
 
-impl From<Rc<Object>> for Value {
-    fn from(obj: Rc<Object>) -> Self {
-        Self::Object(obj)
+impl From<Rc<Table>> for Value {
+    fn from(obj: Rc<Table>) -> Self {
+        Self::Table(obj)
     }
 }
 
-impl From<&Rc<Object>> for Value {
-    fn from(obj: &Rc<Object>) -> Self {
-        Self::Object(obj.clone())
+impl From<&Rc<Table>> for Value {
+    fn from(obj: &Rc<Table>) -> Self {
+        Self::Table(obj.clone())
     }
 }

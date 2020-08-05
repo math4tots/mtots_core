@@ -1,6 +1,6 @@
 mod cls;
 mod coll;
-mod obj;
+mod table;
 mod conv;
 mod cv;
 mod format;
@@ -28,7 +28,7 @@ use std::rc::Rc;
 
 pub use cls::*;
 pub use coll::*;
-pub use obj::*;
+pub use table::*;
 pub use conv::*;
 pub use cv::*;
 pub use func::*;
@@ -46,7 +46,7 @@ pub enum Value {
     List(Rc<List>),
     Set(Rc<Set>),
     Map(Rc<Map>),
-    Object(Rc<Object>),
+    Table(Rc<Table>),
     Function(Rc<Function>),
     NativeFunction(Rc<NativeFunction>),
     Generator(Rc<RefCell<Generator>>),
@@ -66,7 +66,7 @@ impl Value {
             Self::List(list) => list.borrow().len() > 0,
             Self::Set(set) => set.borrow().len() > 0,
             Self::Map(map) => map.borrow().len() > 0,
-            Self::Object(_)
+            Self::Table(_)
             | Self::Function(_)
             | Self::NativeFunction(_)
             | Self::Generator(_)
@@ -85,7 +85,7 @@ impl Value {
             Self::List(_) => "List".into(),
             Self::Set(_) => "Set".into(),
             Self::Map(_) => "Map".into(),
-            Self::Object(obj) => obj.cls().name().clone(),
+            Self::Table(obj) => obj.cls().name().clone(),
             Self::Function(_) => "Function".into(),
             Self::NativeFunction(_) => "NativeFunction".into(),
             Self::Generator(_) => "Generator".into(),

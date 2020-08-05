@@ -56,7 +56,7 @@ impl fmt::Debug for Value {
                 }
                 write!(f, "]")
             }
-            Value::Object(obj) => write!(f, "{:?}", obj),
+            Value::Table(obj) => write!(f, "{:?}", obj),
             Value::Function(func) => write!(f, "{:?}", func),
             Value::NativeFunction(func) => write!(f, "{:?}", func),
             Value::Generator(gen) => write!(f, "{:?}", gen.borrow()),
