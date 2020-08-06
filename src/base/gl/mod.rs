@@ -61,7 +61,7 @@ impl Globals {
     pub fn new() -> Self {
         let class_manager = ClassManager::new();
         let builtins = Self::new_builtins(&class_manager);
-        Self {
+        let mut globals = Self {
             trace: vec![],
             lexer: Lexer::new(),
             parser: Parser::new(),
@@ -73,7 +73,9 @@ impl Globals {
             builtins,
             repl_scope: None,
             handle_class_map: HashMap::new(),
-        }
+        };
+        globals.add_builtin_native_libraries();
+        globals
     }
     pub fn trace(&self) -> &Vec<Mark> {
         &self.trace

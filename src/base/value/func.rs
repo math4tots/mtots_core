@@ -84,7 +84,10 @@ impl ArgSpec {
             }
             if !exhausted {
                 if self.var.is_none() {
-                    return Err(rterr!("Too many arguments"));
+                    let extra_args: Vec<_> = iter.collect();
+                    if extra_args.len() > 0 {
+                        return Err(rterr!("Too many arguments ({:?})", extra_args));
+                    }
                 } else {
                     new_args.extend(iter);
                 }
@@ -175,6 +178,12 @@ from_arr_for_spec!(5);
 from_arr_for_spec!(6);
 from_arr_for_spec!(7);
 
+impl From<ArgSpecBuilder> for ArgSpec {
+    fn from(builder: ArgSpecBuilder) -> Self {
+        builder.build()
+    }
+}
+
 #[derive(Default)]
 pub struct ArgSpecBuilder {
     req: Vec<RcStr>,
@@ -192,19 +201,19 @@ impl ArgSpecBuilder {
             key: self.key,
         }
     }
-    pub fn req<S: Into<RcStr>>(&mut self, name: S) -> &mut Self {
+    pub fn req<S: Into<RcStr>>(mut self, name: S) -> Self {
         self.req.push(name.into());
         self
     }
-    pub fn def<S: Into<RcStr>, V: Into<ConstVal>>(&mut self, name: S, value: V) -> &mut Self {
+    pub fn def<S: Into<RcStr>, V: Into<ConstVal>>(mut self, name: S, value: V) -> Self {
         self.def.push((name.into(), value.into()));
         self
     }
-    pub fn var<S: Into<Option<RcStr>>>(&mut self, optname: S) -> &mut Self {
+    pub fn var<S: Into<Option<RcStr>>>(mut self, optname: S) -> Self {
         self.var = optname.into();
         self
     }
-    pub fn key<S: Into<Option<RcStr>>>(&mut self, keyname: S) -> &mut Self {
+    pub fn key<S: Into<Option<RcStr>>>(mut self, keyname: S) -> Self {
         self.key = keyname.into();
         self
     }

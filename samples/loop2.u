@@ -1,3 +1,4 @@
+import a.fs
 
 def main() {
 
@@ -31,3 +32,11 @@ def* range(n) {
 }
 
 main()
+
+print(fs)
+print(['fs.isdir(.)', fs.isdir('.')])
+print(['fs.isfile(.)', fs.isfile('.')])
+print(fs.ls('.'))
+print(fs.ls('./src'))
+print(fs.ls('./src', path=true))
+print(fs.ls('src', path=true))

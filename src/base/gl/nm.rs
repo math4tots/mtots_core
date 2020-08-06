@@ -11,7 +11,7 @@ impl NativeModule {
         NativeModuleBuilder {
             name: name.into(),
             fields: vec![],
-            actions: vec![],
+            action: None,
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -30,8 +30,12 @@ impl NativeModule {
 
 pub struct NativeModuleBuilder {
     name: RcStr,
-    fields: Vec<(RcStr, Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value>>)>,
-    actions: Vec<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>,
+    fields: Vec<(
+        RcStr,
+        Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value>>,
+    )>,
+    action:
+        Option<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>,
 }
 
 impl NativeModuleBuilder {
@@ -57,16 +61,16 @@ impl NativeModuleBuilder {
         ));
         self
     }
-    pub fn action<F>(mut self, body: F) -> Self
+    pub fn action<F>(mut self, body: F) -> NativeModule
     where
         F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()> + 'static,
     {
-        self.actions.push(Box::new(body));
-        self
+        self.action = Some(Box::new(body));
+        self.build()
     }
     pub fn build(self) -> NativeModule {
         let fields = self.fields;
-        let actions = self.actions;
+        let action = self.action;
         NativeModule {
             name: self.name,
             fields: fields.iter().map(|(name, _)| name.clone()).collect(),
@@ -75,7 +79,7 @@ impl NativeModuleBuilder {
                     let value = f(globals, map)?;
                     *map.get(&name).unwrap().borrow_mut() = value;
                 }
-                for action in actions {
+                if let Some(action) = action {
                     action(globals, map)?;
                 }
                 Ok(())

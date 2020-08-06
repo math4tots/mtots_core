@@ -1,4 +1,6 @@
 use super::*;
+use std::ffi::OsString;
+use std::ffi::OsStr;
 
 impl From<()> for Value {
     fn from(_: ()) -> Self {
@@ -93,6 +95,33 @@ impl From<&str> for Value {
 impl From<&String> for Value {
     fn from(s: &String) -> Self {
         Self::String(s.into())
+    }
+}
+
+impl From<String> for Value {
+    fn from(s: String) -> Self {
+        Self::String(s.into())
+    }
+}
+
+impl TryFrom<OsString> for Value {
+    type Error = Error;
+    fn try_from(s: OsString) -> Result<Self> {
+        Ok(Self::String(RcStr::try_from(s)?))
+    }
+}
+
+impl TryFrom<&OsString> for Value {
+    type Error = Error;
+    fn try_from(s: &OsString) -> Result<Self> {
+        Ok(Self::String(RcStr::try_from(s)?))
+    }
+}
+
+impl TryFrom<&OsStr> for Value {
+    type Error = Error;
+    fn try_from(s: &OsStr) -> Result<Self> {
+        Ok(Self::String(RcStr::try_from(s)?))
     }
 }
 
@@ -241,5 +270,32 @@ impl From<ConstVal> for Value {
 impl From<&ConstVal> for Value {
     fn from(cv: &ConstVal) -> Self {
         cv.clone().into()
+    }
+}
+
+impl TryFrom<OsString> for RcStr {
+    type Error = Error;
+
+    fn try_from(s: OsString) -> Result<Self> {
+        match s.into_string() {
+            Ok(string) => Ok(string.into()),
+            Err(osstr) => Err(rterr!("Got a string that is not valid UTF-8 ({:?})", osstr)),
+        }
+    }
+}
+
+impl TryFrom<&OsString> for RcStr {
+    type Error = Error;
+
+    fn try_from(s: &OsString) -> Result<Self> {
+        RcStr::try_from(s.to_owned())
+    }
+}
+
+impl TryFrom<&OsStr> for RcStr {
+    type Error = Error;
+
+    fn try_from(s: &OsStr) -> Result<Self> {
+        RcStr::try_from(s.to_owned())
     }
 }

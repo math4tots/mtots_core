@@ -2,6 +2,7 @@ use std::borrow;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cmp;
+use std::ffi::OsStr;
 use std::fmt;
 use std::hash;
 use std::ops;
@@ -109,6 +110,12 @@ impl ops::Deref for RcStr {
 
 impl AsRef<str> for RcStr {
     fn as_ref(&self) -> &str {
+        self.0.string.as_ref()
+    }
+}
+
+impl AsRef<OsStr> for RcStr {
+    fn as_ref(&self) -> &OsStr {
         self.0.string.as_ref()
     }
 }

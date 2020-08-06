@@ -133,6 +133,12 @@ impl From<std::io::Error> for Error {
     }
 }
 
+impl From<std::convert::Infallible> for Error {
+    fn from(_: std::convert::Infallible) -> Self {
+        panic!("An Infallible Error has Ocurred")
+    }
+}
+
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error({}, {})", self.0.type_, self.0.message)
