@@ -46,3 +46,5 @@ from a.fs import isdir as g
 
 print(ls)
 print(g)
+# print(fs.read('Cargo.toml'))
+print(['cwd = ', fs.cwd()])

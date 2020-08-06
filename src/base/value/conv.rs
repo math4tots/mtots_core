@@ -1,6 +1,6 @@
 use super::*;
-use std::ffi::OsString;
 use std::ffi::OsStr;
+use std::ffi::OsString;
 
 impl From<()> for Value {
     fn from(_: ()) -> Self {
