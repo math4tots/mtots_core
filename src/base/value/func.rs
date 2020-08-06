@@ -166,24 +166,27 @@ impl ArgSpecBuilder {
     }
 }
 
-pub type NativeFunctionBody = fn(&mut Globals, args: Vec<Value>) -> Result<Value>;
-
 pub struct NativeFunction {
     name: RcStr,
     argspec: ArgSpec,
-    body: NativeFunctionBody,
+    body: Box<dyn Fn(&mut Globals, Vec<Value>) -> Result<Value>>,
 }
 
 impl NativeFunction {
-    pub fn new<S: Into<RcStr>, AS: Into<ArgSpec>>(
+    pub fn new<S, AS, B>(
         name: S,
         argspec: AS,
-        body: NativeFunctionBody,
-    ) -> Self {
+        body: B,
+    ) -> Self
+    where
+        S: Into<RcStr>,
+        AS: Into<ArgSpec>,
+        B: Fn(&mut Globals, Vec<Value>) -> Result<Value> + 'static,
+    {
         Self {
             name: name.into(),
             argspec: argspec.into(),
-            body,
+            body: Box::new(body),
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -202,7 +205,7 @@ impl NativeFunction {
 
 impl cmp::PartialEq for NativeFunction {
     fn eq(&self, other: &Self) -> bool {
-        self.body as *const std::ffi::c_void == other.body as *const std::ffi::c_void
+        self as *const _ == other as *const _
     }
 }
 
