@@ -13,7 +13,7 @@ impl Globals {
     fn load_uncached(&mut self, name: &RcStr) -> Result<Rc<Module>> {
         if let Some(native_module) = self.native_modules.remove(name) {
             let data = native_module.data(self);
-            let module = Rc::new(Module::new(name.clone(), data.fields));
+            let module = Rc::new(Module::new(name.clone(), data.fields, Rc::new(data.docmap)));
             self.register_module(module.clone())?;
             (data.init)(self, module.map())?;
             return Ok(module);

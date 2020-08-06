@@ -221,6 +221,12 @@ impl ArgSpecBuilder {
 
 pub struct DocStr(Option<RcStr>);
 
+impl DocStr {
+    pub(crate) fn get(&self) -> &Option<RcStr> {
+        &self.0
+    }
+}
+
 impl From<()> for DocStr {
     fn from(_: ()) -> Self {
         Self(None)

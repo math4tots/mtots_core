@@ -11,6 +11,8 @@ pub struct Code {
     varspec: VarSpec,
 
     marks: Vec<Mark>,
+
+    docmap: Rc<HashMap<RcStr, RcStr>>,
 }
 
 impl fmt::Debug for Code {
@@ -26,6 +28,7 @@ impl Code {
         params: Vec<Variable>,
         varspec: VarSpec,
         marks: Vec<Mark>,
+        docmap: HashMap<RcStr, RcStr>,
     ) -> Self {
         Self {
             name,
@@ -33,6 +36,7 @@ impl Code {
             params,
             varspec,
             marks,
+            docmap: Rc::new(docmap),
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -49,6 +53,9 @@ impl Code {
     }
     pub fn marks(&self) -> &Vec<Mark> {
         &self.marks
+    }
+    pub fn docmap(&self) -> &HashMap<RcStr, RcStr> {
+        &self.docmap
     }
     pub(crate) fn new_frame(&self, bindings: Vec<Rc<RefCell<Value>>>) -> Frame {
         Frame::new(
@@ -103,6 +110,7 @@ impl Code {
                 .map(|(name, _)| name.clone())
                 .zip(owned_bindings)
                 .collect(),
+            self.docmap.clone(),
         ));
         globals.register_module(module.clone())?;
 

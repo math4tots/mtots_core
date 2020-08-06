@@ -6,6 +6,7 @@ use crate::NewFunctionDesc;
 use crate::Opcode;
 use crate::RcStr;
 use crate::Result;
+use std::collections::HashMap;
 
 const INVALID_JUMP: usize = usize::MAX;
 
@@ -33,6 +34,7 @@ struct Builder {
     varspec: VarSpec,
     ops: Vec<Opcode>,
     marks: Vec<Mark>,
+    docmap: HashMap<RcStr, RcStr>,
 }
 
 impl Builder {
@@ -44,11 +46,19 @@ impl Builder {
             varspec,
             ops: vec![],
             marks: vec![],
+            docmap: HashMap::new(),
         }
     }
     fn build(self) -> Code {
         assert_eq!(self.ops.len(), self.marks.len());
-        Code::new(self.name, self.ops, self.params, self.varspec, self.marks)
+        Code::new(
+            self.name,
+            self.ops,
+            self.params,
+            self.varspec,
+            self.marks,
+            self.docmap,
+        )
     }
     fn add(&mut self, op: Opcode, mark: Mark) -> usize {
         let id = self.ops.len();
@@ -277,6 +287,10 @@ impl Builder {
                 if !used {
                     self.add(Opcode::Pop, mark);
                 }
+            }
+            ExprDesc::AssignDoc(expr, name, doc) => {
+                self.docmap.insert(name.clone(), doc.clone());
+                self.expr(expr, used)?;
             }
             ExprDesc::Function {
                 is_generator,

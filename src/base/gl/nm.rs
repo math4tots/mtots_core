@@ -7,6 +7,7 @@ pub struct NativeModule {
 
 pub struct NativeModuleData {
     pub(super) fields: Vec<RcStr>,
+    pub(super) docmap: HashMap<RcStr, RcStr>,
     pub(super) init:
         Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>,
 }
@@ -25,6 +26,7 @@ impl NativeModule {
                     NativeModuleBuilder {
                         deps: vec![],
                         fields: vec![],
+                        docmap: HashMap::new(),
                         action: None,
                     },
                 )
@@ -45,6 +47,7 @@ pub struct NativeModuleBuilder {
         RcStr,
         Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value>>,
     )>,
+    docmap: HashMap<RcStr, RcStr>,
     action:
         Option<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>,
 }
@@ -72,6 +75,9 @@ impl NativeModuleBuilder {
         let name = name.into();
         let argspec = argspec.into();
         let doc = doc.into();
+        if let Some(doc) = doc.get() {
+            self.docmap.insert(name.clone(), doc.clone());
+        }
         self.fields.push((
             name.clone(),
             Box::new(|_globals, _map| Ok(NativeFunction::new(name, argspec, doc, body).into())),
@@ -87,10 +93,12 @@ impl NativeModuleBuilder {
     }
     pub fn build(self) -> NativeModuleData {
         let fields = self.fields;
+        let docmap = self.docmap;
         let action = self.action;
         let deps = self.deps;
         NativeModuleData {
             fields: fields.iter().map(|(name, _)| name.clone()).collect(),
+            docmap,
             init: Box::new(move |globals, map| -> Result<()> {
                 for dep in deps {
                     globals.load(&dep)?;
