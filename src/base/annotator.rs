@@ -121,6 +121,9 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
         }
         ExprDesc::Import(_) => {}
+        ExprDesc::AssignDoc(expr, _name, _doc) => {
+            get(expr, out)?;
+        }
         ExprDesc::Function {
             is_generator: _,
             name: _,

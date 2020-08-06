@@ -9,6 +9,17 @@ pub enum ConstVal {
     String(RcStr),
 }
 
+impl fmt::Display for ConstVal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Nil => write!(f, "nil"),
+            Self::Bool(b) => write!(f, "{}", if *b { "true" } else { "false" }),
+            Self::Number(n) => write!(f, "{}", n),
+            Self::String(s) => write!(f, "{:?}", s),
+        }
+    }
+}
+
 impl From<()> for ConstVal {
     fn from(_: ()) -> Self {
         Self::Nil

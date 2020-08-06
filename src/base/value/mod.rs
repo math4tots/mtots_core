@@ -106,6 +106,9 @@ impl Value {
     fn terr(&self, etype: &str) -> Error {
         rterr!("Expected {} but got {}", etype, self.debug_typename())
     }
+    pub fn is_nil(&self) -> bool {
+        matches!(self, Value::Nil)
+    }
     pub fn bool(&self) -> Result<bool> {
         if let Self::Bool(x) = self {
             Ok(*x)
@@ -141,6 +144,16 @@ impl Value {
             Err(self.terr("function"))
         }
     }
+    pub fn is_function(&self) -> bool {
+        matches!(self, Self::Function(_))
+    }
+    pub fn into_function(self) -> Result<Rc<Function>> {
+        if let Self::Function(func) = self {
+            Ok(func)
+        } else {
+            Err(self.terr("function"))
+        }
+    }
     pub fn class(&self) -> Result<&Rc<Class>> {
         if let Self::Class(cls) = self {
             Ok(cls)
@@ -160,6 +173,13 @@ impl Value {
             HandleData::downcast(data)
         } else {
             Err(self.terr(&format!("{} handle", std::any::type_name::<T>())))
+        }
+    }
+    pub fn is_handle<T: Any>(&self) -> bool {
+        if let Self::Handle(data) = self {
+            data.is::<T>()
+        } else {
+            false
         }
     }
     pub fn unwrap_handle<T: Any>(self) -> Result<T> {

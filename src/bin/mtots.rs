@@ -16,6 +16,7 @@ fn main() {
         match mode {
             Mode::Normal => match arg {
                 "-m" => mode = Mode::SetRunModule,
+                "-d" => mode = Mode::SetDocModule,
                 "-r" => command = Command::Repl,
                 _ => {
                     let path = Path::new(arg);
@@ -28,6 +29,10 @@ fn main() {
             },
             Mode::SetRunModule => {
                 command = Command::RunModule(argstr);
+                mode = Mode::Normal;
+            }
+            Mode::SetDocModule => {
+                command = Command::DocModule(argstr);
                 mode = Mode::Normal;
             }
         }
@@ -49,6 +54,7 @@ fn main() {
     match command {
         Command::Unspecified => panic!("Command::Unspecified should be unreachable"),
         Command::Repl => repl(globals),
+        Command::DocModule(module) => doc_module(globals, &module.into()),
         Command::RunModule(module) => run_module(globals, &module.into()),
         Command::RunPath(pathstr) => run_path(globals, pathstr),
     }
@@ -57,11 +63,13 @@ fn main() {
 enum Mode {
     Normal,
     SetRunModule,
+    SetDocModule,
 }
 
 enum Command {
     Unspecified,
     Repl,
+    DocModule(String),
     RunModule(String),
     RunPath(String),
 }
@@ -103,7 +111,58 @@ fn repl(mut globals: Globals) {
     }
 }
 
+fn doc_module(mut globals: Globals, module: &RcStr) {
+    globals.set_main(module.clone());
+    let r = globals.load(module).map(|m| m.clone());
+    let module = ordie(&mut globals, r);
+    println!("[[Module {}]]", module.name());
+    if let Some(doc) = module.doc() {
+        print!("{}", doc);
+    }
+    println!("");
+    println!("[Members]");
+    let mut pairs: Vec<_> = module.docmap().iter().collect();
+    pairs.sort();
+    for (field_name, field_doc) in pairs {
+        match module.map().get(field_name).map(|f| f.borrow().clone()) {
+            Some(Value::Function(func)) => {
+                let type_ = if func.is_generator() { "def*" } else { "def" };
+                println!("  {} {}{}\n", type_, field_name, func.argspec());
+            }
+            Some(Value::NativeFunction(func)) => {
+                println!("  native def {}{}\n", field_name, func.argspec());
+            }
+            _ => {
+                println!("  {}", field_name);
+            }
+        }
+        println!("{}", format_field_doc(field_doc));
+    }
+}
+
+fn format_field_doc(doc: &str) -> String {
+    const LINE_WIDTH: usize = 80;
+    doc.lines()
+        .flat_map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                vec!["".to_owned()]
+            } else {
+                line.trim()
+                    .chars()
+                    .collect::<Vec<_>>()
+                    .chunks(LINE_WIDTH)
+                    .map(|chars| chars.iter().collect::<String>())
+                    .collect::<Vec<_>>()
+            }
+        })
+        .map(|line| format!("        {}\n", line))
+        .collect::<Vec<_>>()
+        .join("")
+}
+
 fn run_module(mut globals: Globals, module: &RcStr) {
+    globals.set_main(module.clone());
     let r = globals.load(module).map(|_| ());
     ordie(&mut globals, r);
 }

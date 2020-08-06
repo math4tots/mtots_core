@@ -22,7 +22,7 @@ pub(super) fn new() -> NativeModule {
             .func(
                 "cwd",
                 (),
-                "Reurns the current working directory",
+                "Returns the current working directory",
                 |_globals, _args, _| Ok(Value::try_from(env::current_dir()?.into_os_string())?),
             )
             .func(

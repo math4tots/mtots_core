@@ -142,6 +142,45 @@ impl ArgSpec {
     }
 }
 
+impl fmt::Display for ArgSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(")?;
+        let mut first = true;
+        for req in &self.req {
+            if !first {
+                write!(f, ", ")?;
+            }
+            first = false;
+
+            write!(f, "{}", req)?;
+        }
+        for (name, val) in &self.def {
+            if !first {
+                write!(f, ", ")?;
+            }
+            first = false;
+
+            write!(f, "{}={}", name, val)?;
+        }
+        if let Some(name) = &self.var {
+            if !first {
+                write!(f, ", ")?;
+            }
+            first = false;
+
+            write!(f, "*{}", name)?;
+        }
+        if let Some(name) = &self.key {
+            if !first {
+                write!(f, ", ")?;
+            }
+
+            write!(f, "**{}", name)?;
+        }
+        write!(f, ")")
+    }
+}
+
 impl From<()> for ArgSpec {
     fn from((): ()) -> Self {
         Self::empty()
@@ -270,6 +309,9 @@ impl NativeFunction {
     pub fn name(&self) -> &RcStr {
         &self.name
     }
+    pub fn argspec(&self) -> &ArgSpec {
+        &self.argspec
+    }
     pub fn doc(&self) -> &Option<RcStr> {
         &self.doc
     }
@@ -350,6 +392,12 @@ impl Function {
     }
     pub fn doc(&self) -> &Option<RcStr> {
         self.code.doc()
+    }
+    pub fn argspec(&self) -> &ArgSpec {
+        &self.argspec
+    }
+    pub fn is_generator(&self) -> bool {
+        self.is_generator
     }
     pub fn apply(
         &self,
