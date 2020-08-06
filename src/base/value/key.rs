@@ -43,3 +43,21 @@ impl cmp::Ord for HSet {
         self.sorted_keys().cmp(&other.sorted_keys())
     }
 }
+
+impl From<()> for Key {
+    fn from(_: ()) -> Self {
+        Self::Nil
+    }
+}
+
+impl From<bool> for Key {
+    fn from(x: bool) -> Self {
+        Self::Bool(x)
+    }
+}
+
+impl From<RcStr> for Key {
+    fn from(s: RcStr) -> Self {
+        Self::String(s)
+    }
+}

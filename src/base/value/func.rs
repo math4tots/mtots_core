@@ -5,11 +5,17 @@ pub struct ArgSpec {
     req: Vec<RcStr>,             // required parameters
     def: Vec<(RcStr, ConstVal)>, // default parameters
     var: Option<RcStr>,          // variadic parameter
+    key: Option<RcStr>,          // keymap parameter
 }
 
 impl ArgSpec {
-    pub fn new(req: Vec<RcStr>, def: Vec<(RcStr, ConstVal)>, var: Option<RcStr>) -> Self {
-        Self { req, def, var }
+    pub fn new(
+        req: Vec<RcStr>,
+        def: Vec<(RcStr, ConstVal)>,
+        var: Option<RcStr>,
+        key: Option<RcStr>,
+    ) -> Self {
+        Self { req, def, var, key }
     }
     pub fn builder() -> ArgSpecBuilder {
         ArgSpecBuilder::default()
@@ -19,11 +25,15 @@ impl ArgSpec {
             req: vec![],
             def: vec![],
             var: None,
+            key: None,
         }
     }
 
     pub fn nparams(&self) -> usize {
-        self.req.len() + self.def.len() + if self.var.is_some() { 1 } else { 0 }
+        self.req.len()
+            + self.def.len()
+            + if self.var.is_some() { 1 } else { 0 }
+            + if self.key.is_some() { 1 } else { 0 }
     }
 
     pub fn params(&self) -> Vec<RcStr> {
@@ -34,17 +44,20 @@ impl ArgSpec {
         if let Some(name) = &self.var {
             ret.push(name.clone());
         }
+        if let Some(name) = &self.key {
+            ret.push(name.clone());
+        }
         ret
     }
 
     pub fn apply(
         &self,
         mut args: Vec<Value>,
-        kwargs: Option<HashMap<RcStr, Value>>,
-    ) -> Result<Vec<Value>> {
+        mut kwargs: Option<HashMap<RcStr, Value>>,
+    ) -> Result<(Vec<Value>, Option<HashMap<RcStr, Value>>)> {
         let lower = self.req.len();
         let upper = lower + self.def.len();
-        if let Some(mut kwargs) = kwargs {
+        if let Some(kwargs) = &mut kwargs {
             let mut iter = args.into_iter();
             let mut new_args = Vec::new();
             for name in &self.req {
@@ -76,6 +89,12 @@ impl ArgSpec {
                     new_args.extend(iter);
                 }
             }
+            if self.key.is_none() {
+                if kwargs.len() > 0 {
+                    let keys: Vec<_> = kwargs.keys().collect();
+                    return Err(rterr!("Unused keyword arguments: {:?}", keys));
+                }
+            }
             args = new_args;
         }
         let argc = args.len();
@@ -98,6 +117,24 @@ impl ArgSpec {
             let vec: Vec<_> = args.drain(upper..).collect();
             args.push(vec.into());
         }
+        Ok((args, kwargs))
+    }
+
+    /// Like apply, but the kwargs map is converted to a Value and added to args
+    /// if a kwargs parameter was specified
+    pub fn apply_and_append_kwmap(
+        &self,
+        args: Vec<Value>,
+        kwargs: Option<HashMap<RcStr, Value>>,
+    ) -> Result<Vec<Value>> {
+        let (mut args, kwargs) = self.apply(args, kwargs)?;
+        if self.key.is_some() {
+            if let Some(kwargs) = kwargs {
+                args.push(kwargs.into());
+            } else {
+                args.push(Map::new().into())
+            }
+        }
         Ok(args)
     }
 }
@@ -114,6 +151,7 @@ impl From<&[&str]> for ArgSpec {
             req: reqs.iter().map(RcStr::from).collect(),
             def: vec![],
             var: None,
+            key: None,
         }
     }
 }
@@ -142,6 +180,7 @@ pub struct ArgSpecBuilder {
     req: Vec<RcStr>,
     def: Vec<(RcStr, ConstVal)>,
     var: Option<RcStr>,
+    key: Option<RcStr>,
 }
 
 impl ArgSpecBuilder {
@@ -150,6 +189,7 @@ impl ArgSpecBuilder {
             req: self.req,
             def: self.def,
             var: self.var,
+            key: self.key,
         }
     }
     pub fn req<S: Into<RcStr>>(&mut self, name: S) -> &mut Self {
@@ -164,24 +204,24 @@ impl ArgSpecBuilder {
         self.var = optname.into();
         self
     }
+    pub fn key<S: Into<Option<RcStr>>>(&mut self, keyname: S) -> &mut Self {
+        self.key = keyname.into();
+        self
+    }
 }
 
 pub struct NativeFunction {
     name: RcStr,
     argspec: ArgSpec,
-    body: Box<dyn Fn(&mut Globals, Vec<Value>) -> Result<Value>>,
+    body: Box<dyn Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>,
 }
 
 impl NativeFunction {
-    pub fn new<S, AS, B>(
-        name: S,
-        argspec: AS,
-        body: B,
-    ) -> Self
+    pub fn new<S, AS, B>(name: S, argspec: AS, body: B) -> Self
     where
         S: Into<RcStr>,
         AS: Into<ArgSpec>,
-        B: Fn(&mut Globals, Vec<Value>) -> Result<Value> + 'static,
+        B: Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
     {
         Self {
             name: name.into(),
@@ -198,8 +238,8 @@ impl NativeFunction {
         args: Vec<Value>,
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
-        let args = self.argspec.apply(args, kwargs)?;
-        (self.body)(globals, args)
+        let (args, kwargs) = self.argspec.apply(args, kwargs)?;
+        (self.body)(globals, args, kwargs)
     }
 }
 
@@ -273,7 +313,7 @@ impl Function {
         args: Vec<Value>,
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
-        let args = self.argspec.apply(args, kwargs)?;
+        let args = self.argspec.apply_and_append_kwmap(args, kwargs)?;
         if self.is_generator {
             let frame = self.code.new_frame(self.bindings.clone());
             Ok(Generator::new(self.code.clone(), frame).into())

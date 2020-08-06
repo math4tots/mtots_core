@@ -8,25 +8,25 @@ impl Globals {
         }
 
         let funcs = vec![
-            NativeFunction::new("print", ["x"], |_globals, args| {
+            NativeFunction::new("print", ["x"], |_globals, args, _| {
                 let x = args.into_iter().next().unwrap();
                 println!("{}", x);
                 Ok(Value::Nil)
             }),
-            NativeFunction::new("str", ["x"], |_globals, args| {
+            NativeFunction::new("str", ["x"], |_globals, args, _| {
                 Ok(args.into_iter().next().unwrap().into_rcstr().into())
             }),
-            NativeFunction::new("sorted", ["x"], |globals, args| {
+            NativeFunction::new("sorted", ["x"], |globals, args, _| {
                 let mut list = args.into_iter().next().unwrap().unpack(globals)?;
                 list.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
                 Ok(list.into())
             }),
-            NativeFunction::new("__import", ["name"], |globals, args| {
+            NativeFunction::new("__import", ["name"], |globals, args, _| {
                 let name = args.into_iter().next().unwrap();
                 let name = name.string()?;
                 Ok(globals.load(name)?.into())
             }),
-            NativeFunction::new("__main", (), |globals, _args| {
+            NativeFunction::new("__main", (), |globals, _args, _| {
                 Ok(globals
                     .get_main()
                     .as_ref()

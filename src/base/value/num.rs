@@ -49,7 +49,8 @@ impl Value {
     }
     pub fn isize(&self) -> Result<isize> {
         let x = self.number()?;
-        if x.fract() != 0.0 || !x.is_finite() || x < (isize::MIN as f64) || x > (isize::MAX as f64) {
+        if x.fract() != 0.0 || !x.is_finite() || x < (isize::MIN as f64) || x > (isize::MAX as f64)
+        {
             Err(rterr!("Expected isize, but got {:?}", x))
         } else {
             Ok(x as isize)

@@ -76,6 +76,11 @@ pub struct Map {
 }
 
 impl Map {
+    pub fn new() -> Self {
+        Self {
+            map: RefCell::new(IndexMap::new()),
+        }
+    }
     pub fn borrow(&self) -> Ref<IndexMap<Key, Value>> {
         self.map.borrow()
     }
@@ -134,6 +139,12 @@ impl From<Vec<Value>> for Value {
     }
 }
 
+impl From<Set> for Value {
+    fn from(set: Set) -> Self {
+        Self::Set(set.into())
+    }
+}
+
 impl From<IndexSet<Key>> for Value {
     fn from(set: IndexSet<Key>) -> Self {
         Self::Set(
@@ -142,6 +153,22 @@ impl From<IndexSet<Key>> for Value {
             }
             .into(),
         )
+    }
+}
+
+impl From<Map> for Value {
+    fn from(map: Map) -> Self {
+        Self::Map(map.into())
+    }
+}
+
+impl From<HashMap<RcStr, Value>> for Value {
+    fn from(map: HashMap<RcStr, Value>) -> Self {
+        let map: IndexMap<Key, Value> = map
+            .into_iter()
+            .map(|(key, val)| (Key::from(key), val))
+            .collect();
+        map.into()
     }
 }
 

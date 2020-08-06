@@ -365,7 +365,6 @@ impl<'a> ParserState<'a> {
     }
 
     fn params(&mut self) -> Result<ArgSpec> {
-        let mark = self.mark();
         self.expect(TokenKind::Punctuator(Punctuator::LParen))?;
         let mut req = Vec::new(); // required params
         let mut opt = Vec::new(); // optional params
@@ -422,13 +421,7 @@ impl<'a> ParserState<'a> {
                 break;
             }
         }
-        if keywords.is_some() {
-            return Err(Error::rt(
-                format!("**kwargs parameter not supported").into(),
-                vec![mark],
-            ));
-        }
-        Ok(ArgSpec::new(req, opt, variadic))
+        Ok(ArgSpec::new(req, opt, variadic, keywords))
     }
 
     fn args(&mut self) -> Result<Args> {

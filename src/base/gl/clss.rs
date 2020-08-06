@@ -31,7 +31,7 @@ impl ClassManager {
             Class::map_from_funcs(vec![NativeFunction::new(
                 "__call",
                 ["x"],
-                |globals, args| {
+                |globals, args, _| {
                     let x = args.into_iter().next().unwrap();
                     let set = x.unpack_into_set(globals)?;
                     Ok(set.into())
