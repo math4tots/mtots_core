@@ -1,13 +1,14 @@
 mod cls;
 mod coll;
-mod table;
 mod conv;
 mod cv;
 mod format;
 mod func;
 mod gen;
+mod hnd;
 mod key;
 mod m;
+mod table;
 use crate::Code;
 use crate::Error;
 use crate::Frame;
@@ -16,6 +17,7 @@ use crate::IndexMap;
 use crate::IndexSet;
 use crate::RcStr;
 use crate::Result;
+use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Ref;
 use std::cell::RefCell;
@@ -24,17 +26,19 @@ use std::cmp;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 pub use cls::*;
 pub use coll::*;
-pub use table::*;
 pub use conv::*;
 pub use cv::*;
 pub use func::*;
 pub use gen::*;
+pub use hnd::*;
 pub use key::*;
 pub use m::*;
+pub use table::*;
 
 #[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -53,6 +57,7 @@ pub enum Value {
     NativeGenerator(Rc<RefCell<NativeGenerator>>),
     Class(Rc<Class>),
     Module(Rc<Module>),
+    Handle(Rc<HandleData>),
 }
 
 impl Value {
@@ -72,7 +77,8 @@ impl Value {
             | Self::Generator(_)
             | Self::NativeGenerator(_)
             | Self::Class(_)
-            | Self::Module(_) => true,
+            | Self::Module(_)
+            | Self::Handle(_) => true,
         }
     }
     pub fn debug_typename(&self) -> RcStr {
@@ -92,56 +98,70 @@ impl Value {
             Self::NativeGenerator(_) => "NativeGenerator".into(),
             Self::Class(m) => format!("{:?}", m).into(),
             Self::Module(m) => format!("{:?}", m).into(),
+            Self::Handle(m) => format!("<{} handle>", m.typename()).into(),
         }
+    }
+    fn terr(&self, etype: &str) -> Error {
+        rterr!("Expected {} but got {}", etype, self.debug_typename())
     }
     pub fn bool(&self) -> Result<bool> {
         if let Self::Bool(x) = self {
             Ok(*x)
         } else {
-            Err(rterr!("Expected bool"))
+            Err(self.terr("bool"))
         }
     }
     pub fn number(&self) -> Result<f64> {
         if let Self::Number(x) = self {
             Ok(*x)
         } else {
-            Err(rterr!("Expected number"))
+            Err(self.terr("number"))
         }
     }
     pub fn string(&self) -> Result<&RcStr> {
         if let Self::String(x) = self {
             Ok(x)
         } else {
-            Err(rterr!("Expected string"))
+            Err(self.terr("string"))
         }
     }
     pub fn list(&self) -> Result<&Rc<List>> {
         if let Self::List(x) = self {
             Ok(x)
         } else {
-            Err(rterr!("Expected list"))
+            Err(self.terr("list"))
         }
     }
     pub fn function(&self) -> Result<&Rc<Function>> {
         if let Self::Function(func) = self {
             Ok(func)
         } else {
-            Err(rterr!("Expected function"))
+            Err(self.terr("function"))
         }
     }
     pub fn class(&self) -> Result<&Rc<Class>> {
         if let Self::Class(cls) = self {
             Ok(cls)
         } else {
-            Err(rterr!("Expected class"))
+            Err(self.terr("class"))
         }
     }
     pub fn module(&self) -> Result<&Rc<Module>> {
         if let Self::Module(m) = self {
             Ok(m)
         } else {
-            Err(rterr!("Expected module"))
+            Err(self.terr("module"))
         }
+    }
+    pub fn handle<T: Any>(self) -> Result<Handle<T>> {
+        if let Self::Handle(data) = self {
+            HandleData::downcast(data)
+        } else {
+            Err(self.terr(&format!("{} handle", std::any::type_name::<T>())))
+        }
+    }
+    pub fn unwrap_handle<T: Any>(self) -> Result<T> {
+        self.handle::<T>()?.unwrap()
     }
     pub fn into_rcstr(self) -> RcStr {
         match self {
@@ -153,7 +173,7 @@ impl Value {
         if let Self::String(r) = self {
             Ok(r.unwrap_or_clone())
         } else {
-            Err(rterr!("Expected string"))
+            Err(self.terr("string"))
         }
     }
     pub fn iter(self, _globals: &mut Globals) -> Result<Self> {
@@ -162,10 +182,7 @@ impl Value {
             Self::Set(set) => Ok(Set::generator(set).into()),
             Self::Map(map) => Ok(Map::generator(map).into()),
             Self::Generator(_) | Self::NativeGenerator(_) => Ok(self),
-            _ => Err(rterr!(
-                "Expected iterable but got {}",
-                self.debug_typename()
-            )),
+            _ => Err(self.terr("iterable")),
         }
     }
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {

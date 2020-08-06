@@ -27,7 +27,11 @@ impl Globals {
                 Ok(globals.load(name)?.into())
             }),
             NativeFunction::new("__main", (), |globals, _args| {
-                Ok(globals.get_main().as_ref().map(Value::from).unwrap_or(Value::Nil))
+                Ok(globals
+                    .get_main()
+                    .as_ref()
+                    .map(Value::from)
+                    .unwrap_or(Value::Nil))
             }),
         ];
 

@@ -1,5 +1,7 @@
 use super::*;
 
+/// The priamry user defined object instances
+/// Essentially a class + bag of fields
 #[derive(PartialEq)]
 pub struct Table {
     cls: Rc<Class>,
@@ -26,10 +28,7 @@ impl Table {
         }
     }
     pub fn new(cls: Rc<Class>, map: HashMap<RcStr, RefCell<Value>>) -> Self {
-        Table {
-            cls,
-            map,
-        }
+        Table { cls, map }
     }
     pub fn cls(&self) -> &Rc<Class> {
         &self.cls

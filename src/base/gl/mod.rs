@@ -2,6 +2,7 @@ use crate::annotate;
 use crate::compile;
 use crate::Class;
 use crate::Error;
+use crate::Handle;
 use crate::LexErrorKind;
 use crate::Lexer;
 use crate::Mark;
@@ -13,13 +14,17 @@ use crate::RcStr;
 use crate::Result;
 use crate::Source;
 use crate::Value;
+use std::any::Any;
+use std::any::TypeId;
 use std::cell::RefCell;
+use std::cmp;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cmp;
 mod bltn;
 mod clss;
 mod ge;
+mod hnd;
 mod load;
 mod nm;
 mod parse;
@@ -46,6 +51,9 @@ pub struct Globals {
     class_manager: ClassManager,
     builtins: HashMap<RcStr, Value>,
     repl_scope: Option<HashMap<RcStr, Rc<RefCell<Value>>>>,
+
+    // interfacing with native types (i.e. Handles)
+    handle_class_map: HashMap<TypeId, Rc<Class>>,
 }
 
 impl Globals {
@@ -63,6 +71,7 @@ impl Globals {
             class_manager,
             builtins,
             repl_scope: None,
+            handle_class_map: HashMap::new(),
         }
     }
     pub fn trace(&self) -> &Vec<Mark> {

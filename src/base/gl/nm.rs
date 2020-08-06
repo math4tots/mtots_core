@@ -45,7 +45,7 @@ impl NativeModuleBuilder {
     }
     pub fn action<F>(mut self, body: F) -> Self
     where
-        F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()> + 'static
+        F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()> + 'static,
     {
         self.actions.push(Box::new(body));
         self

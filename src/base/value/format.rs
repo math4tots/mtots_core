@@ -63,6 +63,7 @@ impl fmt::Debug for Value {
             Value::NativeGenerator(gen) => write!(f, "{:?}", gen.borrow()),
             Value::Module(module) => write!(f, "{:?}", module),
             Value::Class(cls) => write!(f, "{:?}", cls),
+            Value::Handle(handle) => write!(f, "{:?}", handle),
         }
     }
 }
