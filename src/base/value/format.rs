@@ -3,7 +3,7 @@ use super::*;
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Invalid => write!(f, "<invalid>"),
+            Value::Invalid => write!(f, "<??>"),
             Value::Nil => write!(f, "nil"),
             Value::Bool(x) => write!(f, "{}", if *x { "true" } else { "false" }),
             Value::Number(x) => write!(f, "{}", x),
