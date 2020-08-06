@@ -115,12 +115,18 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
     globals.set_main(module.clone());
     let r = globals.load(module).map(|m| m.clone());
     let module = ordie(&mut globals, r);
-    println!("[[Module {}]]", module.name());
-    if let Some(doc) = module.doc() {
-        print!("{}", doc);
+    let header = format!("Module {}", module.name());
+    println!("{}", header);
+    for _ in header.chars() {
+        print!("=");
     }
     println!("");
-    println!("[Members]");
+    if let Some(doc) = module.doc() {
+        println!("\n{}", doc.trim());
+    }
+    println!("");
+    println!("Members");
+    println!("=======");
     let mut pairs: Vec<_> = module.docmap().iter().collect();
     pairs.sort();
     for (field_name, field_doc) in pairs {

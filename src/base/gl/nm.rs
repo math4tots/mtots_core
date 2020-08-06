@@ -77,7 +77,16 @@ impl NativeModuleBuilder {
         self.fields.push((name, Box::new(body)));
         self
     }
-    pub fn func<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
+    pub fn val<N, D, V>(self, name: N, doc: D, value: V) -> Self
+    where
+        N: Into<RcStr>,
+        D: Into<DocStr>,
+        V: Into<Value>,
+    {
+        let value = value.into();
+        self.field(name, doc, |_, _| Ok(value))
+    }
+    pub fn func<N, A, D, B>(self, name: N, argspec: A, doc: D, body: B) -> Self
     where
         N: Into<RcStr>,
         A: Into<ArgSpec>,
@@ -87,14 +96,9 @@ impl NativeModuleBuilder {
         let name = name.into();
         let argspec = argspec.into();
         let doc = doc.into();
-        if let Some(doc) = doc.get() {
-            self.docmap.insert(name.clone(), doc.clone());
-        }
-        self.fields.push((
-            name.clone(),
-            Box::new(|_globals, _map| Ok(NativeFunction::new(name, argspec, doc, body).into())),
-        ));
-        self
+        self.field(name.clone(), doc.get().clone(), |_globals, _map| {
+            Ok(NativeFunction::new(name, argspec, doc, body).into())
+        })
     }
     pub fn action<F>(mut self, body: F) -> NativeModuleData
     where

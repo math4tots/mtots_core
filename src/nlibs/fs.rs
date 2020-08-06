@@ -9,6 +9,7 @@ use std::path::Path;
 pub(super) fn new() -> NativeModule {
     NativeModule::new("a.fs", |_globals, builder| {
         builder
+            .doc("Module for interacting with the file system")
             .func("isfile", ["path"], None, |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
                 let path = Path::new(arg.string()?);
