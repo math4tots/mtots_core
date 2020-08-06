@@ -287,7 +287,7 @@ impl Value {
                 .unpack(globals)?
                 .into_iter()
                 .map(|pairval| {
-                    let [key, val] = pairval.unpack_2(globals)?;
+                    let [key, val] = pairval.unpack2(globals)?;
                     Ok((Key::try_from(key)?, val))
                 })
                 .collect(),
@@ -304,7 +304,7 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable", self)),
         }
     }
-    pub fn unpack_2(self, globals: &mut Globals) -> Result<[Value; 2]> {
+    pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
         let vec = self.unpack(globals)?;
         if vec.len() != 2 {
             Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
