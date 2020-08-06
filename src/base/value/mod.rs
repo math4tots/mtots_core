@@ -8,7 +8,9 @@ mod gen;
 mod hnd;
 mod key;
 mod m;
+mod num;
 mod table;
+mod unpack;
 use crate::Code;
 use crate::Error;
 use crate::Frame;
@@ -262,55 +264,6 @@ impl Value {
                     )),
                 }
             }
-        }
-    }
-    pub fn unpack_into_set(self, globals: &mut Globals) -> Result<IndexSet<Key>> {
-        match self {
-            Self::Set(set) => match Rc::try_unwrap(set) {
-                Ok(set) => Ok(set.into_inner()),
-                Err(set) => Ok(set.borrow().clone()),
-            },
-            _ => self
-                .unpack(globals)?
-                .into_iter()
-                .map(Key::try_from)
-                .collect(),
-        }
-    }
-    pub fn unpack_into_map(self, globals: &mut Globals) -> Result<IndexMap<Key, Value>> {
-        match self {
-            Self::Map(map) => match Rc::try_unwrap(map) {
-                Ok(map) => Ok(map.into_inner()),
-                Err(map) => Ok(map.borrow().clone()),
-            },
-            _ => self
-                .unpack(globals)?
-                .into_iter()
-                .map(|pairval| {
-                    let [key, val] = pairval.unpack2(globals)?;
-                    Ok((Key::try_from(key)?, val))
-                })
-                .collect(),
-        }
-    }
-    pub fn unpack(self, globals: &mut Globals) -> Result<Vec<Value>> {
-        match self {
-            Self::List(list) => match Rc::try_unwrap(list) {
-                Ok(list) => Ok(list.into_inner()),
-                Err(list) => Ok(list.borrow().clone()),
-            },
-            Self::Generator(gen) => gen.borrow_mut().unpack(globals),
-            Self::NativeGenerator(gen) => gen.borrow_mut().unpack(globals),
-            _ => Err(rterr!("{:?} is not unpackable", self)),
-        }
-    }
-    pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
-        let vec = self.unpack(globals)?;
-        if vec.len() != 2 {
-            Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
-        } else {
-            let mut iter = vec.into_iter();
-            Ok([iter.next().unwrap(), iter.next().unwrap()])
         }
     }
     pub fn resume(&self, globals: &mut Globals, arg: Value) -> ResumeResult {
