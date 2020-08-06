@@ -2,8 +2,8 @@ use crate::ArgSpec;
 use crate::NativeModule;
 use crate::Value;
 use std::convert::TryFrom;
-use std::fs;
 use std::env;
+use std::fs;
 use std::path::Path;
 
 pub(super) fn new() -> NativeModule {
@@ -18,9 +18,12 @@ pub(super) fn new() -> NativeModule {
             let path = Path::new(arg.string()?);
             Ok(Value::from(path.is_dir()))
         })
-        .func("cwd", (), "Reurns the current working directory", |_globals, _args, _| {
-            Ok(Value::try_from(env::current_dir()?.into_os_string())?)
-        })
+        .func(
+            "cwd",
+            (),
+            "Reurns the current working directory",
+            |_globals, _args, _| Ok(Value::try_from(env::current_dir()?.into_os_string())?),
+        )
         .func(
             "ls",
             ArgSpec::builder().req("dir").def("path", false),
