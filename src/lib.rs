@@ -1,3 +1,15 @@
+
+/// try for generators (where '?' operator won't work)
+#[macro_export]
+macro_rules! gentry {
+    ($e:expr) => {
+        match $e {
+            Ok(t) => t,
+            Err(error) => return crate::ResumeResult::Err(crate::Error::from(error)),
+        }
+    };
+}
+
 mod base;
 mod nlibs;
 mod util;

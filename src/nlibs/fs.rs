@@ -1,3 +1,5 @@
+use crate::ResumeResult;
+use crate::NativeGenerator;
 use crate::ArgSpec;
 use crate::NativeModule;
 use crate::Value;
@@ -5,6 +7,7 @@ use std::convert::TryFrom;
 use std::env;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 
 pub(super) fn new() -> NativeModule {
     NativeModule::new("a.fs", |_globals, builder| {
@@ -70,6 +73,46 @@ pub(super) fn new() -> NativeModule {
                     let path = Path::new(arg.string()?);
                     let data = fs::read_to_string(path)?;
                     Ok(data.into())
+                },
+            )
+            .func(
+                "walk",
+                ["top"],
+                concat!(
+                    "Walk the entire tree, yielding a [dirpath, dirnames, filenames] triple ",
+                    "at every directory along the way\n\n",
+                    "  'dirpath' is a string, a path to the directory\n",
+                    "  'dirnames' is a list of strings containings the names of directories ",
+                    "in the current directory (note: these are not full paths)\n",
+                    "  'filenames' is a list of strings containing the names of non-directory ",
+                    "files in the current directory\n",
+                ),
+                |_globals, args, _| {
+                    let pathval = args.into_iter().next().unwrap();
+                    let mut stack = vec![PathBuf::from(pathval.unwrap_string_or_clone()?)];
+                    Ok(Value::from(NativeGenerator::new("fs.walk", move |_globals, _| {
+                        if let Some(dirpath) = stack.pop() {
+                            let mut filenames = Vec::new();
+                            let mut dirnames = Vec::new();
+                            for entry in gentry!(fs::read_dir(&dirpath)) {
+                                let entry = gentry!(entry);
+                                let name = gentry!(Value::try_from(entry.file_name()));
+                                if gentry!(entry.file_type()).is_dir() {
+                                    dirnames.push(name);
+                                    stack.push(entry.path());
+                                } else {
+                                    filenames.push(name);
+                                }
+                            }
+                            ResumeResult::Yield(vec![
+                                gentry!(Value::try_from(dirpath.into_os_string())),
+                                Value::from(dirnames),
+                                Value::from(filenames),
+                            ].into())
+                        } else {
+                            ResumeResult::Return(Value::Nil)
+                        }
+                    })))
                 },
             )
             .build()

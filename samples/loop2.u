@@ -48,3 +48,8 @@ print(ls)
 print(g)
 # print(fs.read('Cargo.toml'))
 print(['cwd = ', fs.cwd()])
+
+# print(List(fs.walk('./src')))
+for triple in fs.walk('./src') {
+    print(['triple', triple])
+}
