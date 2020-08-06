@@ -298,6 +298,21 @@ impl<'a> ParserState<'a> {
         Ok(expr)
     }
 
+    fn import_module_name(&mut self) -> Result<(String, &str)> {
+        let mut name = String::new();
+        while self.consume(TokenKind::Punctuator(Punctuator::Dot)) {
+            name.push('.');
+        }
+        let mut last_part = self.expect_name()?;
+        name.push_str(last_part);
+        while self.consume(TokenKind::Punctuator(Punctuator::Dot)) {
+            name.push('.');
+            last_part = self.expect_name()?;
+            name.push_str(last_part);
+        }
+        Ok((name, last_part))
+    }
+
     /// parse a statement
     /// a statement is basically an expression, except that named functions
     /// will automatically be assigned to a variable of the same name
@@ -817,28 +832,28 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                 },
             ))
         }),
-        (&["import"], |state: &mut ParserState| {
+        (&["import", "from"], |state: &mut ParserState| {
             let mark = state.mark();
-            state.gettok();
-            let mut name = String::new();
-            while state.consume(TokenKind::Punctuator(Punctuator::Dot)) {
-                name.push('.');
-            }
-            let mut last_part = state.expect_name()?;
-            name.push_str(last_part);
-            while state.consume(TokenKind::Punctuator(Punctuator::Dot)) {
-                name.push('.');
-                last_part = state.expect_name()?;
-                name.push_str(last_part);
-            }
-            let field = if state.consume(TokenKind::Punctuator(Punctuator::Scope)) {
-                last_part = state.expect_name()?;
-                Some(last_part)
+            let from_ = if state.consume(TokenKind::Punctuator(Punctuator::From)) {
+                true
+            } else {
+                state.expect(TokenKind::Punctuator(Punctuator::Import))?;
+                false
+            };
+            let (name, last_part) = state.import_module_name()?;
+
+            let mut last_part = RcStr::from(last_part);
+
+            let field = if from_ {
+                state.expect(TokenKind::Punctuator(Punctuator::Import))?;
+                last_part = RcStr::from(state.expect_name()?);
+                Some(last_part.clone())
             } else {
                 None
             };
+
             let alias = if state.consume(TokenKind::Punctuator(Punctuator::As)) {
-                state.expect_name()?
+                RcStr::from(state.expect_name()?)
             } else {
                 last_part
             };
@@ -847,7 +862,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                 Some(field) => Expr::new(mark, ExprDesc::Attr(raw_import.into(), field.into())),
                 None => raw_import,
             };
-            Ok(assign_name(alias.into(), field_applied))
+            Ok(assign_name(alias, field_applied))
         }),
         (&["-", "+", "!"], |state| {
             let op = match state.peek().kind() {

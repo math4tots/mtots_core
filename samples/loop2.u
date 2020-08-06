@@ -40,3 +40,9 @@ print(fs.ls('.'))
 print(fs.ls('./src'))
 print(fs.ls('./src', path=true))
 print(fs.ls('src', path=true))
+
+from a.fs import ls
+from a.fs import isdir as g
+
+print(ls)
+print(g)
