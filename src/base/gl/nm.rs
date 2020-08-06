@@ -47,17 +47,19 @@ impl NativeModuleBuilder {
         self.fields.push((name.into(), Box::new(body)));
         self
     }
-    pub fn func<N, A, B>(mut self, name: N, argspec: A, body: B) -> Self
+    pub fn func<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
     where
         N: Into<RcStr>,
         A: Into<ArgSpec>,
+        D: Into<DocStr>,
         B: Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
     {
         let name = name.into();
         let argspec = argspec.into();
+        let doc = doc.into();
         self.fields.push((
             name.clone(),
-            Box::new(|_globals, _map| Ok(NativeFunction::new(name, argspec, body).into())),
+            Box::new(|_globals, _map| Ok(NativeFunction::new(name, argspec, doc, body).into())),
         ));
         self
     }

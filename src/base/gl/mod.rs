@@ -15,6 +15,7 @@ use crate::RcStr;
 use crate::Result;
 use crate::Source;
 use crate::Value;
+use crate::DocStr;
 use std::any::Any;
 use std::any::TypeId;
 use std::cell::RefCell;

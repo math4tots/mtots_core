@@ -6,17 +6,17 @@ use std::convert::TryFrom;
 
 pub(super) fn new() -> NativeModule {
     NativeModule::builder("a.fs")
-        .func("isfile", ["path"], |_globals, args, _| {
+        .func("isfile", ["path"], None, |_globals, args, _| {
             let arg = args.into_iter().next().unwrap();
             let path = Path::new(arg.string()?);
             Ok(Value::from(path.is_file()))
         })
-        .func("isdir", ["path"], |_globals, args, _| {
+        .func("isdir", ["path"], None, |_globals, args, _| {
             let arg = args.into_iter().next().unwrap();
             let path = Path::new(arg.string()?);
             Ok(Value::from(path.is_dir()))
         })
-        .func("ls", ArgSpec::builder().req("dir").def("path", false), |_globals, args, _| {
+        .func("ls", ArgSpec::builder().req("dir").def("path", false), None, |_globals, args, _| {
             let mut args = args.into_iter();
             let pathval = args.next().unwrap();
             let dir = Path::new(pathval.string()?);

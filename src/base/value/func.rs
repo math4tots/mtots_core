@@ -219,27 +219,53 @@ impl ArgSpecBuilder {
     }
 }
 
+pub struct DocStr(Option<RcStr>);
+
+impl From<()> for DocStr {
+    fn from(_: ()) -> Self {
+        Self(None)
+    }
+}
+
+impl From<Option<RcStr>> for DocStr {
+    fn from(doc: Option<RcStr>) -> Self {
+        Self(doc)
+    }
+}
+
+impl<T: Into<RcStr>> From<T> for DocStr {
+    fn from(doc: T) -> Self {
+        Self(Some(doc.into()))
+    }
+}
+
 pub struct NativeFunction {
     name: RcStr,
     argspec: ArgSpec,
+    doc: Option<RcStr>,
     body: Box<dyn Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>,
 }
 
 impl NativeFunction {
-    pub fn new<S, AS, B>(name: S, argspec: AS, body: B) -> Self
+    pub fn new<S, AS, D, B>(name: S, argspec: AS, doc: D, body: B) -> Self
     where
         S: Into<RcStr>,
         AS: Into<ArgSpec>,
+        D: Into<DocStr>,
         B: Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
     {
         Self {
             name: name.into(),
             argspec: argspec.into(),
+            doc: doc.into().0,
             body: Box::new(body),
         }
     }
     pub fn name(&self) -> &RcStr {
         &self.name
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn apply(
         &self,
