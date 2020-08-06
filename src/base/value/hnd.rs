@@ -95,3 +95,9 @@ impl<T: Any + Clone> Handle<T> {
         }
     }
 }
+
+impl<T: Any> From<Handle<T>> for Value {
+    fn from(handle: Handle<T>) -> Self {
+        Self::Handle(handle.0)
+    }
+}
