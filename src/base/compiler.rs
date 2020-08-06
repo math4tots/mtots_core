@@ -14,6 +14,7 @@ pub fn compile(md: &ModuleDisplay) -> Result<Code> {
     let mut builder = Builder::new(
         Type::Module,
         md.name().clone(),
+        md.doc().clone(),
         vec![],
         md.varspec().clone().unwrap(),
     );
@@ -34,14 +35,22 @@ struct Builder {
     varspec: VarSpec,
     ops: Vec<Opcode>,
     marks: Vec<Mark>,
+    doc: Option<RcStr>,
     docmap: HashMap<RcStr, RcStr>,
 }
 
 impl Builder {
-    fn new(type_: Type, name: RcStr, params: Vec<Variable>, varspec: VarSpec) -> Self {
+    fn new(
+        type_: Type,
+        name: RcStr,
+        doc: Option<RcStr>,
+        params: Vec<Variable>,
+        varspec: VarSpec,
+    ) -> Self {
         Self {
             type_,
             name,
+            doc,
             params,
             varspec,
             ops: vec![],
@@ -57,6 +66,7 @@ impl Builder {
             self.params,
             self.varspec,
             self.marks,
+            self.doc,
             self.docmap,
         )
     }
@@ -317,7 +327,8 @@ impl Builder {
                 } else {
                     Type::Function
                 };
-                let mut func_builder = Builder::new(type_, name, param_vars, varspec);
+                let mut func_builder =
+                    Builder::new(type_, name, docstr.clone(), param_vars, varspec);
                 func_builder.expr(body, true)?;
                 let func_code = func_builder.build();
 
@@ -331,7 +342,6 @@ impl Builder {
                 let desc = NewFunctionDesc {
                     code: func_code.into(),
                     argspec: params.clone().into(),
-                    doc: docstr.clone(),
                     freevar_binding_slots,
                     is_generator: *is_generator,
                 };

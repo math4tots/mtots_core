@@ -3,27 +3,36 @@ use super::*;
 pub struct Module {
     name: RcStr,
     map: HashMap<RcStr, Rc<RefCell<Value>>>,
+    doc: Option<RcStr>,
     docmap: Rc<HashMap<RcStr, RcStr>>,
 }
 
 impl Module {
-    pub fn new(name: RcStr, vars: Vec<RcStr>, docmap: Rc<HashMap<RcStr, RcStr>>) -> Self {
+    pub fn new(
+        name: RcStr,
+        vars: Vec<RcStr>,
+        doc: Option<RcStr>,
+        docmap: Rc<HashMap<RcStr, RcStr>>,
+    ) -> Self {
         Self::new_with_cells(
             name,
             vars.into_iter()
                 .map(|var| (var, Rc::new(RefCell::new(Value::Invalid))))
                 .collect(),
+            doc,
             docmap,
         )
     }
     pub fn new_with_cells(
         name: RcStr,
         vars: Vec<(RcStr, Rc<RefCell<Value>>)>,
+        doc: Option<RcStr>,
         docmap: Rc<HashMap<RcStr, RcStr>>,
     ) -> Self {
         Self {
             name,
             map: vars.into_iter().collect(),
+            doc,
             docmap,
         }
     }
@@ -35,6 +44,9 @@ impl Module {
     }
     pub fn get(&self, name: &RcStr) -> Option<Value> {
         self.map.get(name).map(|cell| cell.borrow().clone())
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn docmap(&self) -> &Rc<HashMap<RcStr, RcStr>> {
         &self.docmap

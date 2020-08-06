@@ -239,6 +239,19 @@ impl<'a> ParserState<'a> {
 
     fn parse(&mut self) -> Result<ModuleDisplay> {
         let mark = self.mark();
+
+        // check for a docstring
+        self.skip_delim();
+        let doc = if self.at_string() {
+            if let Some(Token::Newline(_)) = self.peek1() {
+                Some(self.expect_string()?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let mut exprs = Vec::new();
         self.skip_delim();
         while self.peek().kind() != TokenKind::EOF {
@@ -246,7 +259,7 @@ impl<'a> ParserState<'a> {
             self.expect_delim()?;
         }
         let body = Expr::new(mark, ExprDesc::Block(exprs));
-        Ok(ModuleDisplay::new(self.source.name().clone(), body))
+        Ok(ModuleDisplay::new(self.source.name().clone(), doc, body))
     }
 
     fn prec(&self, kind: TokenKind) -> Prec {

@@ -9,6 +9,7 @@ pub struct NativeModuleData {
     pub(super) fields: Vec<RcStr>,
     pub(super) init:
         Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>,
+    pub(super) doc: Option<RcStr>,
     pub(super) docmap: HashMap<RcStr, RcStr>,
 }
 
@@ -24,6 +25,7 @@ impl NativeModule {
                 f(
                     globals,
                     NativeModuleBuilder {
+                        doc: None,
                         deps: vec![],
                         fields: vec![],
                         docmap: HashMap::new(),
@@ -42,6 +44,7 @@ impl NativeModule {
 }
 
 pub struct NativeModuleBuilder {
+    doc: Option<RcStr>,
     deps: Vec<RcStr>,
     fields: Vec<(
         RcStr,
@@ -53,6 +56,10 @@ pub struct NativeModuleBuilder {
 }
 
 impl NativeModuleBuilder {
+    pub fn doc<D: Into<RcStr>>(mut self, doc: D) -> Self {
+        self.doc = Some(doc.into());
+        self
+    }
     pub fn dep<N: Into<RcStr>>(mut self, name: N) -> Self {
         self.deps.push(name.into());
         self
@@ -98,6 +105,7 @@ impl NativeModuleBuilder {
     }
     pub fn build(self) -> NativeModuleData {
         let fields = self.fields;
+        let doc = self.doc;
         let docmap = self.docmap;
         let action = self.action;
         let deps = self.deps;
@@ -116,6 +124,7 @@ impl NativeModuleBuilder {
                 }
                 Ok(())
             }),
+            doc,
             docmap,
         }
     }

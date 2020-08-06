@@ -12,6 +12,7 @@ pub struct Code {
 
     marks: Vec<Mark>,
 
+    doc: Option<RcStr>,
     docmap: Rc<HashMap<RcStr, RcStr>>,
 }
 
@@ -28,6 +29,7 @@ impl Code {
         params: Vec<Variable>,
         varspec: VarSpec,
         marks: Vec<Mark>,
+        doc: Option<RcStr>,
         docmap: HashMap<RcStr, RcStr>,
     ) -> Self {
         Self {
@@ -36,6 +38,7 @@ impl Code {
             params,
             varspec,
             marks,
+            doc,
             docmap: Rc::new(docmap),
         }
     }
@@ -53,6 +56,9 @@ impl Code {
     }
     pub fn marks(&self) -> &Vec<Mark> {
         &self.marks
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn docmap(&self) -> &HashMap<RcStr, RcStr> {
         &self.docmap
@@ -110,6 +116,7 @@ impl Code {
                 .map(|(name, _)| name.clone())
                 .zip(owned_bindings)
                 .collect(),
+            self.doc.clone(),
             self.docmap.clone(),
         ));
         globals.register_module(module.clone())?;

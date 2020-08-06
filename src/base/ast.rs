@@ -117,14 +117,16 @@ pub struct ModuleDisplay {
     name: RcStr,
     body: Expr,
     varspec: Option<VarSpec>,
+    doc: Option<RcStr>,
 }
 
 impl ModuleDisplay {
-    pub(crate) fn new(name: RcStr, body: Expr) -> Self {
+    pub(crate) fn new(name: RcStr, doc: Option<RcStr>, body: Expr) -> Self {
         Self {
             name,
             body,
             varspec: None,
+            doc,
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -141,6 +143,9 @@ impl ModuleDisplay {
     }
     pub fn varspec_mut(&mut self) -> &mut Option<VarSpec> {
         &mut self.varspec
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
 }
 
