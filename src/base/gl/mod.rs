@@ -1,5 +1,6 @@
 use crate::annotate;
 use crate::compile;
+use crate::ArgSpec;
 use crate::Class;
 use crate::Error;
 use crate::Handle;

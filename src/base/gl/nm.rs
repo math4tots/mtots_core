@@ -30,7 +30,7 @@ impl NativeModule {
 
 pub struct NativeModuleBuilder {
     name: RcStr,
-    fields: Vec<(RcStr, Box<dyn FnOnce(&mut Globals) -> Result<Value>>)>,
+    fields: Vec<(RcStr, Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value>>)>,
     actions: Vec<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>,
 }
 
@@ -38,9 +38,23 @@ impl NativeModuleBuilder {
     pub fn field<N, F>(mut self, name: N, body: F) -> Self
     where
         N: Into<RcStr>,
-        F: FnOnce(&mut Globals) -> Result<Value> + 'static,
+        F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value> + 'static,
     {
         self.fields.push((name.into(), Box::new(body)));
+        self
+    }
+    pub fn func<N, A, B>(mut self, name: N, argspec: A, body: B) -> Self
+    where
+        N: Into<RcStr>,
+        A: Into<ArgSpec>,
+        B: Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
+    {
+        let name = name.into();
+        let argspec = argspec.into();
+        self.fields.push((
+            name.clone(),
+            Box::new(|_globals, _map| Ok(NativeFunction::new(name, argspec, body).into())),
+        ));
         self
     }
     pub fn action<F>(mut self, body: F) -> Self
@@ -58,7 +72,7 @@ impl NativeModuleBuilder {
             fields: fields.iter().map(|(name, _)| name.clone()).collect(),
             init: Some(Box::new(move |globals, map| -> Result<()> {
                 for (name, f) in fields {
-                    let value = f(globals)?;
+                    let value = f(globals, map)?;
                     *map.get(&name).unwrap().borrow_mut() = value;
                 }
                 for action in actions {
