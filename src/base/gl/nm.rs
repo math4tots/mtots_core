@@ -2,35 +2,44 @@ use super::*;
 
 pub struct NativeModule {
     name: RcStr,
-    fields: Vec<RcStr>,
-    init: Option<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>,
+    data: Box<dyn FnOnce(&mut Globals) -> NativeModuleData>,
+}
+
+pub struct NativeModuleData {
+    pub(super) fields: Vec<RcStr>,
+    pub(super) init:
+        Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>,
 }
 
 impl NativeModule {
-    pub fn builder<N: Into<RcStr>>(name: N) -> NativeModuleBuilder {
-        NativeModuleBuilder {
+    pub fn new<N, F>(name: N, f: F) -> Self
+    where
+        N: Into<RcStr>,
+        F: FnOnce(&mut Globals, NativeModuleBuilder) -> NativeModuleData + 'static,
+    {
+        Self {
             name: name.into(),
-            deps: vec![],
-            fields: vec![],
-            action: None,
+            data: Box::new(|globals| {
+                f(
+                    globals,
+                    NativeModuleBuilder {
+                        deps: vec![],
+                        fields: vec![],
+                        action: None,
+                    },
+                )
+            }),
         }
     }
     pub fn name(&self) -> &RcStr {
         &self.name
     }
-    pub fn fields(&self) -> &Vec<RcStr> {
-        &self.fields
-    }
-    pub fn init(
-        &mut self,
-    ) -> Option<Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()>>>
-    {
-        std::mem::replace(&mut self.init, None)
+    pub fn data(self, globals: &mut Globals) -> NativeModuleData {
+        (self.data)(globals)
     }
 }
 
 pub struct NativeModuleBuilder {
-    name: RcStr,
     deps: Vec<RcStr>,
     fields: Vec<(
         RcStr,
@@ -69,21 +78,20 @@ impl NativeModuleBuilder {
         ));
         self
     }
-    pub fn action<F>(mut self, body: F) -> NativeModule
+    pub fn action<F>(mut self, body: F) -> NativeModuleData
     where
         F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()> + 'static,
     {
         self.action = Some(Box::new(body));
         self.build()
     }
-    pub fn build(self) -> NativeModule {
+    pub fn build(self) -> NativeModuleData {
         let fields = self.fields;
         let action = self.action;
         let deps = self.deps;
-        NativeModule {
-            name: self.name,
+        NativeModuleData {
             fields: fields.iter().map(|(name, _)| name.clone()).collect(),
-            init: Some(Box::new(move |globals, map| -> Result<()> {
+            init: Box::new(move |globals, map| -> Result<()> {
                 for dep in deps {
                     globals.load(&dep)?;
                 }
@@ -95,7 +103,7 @@ impl NativeModuleBuilder {
                     action(globals, map)?;
                 }
                 Ok(())
-            })),
+            }),
         }
     }
 }

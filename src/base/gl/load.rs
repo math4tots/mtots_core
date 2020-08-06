@@ -11,14 +11,11 @@ impl Globals {
         Ok(self.module_map.get(name).unwrap())
     }
     fn load_uncached(&mut self, name: &RcStr) -> Result<Rc<Module>> {
-        if let Some(native_module) = self.native_modules.get_mut(name) {
-            let init = match native_module.init() {
-                Some(init) => init,
-                None => return Err(rterr!("Exhausted native module {:?}", native_module.name())),
-            };
-            let module = Rc::new(Module::new(name.clone(), native_module.fields().clone()));
+        if let Some(native_module) = self.native_modules.remove(name) {
+            let data = native_module.data(self);
+            let module = Rc::new(Module::new(name.clone(), data.fields));
             self.register_module(module.clone())?;
-            init(self, module.map())?;
+            (data.init)(self, module.map())?;
             return Ok(module);
         }
         if let Some(source) = self.find_source(name)? {

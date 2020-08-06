@@ -25,12 +25,6 @@ impl From<NativeModule> for GlobalElement {
     }
 }
 
-impl From<NativeModuleBuilder> for GlobalElement {
-    fn from(nm: NativeModuleBuilder) -> Self {
-        Self::NativeModule(nm.build())
-    }
-}
-
 impl From<RcStr> for GlobalElement {
     fn from(sr: RcStr) -> Self {
         Self::SourceRoot(sr)
