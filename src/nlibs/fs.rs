@@ -10,12 +10,12 @@ pub(super) fn new() -> NativeModule {
     NativeModule::new("a.fs", |_globals, builder| {
         builder
             .doc("Module for interacting with the file system")
-            .func("isfile", ["path"], None, |_globals, args, _| {
+            .func("isfile", ["path"], "", |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
                 let path = Path::new(arg.string()?);
                 Ok(Value::from(path.is_file()))
             })
-            .func("isdir", ["path"], None, |_globals, args, _| {
+            .func("isdir", ["path"], "", |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
                 let path = Path::new(arg.string()?);
                 Ok(Value::from(path.is_dir()))
@@ -36,7 +36,7 @@ pub(super) fn new() -> NativeModule {
                     "prefixed by the given directory path as to form a path to the ",
                     "members of the directory\n\n",
                     "That is, if path=false, ls('src') may return ['foo', 'bar'], ",
-                    "if path=true may return ['src/foo', 'src/bar']\n\n",
+                    "while path=true may return ['src/foo', 'src/bar']\n\n",
                     "Due to the requirement that mtots strings be valid UTF-8, ",
                     "this function will throw if any of the base names are not valid UTF-8\n",
                 ),

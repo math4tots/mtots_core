@@ -130,19 +130,39 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
     let mut pairs: Vec<_> = module.docmap().iter().collect();
     pairs.sort();
     for (field_name, field_doc) in pairs {
-        match module.map().get(field_name).map(|f| f.borrow().clone()) {
-            Some(Value::Function(func)) => {
+        print!("  ");
+        let value = match module.map().get(field_name) {
+            Some(value) => value.borrow().clone(),
+            None => panic!(
+                "{}: Doc for field {:?} found with no associated value",
+                module.name(),
+                field_name
+            ),
+        };
+        match value {
+            Value::Function(func) => {
                 let type_ = if func.is_generator() { "def*" } else { "def" };
-                println!("  {} {}{}\n", type_, field_name, func.argspec());
+                println!("{} {}{}\n", type_, field_name, func.argspec());
             }
-            Some(Value::NativeFunction(func)) => {
-                println!("  native def {}{}\n", field_name, func.argspec());
+            Value::NativeFunction(func) => {
+                println!("native def {}{}\n", field_name, func.argspec());
             }
-            _ => {
-                println!("  {}", field_name);
+            value if short_printable_value(&value) => {
+                println!("{} = {}", field_name, value);
             }
+            _ => println!("{}", field_name),
         }
         println!("{}", format_field_doc(field_doc));
+    }
+}
+
+fn short_printable_value(value: &Value) -> bool {
+    match value {
+        Value::Nil | Value::Bool(_) | Value::Number(_) => true,
+        Value::String(s) => {
+            s.len() < 40 && s.chars().all(|c| !c.is_control() && c != '\n' && c != '\t')
+        }
+        _ => false,
     }
 }
 
