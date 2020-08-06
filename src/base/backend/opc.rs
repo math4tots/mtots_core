@@ -75,6 +75,7 @@ pub(crate) struct NewFunctionDesc {
     pub freevar_binding_slots: Vec<usize>,
 
     pub is_generator: bool,
+    pub doc: Option<RcStr>,
 }
 
 #[inline(always)]
@@ -317,6 +318,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 .collect();
             let func = Function::new(
                 desc.argspec.clone(),
+                desc.doc.clone(),
                 desc.code.clone(),
                 bindings,
                 desc.is_generator,

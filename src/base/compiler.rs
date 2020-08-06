@@ -282,7 +282,7 @@ impl Builder {
                 is_generator,
                 name,
                 params,
-                docstr: _,
+                docstr,
                 body,
                 varspec,
             } => {
@@ -317,6 +317,7 @@ impl Builder {
                 let desc = NewFunctionDesc {
                     code: func_code.into(),
                     argspec: params.clone().into(),
+                    doc: docstr.clone(),
                     freevar_binding_slots,
                     is_generator: *is_generator,
                 };

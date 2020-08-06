@@ -298,6 +298,7 @@ impl fmt::Debug for NativeFunction {
 
 pub struct Function {
     argspec: Rc<ArgSpec>,
+    doc: Option<RcStr>,
     code: Rc<Code>,
     bindings: Vec<Rc<RefCell<Value>>>,
     is_generator: bool,
@@ -324,6 +325,7 @@ impl fmt::Debug for Function {
 impl Function {
     pub fn new(
         argspec: Rc<ArgSpec>,
+        doc: Option<RcStr>,
         code: Rc<Code>,
         bindings: Vec<Rc<RefCell<Value>>>,
         is_generator: bool,
@@ -334,6 +336,7 @@ impl Function {
         assert_eq!(argspec.nparams(), code.params().len());
         Self {
             argspec,
+            doc,
             code,
             bindings,
             is_generator,
@@ -341,6 +344,9 @@ impl Function {
     }
     pub fn name(&self) -> &RcStr {
         self.code.name()
+    }
+    pub fn doc(&self) -> &Option<RcStr> {
+        &self.doc
     }
     pub fn apply(
         &self,
