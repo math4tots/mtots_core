@@ -32,7 +32,6 @@ pub(super) fn new() -> NativeModule {
                 |_globals, args, _| {
                     let arg = args.into_iter().next().unwrap();
                     let path = Path::new(arg.string()?);
-                    println!("path -> {:?}, parent -> {:?}", path, path.parent());
                     match path.parent() {
                         Some(parent) => Value::try_from(parent.as_os_str()),
                         None => Ok(Value::from("")),

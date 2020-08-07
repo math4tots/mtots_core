@@ -238,6 +238,14 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::Subscript(owner, index) => {
+                self.expr(owner, true)?;
+                self.expr(index, true)?;
+                self.add(Opcode::GetItem, mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Attr(owner, attr) => {
                 self.expr(owner, true)?;
                 self.add(Opcode::GetAttr(attr.clone()), mark.clone());

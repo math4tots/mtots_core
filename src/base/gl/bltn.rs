@@ -31,6 +31,20 @@ impl Globals {
                     Ok(Value::Nil)
                 }
             }),
+            NativeFunction::new("assert_throws", ["f"], None, |globals, args, _| {
+                let mut args = args.into_iter();
+                let f = args.next().unwrap();
+                let trace_len = globals.trace().len();
+                match f.apply(globals, vec![], None) {
+                    Ok(_) => {
+                        Err(rterr!("Expected an exception to be thrown"))
+                    }
+                    Err(_) => {
+                        globals.trace_unwind(trace_len);
+                        Ok(Value::Nil)
+                    }
+                }
+            }),
             NativeFunction::new("assert", ["cond"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let cond = args.next().unwrap();

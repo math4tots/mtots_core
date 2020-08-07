@@ -375,6 +375,57 @@ impl Value {
             _ => ResumeResult::Err(rterr!("{:?} is not a generator", self)),
         }
     }
+    pub fn to_index(&self, len: usize) -> Result<usize> {
+        let len = len as i64;
+        let i = i64::try_from(self)?;
+        let adjusted = if i < 0 { i + len } else { i };
+        if adjusted < 0 || adjusted >= len {
+            Err(rterr!(
+                "Index out of bounds (i = {} -> {}, len = {})",
+                i,
+                adjusted,
+                len
+            ))
+        } else {
+            Ok(i as usize)
+        }
+    }
+    pub fn to_slice_index(&self, len: usize) -> Result<usize> {
+        let len = len as i64;
+        let i = i64::try_from(self)?;
+        let adjusted = if i < 0 { i + len } else { i };
+        Ok(if adjusted < 0 {
+            0
+        } else if adjusted > len {
+            len as usize
+        } else {
+            adjusted as usize
+        })
+    }
+    pub fn to_start_index(&self, len: usize) -> Result<usize> {
+        if self.is_nil() {
+            Ok(0)
+        } else {
+            self.to_slice_index(len)
+        }
+    }
+    pub fn to_end_index(&self, len: usize) -> Result<usize> {
+        if self.is_nil() {
+            Ok(len)
+        } else {
+            self.to_slice_index(len)
+        }
+    }
+    pub fn getitem(&self, globals: &mut Globals, index: &Value) -> Result<Value> {
+        match self {
+            Self::List(list) => {
+                let list = list.borrow();
+                let i = index.to_index(list.len())?;
+                Ok(list[i].clone())
+            }
+            _ => self.apply_method(globals, &"__getitem".into(), vec![index.clone()], None),
+        }
+    }
 }
 
 impl cmp::PartialOrd for Value {

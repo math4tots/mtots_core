@@ -25,6 +25,7 @@ pub(crate) enum Opcode {
     New(Box<Vec<RcStr>>),
     Binop(Binop),
     Unop(Unop),
+    GetItem,
 
     Iter,
     Next,
@@ -243,6 +244,18 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     }),
                     _ => operr!(),
                 },
+                Binop::Mul => match lhs {
+                    Value::Number(a) => Value::Number(a * get0!(rhs.number())),
+                    Value::String(a) => Value::String({
+                        let mut ret = String::new();
+                        let n = get0!(usize::try_from(rhs));
+                        for _ in 0..n {
+                            ret.push_str(&a);
+                        }
+                        ret.into()
+                    }),
+                    _ => operr!(),
+                },
                 Binop::Pow => match lhs {
                     Value::Number(a) => Value::Number(a.powf(get0!(rhs.number()))),
                     _ => operr!(),
@@ -284,6 +297,12 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 Unop::Not => Value::from(!arg.truthy()),
             };
             frame.push(result);
+        }
+        Opcode::GetItem => {
+            let index = frame.pop();
+            let owner = frame.pop();
+            let value = get0!(owner.getitem(globals, &index));
+            frame.push(value);
         }
         Opcode::Iter => {
             let container = frame.pop();

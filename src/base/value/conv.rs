@@ -305,3 +305,45 @@ impl TryFrom<&OsStr> for RcStr {
         RcStr::try_from(s.to_owned())
     }
 }
+
+macro_rules! try_from_for_int {
+    ($t:ty) => {
+        impl TryFrom<&Value> for $t {
+            type Error = Error;
+
+            fn try_from(v: &Value) -> Result<Self> {
+                let x = v.number()?;
+                if x < <$t>::MIN as f64
+                    || x > <$t>::MAX as f64
+                    || !x.is_finite()
+                    || x.fract() != 0.0
+                {
+                    Err(rterr!(
+                        concat!("Expected ", stringify!($t), " but got {:?}"),
+                        x
+                    ))
+                } else {
+                    Ok(x as $t)
+                }
+            }
+        }
+        impl TryFrom<Value> for $t {
+            type Error = Error;
+
+            fn try_from(v: Value) -> Result<Self> {
+                <$t>::try_from(&v)
+            }
+        }
+    };
+}
+
+try_from_for_int!(isize);
+try_from_for_int!(i64);
+try_from_for_int!(i32);
+try_from_for_int!(i16);
+try_from_for_int!(i8);
+try_from_for_int!(usize);
+try_from_for_int!(u64);
+try_from_for_int!(u32);
+try_from_for_int!(u16);
+try_from_for_int!(u8);
