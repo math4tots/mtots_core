@@ -76,6 +76,30 @@ pub(super) fn new() -> NativeModule {
                 },
             )
             .func(
+                "write",
+                ["path", "data"],
+                concat!(
+                    "Writes data out into a file.\n",
+                    "The data may be either a string or bytes object.\n",
+                    "This function will create a file if it does not exist, ",
+                    "and will entirely replace its contents if it does.\n",
+                ),
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let arg = args.next().unwrap();
+                    let path = Path::new(arg.string()?);
+                    let data = args.next().unwrap();
+                    if data.is_handle::<Vec<u8>>() {
+                        let data = data.unwrap_or_clone_handle::<Vec<u8>>()?;
+                        fs::write(path, data)?;
+                    } else {
+                        let data = data.string()?;
+                        fs::write(path, data)?;
+                    }
+                    Ok(Value::Nil)
+                },
+            )
+            .func(
                 "walk",
                 ["top"],
                 concat!(
@@ -89,7 +113,7 @@ pub(super) fn new() -> NativeModule {
                 ),
                 |_globals, args, _| {
                     let pathval = args.into_iter().next().unwrap();
-                    let mut stack = vec![PathBuf::from(pathval.unwrap_string_or_clone()?)];
+                    let mut stack = vec![PathBuf::from(pathval.unwrap_or_clone_string()?)];
                     Ok(Value::from(NativeGenerator::new(
                         "fs.walk",
                         move |_globals, _| {
@@ -134,7 +158,7 @@ pub(super) fn new() -> NativeModule {
                 ),
                 |_globals, args, _| {
                     let pathval = args.into_iter().next().unwrap();
-                    let mut dirs = vec![PathBuf::from(pathval.unwrap_string_or_clone()?)];
+                    let mut dirs = vec![PathBuf::from(pathval.unwrap_or_clone_string()?)];
                     let mut files = vec![];
                     Ok(Value::from(NativeGenerator::new(
                         "fs.files",

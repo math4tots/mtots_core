@@ -185,13 +185,16 @@ impl Value {
     pub fn unwrap_handle<T: Any>(self) -> Result<T> {
         self.handle::<T>()?.unwrap()
     }
+    pub fn unwrap_or_clone_handle<T: Any + Clone>(self) -> Result<T> {
+        Ok(self.handle::<T>()?.unwrap_or_clone())
+    }
     pub fn into_rcstr(self) -> RcStr {
         match self {
             Self::String(r) => r,
             _ => format!("{}", self).into(),
         }
     }
-    pub fn unwrap_string_or_clone(self) -> Result<String> {
+    pub fn unwrap_or_clone_string(self) -> Result<String> {
         if let Self::String(r) = self {
             Ok(r.unwrap_or_clone())
         } else {

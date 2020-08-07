@@ -56,3 +56,4 @@ print(['cwd = ', fs.cwd()])
 for path in fs.files('./src') {
     print(['path', path])
 }
+fs.write('hi.txt', 'hello data\nthis is some data in hi.txt')

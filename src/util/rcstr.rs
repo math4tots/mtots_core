@@ -108,6 +108,12 @@ impl ops::Deref for RcStr {
     }
 }
 
+impl AsRef<[u8]> for RcStr {
+    fn as_ref(&self) -> &[u8] {
+        self.0.string.as_ref()
+    }
+}
+
 impl AsRef<str> for RcStr {
     fn as_ref(&self) -> &str {
         self.0.string.as_ref()
