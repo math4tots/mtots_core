@@ -65,7 +65,7 @@ pub struct Globals {
 impl Globals {
     pub fn new() -> Self {
         let class_manager = ClassManager::new();
-        let builtins = Self::new_builtins(&class_manager);
+        let builtins = Self::bootstrap_new_builtins(&class_manager);
         let mut globals = Self {
             trace: vec![],
             lexer: Lexer::new(),

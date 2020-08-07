@@ -141,6 +141,20 @@ impl ArgSpec {
         }
         Ok(args)
     }
+
+    pub fn to_value(&self) -> Value {
+        Value::from(vec![
+            Value::from(self.req.iter().map(Value::from).collect::<Vec<_>>()),
+            Value::from(
+                self.def
+                    .iter()
+                    .map(|(k, v)| Value::from(vec![Value::from(k), Value::from(v)]))
+                    .collect::<Vec<_>>(),
+            ),
+            self.var.as_ref().map(Value::from).unwrap_or(Value::Nil),
+            self.key.as_ref().map(Value::from).unwrap_or(Value::Nil),
+        ])
+    }
 }
 
 impl fmt::Display for ArgSpec {

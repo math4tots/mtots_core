@@ -1105,13 +1105,13 @@ fn geninfix() -> (
                 let name = state.expect_name()?;
                 Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
             }),
-            (&["::"], |state, lhs, _prec| {
-                // TODO: Consider making behavior for this different
-                let mark = state.mark();
-                state.gettok();
-                let name = state.expect_name()?;
-                Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
-            }),
+            // (&["::"], |state, lhs, _prec| {
+            //     // TODO: Consider making behavior for this different
+            //     let mark = state.mark();
+            //     state.gettok();
+            //     let name = state.expect_name()?;
+            //     Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
+            // }),
         ],
     ];
 

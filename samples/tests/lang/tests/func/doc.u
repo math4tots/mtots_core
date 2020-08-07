@@ -30,17 +30,17 @@ def __test_doc() {
 
 def __test_args() {
     assert_eq(foo.params(), [[], [], nil, nil])
-    assert_eq(bar.params(), [[:a, :b], [], nil, nil])
-    assert_eq(baz.params(), [[:a, :b], [[:c, 5]], :args, :kwargs])
-    assert_eq(asdf.params(), [[], [], nil, :kwargs])
-    assert_eq(qwer.params(), [[], [], :fghj, nil])
-    assert_eq(f.params(), [[], [[:x, 2]], nil, nil])
+    assert_eq(bar.params(), [['a', 'b'], [], nil, nil])
+    assert_eq(baz.params(), [['a', 'b'], [['c', 5]], 'args', 'kwargs'])
+    assert_eq(asdf.params(), [[], [], nil, 'kwargs'])
+    assert_eq(qwer.params(), [[], [], 'fghj', nil])
+    assert_eq(f.params(), [[], [['x', 2]], nil, nil])
 }
 
 def __test_args_native() {
-    assert_eq(assert_eq.params(), [[:a, :b], [], nil, nil])
-    assert_eq(String.get_method(:len).params(), [[:self], [], nil, nil])
-    assert_eq(max.params(), [[:xs], [], :varargs, nil])
+    assert_eq(assert_eq.params(), [['a', 'b'], [], nil, nil])
+    assert_eq(getmethod(String, 'len').params(), [['self'], [], nil, nil])
+    assert_eq(max.params(), [['xs'], [], 'varargs', nil])
 }
 
 def __test_doc_native() {

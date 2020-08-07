@@ -40,7 +40,7 @@ def run(root_dir, test_pkg=nil) {
 
 def* _get_module_names(root, package_name) {
     for [dirpath, _dirnames, filenames] in fs.walk(fs.join(root, package_name.replace('.', fs.sep))) {
-        if filenames.map(fs.basename).has('__init.u') {
+        if filenames.has('__init.u') {
             yield str(fs.relpath(root, dirpath)).replace(fs.sep, '.')
         }
         for filename in sorted(filenames) {

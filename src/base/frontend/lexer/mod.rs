@@ -296,24 +296,24 @@ impl Lexer {
                 continue;
             }
 
-            // symbols
-            if c == ':' && c2.map(is_word).unwrap_or(false) {
-                incr(&mut s, &mut pos, 1);
-                let dp: usize = s
-                    .chars()
-                    .take_while(|c| is_word(*c))
-                    .map(|c| c.len_utf8())
-                    .sum();
-                add(
-                    &mut tokens,
-                    &mut pos_info,
-                    Token::Symbol(&s[..dp]),
-                    pos,
-                    lineno,
-                );
-                incr(&mut s, &mut pos, dp);
-                continue;
-            }
+            // // symbols
+            // if c == ':' && c2.map(is_word).unwrap_or(false) {
+            //     incr(&mut s, &mut pos, 1);
+            //     let dp: usize = s
+            //         .chars()
+            //         .take_while(|c| is_word(*c))
+            //         .map(|c| c.len_utf8())
+            //         .sum();
+            //     add(
+            //         &mut tokens,
+            //         &mut pos_info,
+            //         Token::Symbol(&s[..dp]),
+            //         pos,
+            //         lineno,
+            //     );
+            //     incr(&mut s, &mut pos, dp);
+            //     continue;
+            // }
 
             // name or keyword
             if is_word(c) {

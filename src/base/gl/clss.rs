@@ -27,6 +27,22 @@ impl ClassManager {
             "String".into(),
             Class::map_from_funcs(vec![
                 NativeFunction::new(
+                    "len",
+                    ["self"],
+                    concat!(
+                        "Returns the number of unicode codepoints\n\n",
+                        "Note this is similar to the length of a string in Python ",
+                        "and different from length of a string in other languages ",
+                        "like Rust where the length of a string is the number ",
+                        "of bytes"
+                    ),
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        Ok(Value::from(owner.charlen()))
+                    },
+                ),
+                NativeFunction::new(
                     "replace",
                     ["self", "old", "new"],
                     "Returns a new string with the old pattern replaced with the new",
@@ -52,17 +68,12 @@ impl ClassManager {
                         Ok(owner.starts_with(prefix.str()).into())
                     },
                 ),
-                NativeFunction::new(
-                    "ends_with",
-                    ["self", "suffix"],
-                    "",
-                    |_globals, args, _| {
-                        let mut args = args.into_iter();
-                        let owner = args.next().unwrap().into_string()?;
-                        let suffix = args.next().unwrap().into_string()?;
-                        Ok(owner.ends_with(suffix.str()).into())
-                    },
-                ),
+                NativeFunction::new("ends_with", ["self", "suffix"], "", |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_string()?;
+                    let suffix = args.next().unwrap().into_string()?;
+                    Ok(owner.ends_with(suffix.str()).into())
+                }),
                 NativeFunction::new(
                     "rstrip",
                     ["self", "suffix"],
@@ -152,8 +163,34 @@ impl ClassManager {
             )]),
         );
         let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
-        let Function = Class::new("Function".into(), HashMap::new(), HashMap::new());
-        let NativeFunction = Class::new("NativeFunction".into(), HashMap::new(), HashMap::new());
+        let Function = Class::new(
+            "Function".into(),
+            Class::map_from_funcs(vec![
+                NativeFunction::new("params", ["self"], None, |_globals, args, _| {
+                    let f = args.into_iter().next().unwrap().into_function()?;
+                    Ok(f.argspec().to_value())
+                }),
+                NativeFunction::new("doc", ["self"], None, |_globals, args, _| {
+                    let f = args.into_iter().next().unwrap().into_function()?;
+                    Ok(f.doc().as_ref().map(Value::from).unwrap_or(Value::Nil))
+                }),
+            ]),
+            HashMap::new(),
+        );
+        let NativeFunction = Class::new(
+            "NativeFunction".into(),
+            Class::map_from_funcs(vec![
+                NativeFunction::new("params", ["self"], None, |_globals, args, _| {
+                    let f = args.into_iter().next().unwrap().into_native_function()?;
+                    Ok(f.argspec().to_value())
+                }),
+                NativeFunction::new("doc", ["self"], None, |_globals, args, _| {
+                    let f = args.into_iter().next().unwrap().into_native_function()?;
+                    Ok(f.doc().as_ref().map(Value::from).unwrap_or(Value::Nil))
+                }),
+            ]),
+            HashMap::new(),
+        );
         let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
         let NativeGenerator = Class::new("NativeGenerator".into(), HashMap::new(), HashMap::new());
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());

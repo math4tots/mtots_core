@@ -43,7 +43,7 @@ pub use key::*;
 pub use m::*;
 pub use table::*;
 
-#[derive(Clone, PartialEq, PartialOrd)]
+#[derive(Clone, PartialEq)]
 pub enum Value {
     Invalid,
     Nil,
@@ -128,6 +128,16 @@ impl Value {
             _ => false,
         }
     }
+    pub fn lt(&self, other: &Self) -> Result<bool> {
+        match self.partial_cmp(other) {
+            Some(ord) => Ok(matches!(ord, cmp::Ordering::Less)),
+            None => Err(rterr!(
+                "{} and {} are not comparable",
+                self.debug_typename(),
+                other.debug_typename()
+            )),
+        }
+    }
     pub fn is_nil(&self) -> bool {
         matches!(self, Value::Nil)
     }
@@ -188,6 +198,23 @@ impl Value {
             Ok(func)
         } else {
             Err(self.terr("function"))
+        }
+    }
+    pub fn native_function(&self) -> Result<&Rc<NativeFunction>> {
+        if let Self::NativeFunction(func) = self {
+            Ok(func)
+        } else {
+            Err(self.terr("native_function"))
+        }
+    }
+    pub fn is_native_function(&self) -> bool {
+        matches!(self, Self::NativeFunction(_))
+    }
+    pub fn into_native_function(self) -> Result<Rc<NativeFunction>> {
+        if let Self::NativeFunction(func) = self {
+            Ok(func)
+        } else {
+            Err(self.terr("native_function"))
         }
     }
     pub fn class(&self) -> Result<&Rc<Class>> {
@@ -346,6 +373,22 @@ impl Value {
             Self::Generator(gen) => gen.borrow_mut().resume(globals, arg),
             Self::NativeGenerator(gen) => gen.borrow_mut().resume(globals, arg),
             _ => ResumeResult::Err(rterr!("{:?} is not a generator", self)),
+        }
+    }
+}
+
+impl cmp::PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        match (self, other) {
+            (Self::Nil, Self::Nil) => Some(cmp::Ordering::Equal),
+            (Self::Bool(a), Self::Bool(b)) => a.partial_cmp(b),
+            (Self::Number(a), Self::Number(b)) => a.partial_cmp(b),
+            (Self::String(a), Self::String(b)) => a.partial_cmp(b),
+            (Self::List(a), Self::List(b)) => a.partial_cmp(b),
+            (Self::Set(a), Self::Set(b)) => a.partial_cmp(b),
+            (Self::Map(a), Self::Map(b)) => a.partial_cmp(b),
+            (a, b) if a == b => Some(cmp::Ordering::Equal),
+            _ => None,
         }
     }
 }
