@@ -24,9 +24,10 @@ impl Globals {
             return Ok(module);
         }
         if let Some(source) = self.find_source(name)? {
-            self.exec(source)?;
+            self.exec(source)
+        } else {
+            Err(rterr!("Module {:?} not found", name))
         }
-        Err(rterr!("Module {:?} not found", name))
     }
     fn find_source(&self, name: &RcStr) -> Result<Option<Rc<Source>>> {
         if let Some(path) = self.find_source_path(name) {

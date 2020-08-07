@@ -59,10 +59,10 @@ impl Mark {
         let out = &mut ret;
         writeln!(
             out,
-            "in {:?}{} on line {}",
+            "in {}{} on line {}",
             self.source.name,
             if let Some(pathstr) = self.source.path() {
-                format!(" (file {})", pathstr)
+                format!(" (file {:?})", pathstr)
             } else {
                 "".to_owned()
             },

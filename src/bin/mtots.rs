@@ -154,7 +154,7 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
                 println!("native def {}{}\n", field_name, func.argspec());
             }
             value if short_printable_value(&value) => {
-                println!("{} = {}", field_name, value);
+                println!("{} = {:?}\n", field_name, value);
             }
             _ => println!("{}", field_name),
         }

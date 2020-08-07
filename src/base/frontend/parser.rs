@@ -343,8 +343,23 @@ impl<'a> ParserState<'a> {
 
         Ok(match expr.desc() {
             ExprDesc::Function {
-                name: Some(name), ..
-            } => assign_name(name.clone(), expr),
+                name: Some(name),
+                docstr,
+                ..
+            } => {
+                let mark = expr.mark().clone();
+                let name = name.clone();
+                let docstr = docstr.clone();
+                let assigned_func = assign_name(name.clone(), expr);
+                if let Some(docstr) = docstr {
+                    Expr::new(
+                        mark,
+                        ExprDesc::AssignDoc(assigned_func.into(), name, docstr),
+                    )
+                } else {
+                    assigned_func
+                }
+            }
             // ExprDesc::ClassDisplay(_, name, ..) => assign_name(name.clone(), expr),
             _ => expr,
         })

@@ -1,0 +1,13 @@
+# Some doc for baz the module
+# Second line for some doc for baz the module
+#
+# Another line
+
+bar = 1234
+    # Some comments on bar
+
+def foo() = {
+    # Some doc for baz.foo the function
+    # Returns 10
+    10
+}
