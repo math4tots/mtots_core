@@ -136,7 +136,7 @@ pub(super) fn new() -> NativeModule {
             )
             .func(
                 "ls",
-                ArgSpec::builder().req("dir").def("path", false),
+                ArgSpec::builder().req("dir").def("path", false).def("sort", false),
                 concat!(
                     "Lists the files in a directory\n",
                     "By default this function will just return the filenames, ",
@@ -153,6 +153,7 @@ pub(super) fn new() -> NativeModule {
                     let pathval = args.next().unwrap();
                     let dir = Path::new(pathval.string()?);
                     let path = args.next().unwrap().truthy();
+                    let sort = args.next().unwrap().truthy();
                     let mut paths = Vec::<Value>::new();
                     for entry in dir.read_dir()? {
                         let entry = entry?;
@@ -161,6 +162,9 @@ pub(super) fn new() -> NativeModule {
                         } else {
                             Value::try_from(entry.file_name())?
                         });
+                    }
+                    if sort {
+                        paths.sort_by(|a, b| a.partial_cmp(b).unwrap());
                     }
                     Ok(paths.into())
                 },
@@ -206,7 +210,7 @@ pub(super) fn new() -> NativeModule {
             )
             .func(
                 "walk",
-                ["top"],
+                ArgSpec::builder().req("top").def("sort", false),
                 concat!(
                     "Walk the entire tree, yielding a [dirpath, dirnames, filenames] triple ",
                     "at every directory along the way\n\n",
@@ -217,22 +221,46 @@ pub(super) fn new() -> NativeModule {
                     "files in the current directory\n",
                 ),
                 |_globals, args, _| {
-                    let pathval = args.into_iter().next().unwrap();
-                    let mut stack = vec![PathBuf::from(pathval.unwrap_or_clone_string()?)];
+                    let mut args = args.into_iter();
+                    let top = PathBuf::from(args.next().unwrap().unwrap_or_clone_string()?);
+                    let mut stack = vec![top];
+                    let sort = args.next().unwrap().truthy();
                     Ok(Value::from(NativeGenerator::new(
                         "fs.walk",
                         move |_globals, _| {
                             if let Some(dirpath) = stack.pop() {
                                 let mut filenames = Vec::new();
                                 let mut dirnames = Vec::new();
-                                for entry in gentry!(fs::read_dir(&dirpath)) {
-                                    let entry = gentry!(entry);
-                                    let name = gentry!(Value::try_from(entry.file_name()));
-                                    if gentry!(entry.file_type()).is_dir() {
-                                        dirnames.push(name);
-                                        stack.push(entry.path());
-                                    } else {
-                                        filenames.push(name);
+
+                                macro_rules! process_entry {
+                                    ($entry:expr) => {
+                                        let entry = $entry;
+                                        let name = gentry!(Value::try_from(entry.file_name()));
+                                        if gentry!(entry.file_type()).is_dir() {
+                                            dirnames.push(name);
+                                            stack.push(entry.path());
+                                        } else {
+                                            filenames.push(name);
+                                        }
+                                    };
+                                }
+
+                                if sort {
+                                    let mut entries =
+                                        gentry!(
+                                            gentry!(fs::read_dir(&dirpath))
+                                                .collect::<std::result::Result<Vec<_>, _>>()
+                                        );
+                                    // sort in reverse order, so that when we pop from the stack
+                                    // we get them in alphabetical order
+                                    entries.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+                                    for entry in entries {
+                                        process_entry!(entry);
+                                    }
+                                } else {
+                                    for entry in gentry!(fs::read_dir(&dirpath)) {
+                                        let entry = gentry!(entry);
+                                        process_entry!(entry);
                                     }
                                 }
                                 ResumeResult::Yield(
@@ -252,33 +280,57 @@ pub(super) fn new() -> NativeModule {
             )
             .func(
                 "files",
-                ["top"],
+                ArgSpec::builder().req("top").def("sort", false),
                 concat!(
                     "Walk the entire tree, yielding a path for every non-directory ",
                     "file along the way\n\n",
                     "NOTE: empty directories are effectively ignored and directories ",
                     "themselves are never visited on, only files.\n",
                     "If you need to visit directories, you might want the fs.walk() ",
-                    "function instead",
+                    "function instead\n",
                 ),
                 |_globals, args, _| {
-                    let pathval = args.into_iter().next().unwrap();
-                    let mut dirs = vec![PathBuf::from(pathval.unwrap_or_clone_string()?)];
+                    let mut args = args.into_iter();
+                    let top = PathBuf::from(args.next().unwrap().unwrap_or_clone_string()?);
+                    let sort = args.next().unwrap().truthy();
+                    let mut dirs = vec![top];
                     let mut files = vec![];
                     Ok(Value::from(NativeGenerator::new(
                         "fs.files",
                         move |_globals, _| {
                             while files.is_empty() {
                                 if let Some(dir) = dirs.pop() {
-                                    for entry in gentry!(fs::read_dir(&dir)) {
-                                        let entry = gentry!(entry);
-                                        let path = entry.path();
-                                        if gentry!(entry.file_type()).is_dir() {
-                                            dirs.push(path);
-                                        } else {
-                                            files.push(gentry!(Value::try_from(
-                                                path.into_os_string()
-                                            )));
+
+                                    macro_rules! process_entry {
+                                        ($entry:expr) => {
+                                            let entry = $entry;
+                                            let path = entry.path();
+                                            if gentry!(entry.file_type()).is_dir() {
+                                                dirs.push(path);
+                                            } else {
+                                                files.push(gentry!(Value::try_from(
+                                                    path.into_os_string()
+                                                )));
+                                            }
+                                        };
+                                    }
+
+                                    if sort {
+                                        let mut entries =
+                                            gentry!(
+                                                gentry!(fs::read_dir(&dir))
+                                                    .collect::<std::result::Result<Vec<_>, _>>()
+                                            );
+                                        // sort in reverse order, so that when we pop from the stack
+                                        // we get them in alphabetical order
+                                        entries.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+                                        for entry in entries {
+                                            process_entry!(entry);
+                                        }
+                                    } else {
+                                        for entry in gentry!(fs::read_dir(&dir)) {
+                                            let entry = gentry!(entry);
+                                            process_entry!(entry);
                                         }
                                     }
                                 } else {
