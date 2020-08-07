@@ -157,10 +157,7 @@ pub struct Args {
 
 impl Args {
     pub fn new(args: Vec<Expr>, kwargs: Vec<(RcStr, Expr)>) -> Self {
-        Self {
-            args,
-            kwargs,
-        }
+        Self { args, kwargs }
     }
     pub(crate) fn call_function_info(&self) -> CallFunctionDesc {
         CallFunctionDesc {
@@ -232,6 +229,7 @@ pub enum ExprDesc {
     NonlocalAssign(RcStr, Box<Expr>),
     Nonlocal(Vec<RcStr>),
 
+    New(Option<RcStr>, Vec<(RcStr, Expr)>),
     Del(RcStr),
     Yield(Box<Expr>),
     Return(Option<Box<Expr>>),
@@ -259,6 +257,11 @@ pub enum ExprDesc {
         docstr: Option<RcStr>,
         methods: Vec<(RcStr, Expr)>,
         static_methods: Vec<(RcStr, Expr)>,
+
+        /// The hidden name for a class is computed during annotation.
+        /// The hidden name is used by methods to refer to the class
+        /// that they belong to
+        hidden_name: Option<RcStr>,
     },
 }
 

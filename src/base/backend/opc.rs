@@ -22,6 +22,7 @@ pub(crate) enum Opcode {
     SetAttr(RcStr),
     TeeAttr(RcStr),
 
+    New(Box<Vec<RcStr>>),
     Binop(Binop),
 
     Iter,
@@ -205,6 +206,17 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let owner = frame.pop();
             let value = frame.peek().clone();
             get0!(owner.setattr(attr, value));
+        }
+        Opcode::New(argnames) => {
+            let argvals = frame.popn_iter(argnames.len()).map(RefCell::new);
+            let map = argnames
+                .iter()
+                .map(Clone::clone)
+                .zip(argvals)
+                .collect::<HashMap<_, _>>();
+            let cls = get0!(frame.pop().into_class());
+            let table = Table::new(cls, map);
+            frame.push(table.into());
         }
         Opcode::Binop(op) => {
             let rhs = frame.pop();

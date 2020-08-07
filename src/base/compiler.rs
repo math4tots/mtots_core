@@ -269,6 +269,28 @@ impl Builder {
                     self.add(Opcode::SetVar(variable.into()), mark);
                 }
             }
+            ExprDesc::New(hidden_class_name, kwargs) => {
+                // load the associated class object
+                let variable = self
+                    .varspec
+                    .get(hidden_class_name.as_ref().unwrap())
+                    .unwrap();
+                self.add(Opcode::GetVar(variable.into()), mark.clone());
+
+                // load all the arguments
+                let mut names = Vec::new();
+                for (name, arg) in kwargs {
+                    names.push(name.clone());
+                    self.expr(arg, true)?;
+                }
+
+                // create the new Table object
+                self.add(Opcode::New(names.into()), mark.clone());
+
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Yield(valexpr) => {
                 match self.type_ {
                     Type::Module | Type::Function => {
@@ -367,6 +389,7 @@ impl Builder {
                 docstr: _,
                 methods,
                 static_methods,
+                hidden_name,
             } => {
                 let name = RcStr::from(format!("{}#{}", self.name, name));
                 for base in bases {
@@ -389,6 +412,8 @@ impl Builder {
                     static_method_names,
                 };
                 self.add(Opcode::NewClass(desc.into()), mark.clone());
+                let hidden_class_var = self.varspec.get(hidden_name.as_ref().unwrap()).unwrap();
+                self.add(Opcode::TeeVar(hidden_class_var.into()), mark.clone());
 
                 if !used {
                     self.add(Opcode::Pop, mark);

@@ -11,6 +11,7 @@ use crate::Module;
 use crate::RcStr;
 use crate::Result;
 use crate::ResumeResult;
+use crate::Table;
 use crate::Value;
 use crate::VarSpec;
 use crate::Variable;

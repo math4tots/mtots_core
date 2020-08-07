@@ -68,11 +68,11 @@ for [key, val] in env.vars() {
 }
 
 class Foo {
-    new(a, b) = 0
-    def foo() = 10
+    new(a, b) = new(a = a, b = b)
+    def foo(self) = [10, self.a, self.b]
     static def foo(m) = 'static foo ' + m
 }
 
 print(['Foo.foo(asdf)', Foo.foo('asdf')])
-# new(Foo)
 print(Foo(1, 2))
+print(Foo(1, 2).foo())

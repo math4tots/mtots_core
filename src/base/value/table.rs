@@ -21,12 +21,6 @@ impl fmt::Debug for Table {
 }
 
 impl Table {
-    pub fn builder(cls: Rc<Class>) -> TableBuilder {
-        TableBuilder {
-            cls,
-            map: HashMap::new(),
-        }
-    }
     pub fn new(cls: Rc<Class>, map: HashMap<RcStr, RefCell<Value>>) -> Self {
         Table { cls, map }
     }
@@ -36,16 +30,14 @@ impl Table {
     pub fn map(&self) -> &HashMap<RcStr, RefCell<Value>> {
         &self.map
     }
-}
-
-pub struct TableBuilder {
-    cls: Rc<Class>,
-    map: HashMap<RcStr, RefCell<Value>>,
-}
-
-impl TableBuilder {
-    pub fn build(self) -> Table {
-        Table::new(self.cls, self.map)
+    pub fn set(&self, key: &RcStr, value: Value) -> Result<()> {
+        match self.map.get(key) {
+            Some(cell) => {
+                cell.replace(value);
+                Ok(())
+            }
+            None => Err(rterr!("Attribute {:?} not found in {:?}", key, self)),
+        }
     }
 }
 

@@ -2,6 +2,7 @@ use crate::ArgSpec;
 use crate::Args;
 use crate::AssignTarget;
 use crate::AssignTargetDesc;
+use crate::Error;
 use crate::Expr;
 use crate::ExprDesc;
 use crate::Mark;
@@ -22,9 +23,10 @@ pub fn annotate(md: &mut ModuleDisplay) -> Result<()> {
     Ok(())
 }
 
-fn annotate_func(params: &ArgSpec, body: &mut Expr) -> Result<VarSpec> {
+fn annotate_func(class_stack: Vec<RcStr>, params: &ArgSpec, body: &mut Expr) -> Result<VarSpec> {
     let mut out = State {
         type_: Type::Function,
+        class_stack,
         ..State::default()
     };
     for param in params.params() {
@@ -112,6 +114,20 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
             get(valexpr, out)?;
         }
+        ExprDesc::New(hidden_class_name, pairs) => {
+            if let Some(hidden_name) = out.class_stack.last() {
+                out.read.insert(hidden_name.clone(), mark);
+                *hidden_class_name = Some(hidden_name.clone());
+            } else {
+                return Err(Error::rt(
+                    format!("The new operator cannot be used outside of a class").into(),
+                    vec![mark],
+                ));
+            }
+            for (_, expr) in pairs {
+                get(expr, out)?;
+            }
+        }
         ExprDesc::Yield(expr) => {
             get(expr, out)?;
         }
@@ -132,28 +148,41 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             body,
             varspec,
         } => {
-            let spec = annotate_func(params, body)?;
+            let spec = annotate_func(out.class_stack.clone(), params, body)?;
             for (name, mark) in spec.free() {
                 out.nested_free.insert(name.clone(), mark.clone());
             }
             *varspec = Some(spec);
         }
         ExprDesc::Class {
-            name: _,
+            name,
             bases,
             docstr: _,
             methods,
             static_methods,
+            hidden_name,
         } => {
             for base in bases {
                 get(base, out)?;
             }
+
+            // Even if a class is never explicitly saved to a variable,
+            // we save it to a hidden local variable so that it can be referred
+            // to by its own methods.
+            let id = out.class_stack.len();
+            let qualified_hidden_name = RcStr::from(format!("class/{}/{}", id, name));
+            out.write.insert(qualified_hidden_name.clone(), mark);
+            *hidden_name = Some(qualified_hidden_name.clone());
+            out.class_stack.push(qualified_hidden_name);
+
             for (_, expr) in methods {
                 get(expr, out)?;
             }
             for (_, expr) in static_methods {
                 get(expr, out)?;
             }
+
+            out.class_stack.pop();
         }
         desc => panic!("TODO: annotate {:?}", desc),
     }
@@ -215,6 +244,8 @@ struct State {
     /// Variables that appear free in nested functions
     /// These must be either owned or free upvalues.
     nested_free: HashMap<RcStr, Mark>,
+
+    class_stack: Vec<RcStr>,
 }
 
 impl From<State> for VarSpec {

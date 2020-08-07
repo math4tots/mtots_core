@@ -712,6 +712,18 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             let body = state.block()?.into();
             Ok(Expr::new(mark, ExprDesc::While(cond, body)))
         }),
+        (&["new"], |state: &mut ParserState| {
+            let mark = state.mark();
+            state.gettok();
+            let args = state.args()?;
+            if args.args.len() > 0 {
+                return Err(Error::rt(
+                    format!("The new operator cannot take positional arguments").into(),
+                    vec![mark],
+                ));
+            }
+            Ok(Expr::new(mark, ExprDesc::New(None, args.kwargs)))
+        }),
         (&["del"], |state: &mut ParserState| {
             let mark = state.mark();
             state.gettok();
@@ -871,6 +883,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                     docstr,
                     methods,
                     static_methods,
+                    hidden_name: None,
                 },
             ))
         }),
