@@ -36,7 +36,7 @@ def __test_variadic() {
         ]
     )
     assert_eq(
-        mixed(22, 33, a=44, *[55, 66, 77, 88]),
+        mixed(22, 33, *[55, 66, 77, 88], a=44),
         [
             'a': 44,
             'b': 22,
@@ -54,7 +54,7 @@ def __test_keyword_table() {
     def foo(a, b, c) = [a, b, c]
 
     assert_eq(
-        foo(**Table(a='aaa', c='ccc', b='bbb')),
+        foo(**['a': 'aaa', 'c': 'ccc', 'b': 'bbb']),
         ['aaa', 'bbb', 'ccc']
     )
 }

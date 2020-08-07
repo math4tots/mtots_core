@@ -481,8 +481,19 @@ impl<'a> ParserState<'a> {
         Ok(ArgSpec::new(req, opt, variadic, keywords))
     }
 
+    /// The 4 different kinds of arguments have to come in a specific order:
+    ///
+    ///   * positional (plain <expr> style argument)
+    ///   * variadic (*<iterable-expr> style argument)
+    ///   * keyword (argname=<expr> style argument)
+    ///   * keyword map (**<map-expr> style argument)
+    ///
+    /// These are summarized to 1 list, and 0-1 map for the
+    /// called function to consume (positional and variadic are
+    /// combined into a vec, and keyword and keyword map are combined
+    /// into a hashmap)
+    ///
     fn args(&mut self) -> Result<Args> {
-        let mark = self.mark();
         self.expect(TokenKind::Punctuator(Punctuator::LParen))?;
         let mut pos = Vec::new();
         let mut key = Vec::new();
@@ -491,8 +502,8 @@ impl<'a> ParserState<'a> {
         while !self.consume(TokenKind::Punctuator(Punctuator::RParen)) {
             let mark = self.mark();
             if self.consume(TokenKind::Punctuator(Punctuator::Star)) {
-                // kwtables have to come after vararg arguments
-                if kwtable.is_some() {
+                // keyword and keyword map arguments have to come after vararg arguments
+                if key.len() > 0 || kwtable.is_some() {
                     return Err(Error::rt(
                         format!("Illegal argument order").into(),
                         vec![mark],
@@ -517,8 +528,8 @@ impl<'a> ParserState<'a> {
                 && self.tokens.get(self.i + 1).map(|t| t.kind())
                     == Some(TokenKind::Punctuator(Punctuator::Eq))
             {
-                // variadic and kwtables have to come after vararg arguments
-                if variadic.is_some() || kwtable.is_some() {
+                // kwtables have to come after vararg arguments
+                if kwtable.is_some() {
                     return Err(Error::rt(
                         format!("Illegal argument order").into(),
                         vec![mark],
@@ -544,13 +555,12 @@ impl<'a> ParserState<'a> {
                 break;
             }
         }
-        if variadic.is_some() || kwtable.is_some() {
-            return Err(Error::rt(
-                format!("*varargs/**kw style arguments are not supported").into(),
-                vec![mark],
-            ));
-        }
-        Ok(Args::new(pos, key))
+        Ok(Args::new(
+            pos,
+            variadic.map(Into::into),
+            key,
+            kwtable.map(Into::into),
+        ))
     }
 }
 

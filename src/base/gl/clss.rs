@@ -20,14 +20,12 @@ pub struct ClassManager {
 impl ClassManager {
     #[allow(non_snake_case)]
     pub(super) fn new() -> Self {
-        let Nil = Class::new("Nil".into(), Class::map_from_funcs(vec![
-            NativeFunction::new(
-                "map",
-                ["self", "x", "f"],
-                "",
-                |globals, args, _| {
+        let Nil = Class::new(
+            "Nil".into(),
+            Class::map_from_funcs(vec![
+                NativeFunction::new("map", ["self", "x", "f"], "", |globals, args, _| {
                     let mut args = args.into_iter();
-                    args.next().unwrap();  // nil
+                    args.next().unwrap(); // nil
                     let x = args.next().unwrap();
                     let f = args.next().unwrap();
                     if x.is_nil() {
@@ -35,15 +33,10 @@ impl ClassManager {
                     } else {
                         f.apply(globals, vec![x], None)
                     }
-                }
-            ),
-            NativeFunction::new(
-                "vmap",
-                ["self", "x", "new"],
-                "",
-                |_globals, args, _| {
+                }),
+                NativeFunction::new("vmap", ["self", "x", "new"], "", |_globals, args, _| {
                     let mut args = args.into_iter();
-                    args.next().unwrap();  // nil
+                    args.next().unwrap(); // nil
                     let x = args.next().unwrap();
                     let new = args.next().unwrap();
                     if x.is_nil() {
@@ -51,15 +44,10 @@ impl ClassManager {
                     } else {
                         Ok(new)
                     }
-                }
-            ),
-            NativeFunction::new(
-                "get",
-                ["self", "x", "default"],
-                "",
-                |_globals, args, _| {
+                }),
+                NativeFunction::new("get", ["self", "x", "default"], "", |_globals, args, _| {
                     let mut args = args.into_iter();
-                    args.next().unwrap();  // nil
+                    args.next().unwrap(); // nil
                     let x = args.next().unwrap();
                     let default = args.next().unwrap();
                     if x.is_nil() {
@@ -67,15 +55,10 @@ impl ClassManager {
                     } else {
                         Ok(x)
                     }
-                }
-            ),
-            NativeFunction::new(
-                "fget",
-                ["self", "x", "f"],
-                "",
-                |globals, args, _| {
+                }),
+                NativeFunction::new("fget", ["self", "x", "f"], "", |globals, args, _| {
                     let mut args = args.into_iter();
-                    args.next().unwrap();  // nil
+                    args.next().unwrap(); // nil
                     let x = args.next().unwrap();
                     let f = args.next().unwrap();
                     if x.is_nil() {
@@ -83,9 +66,10 @@ impl ClassManager {
                     } else {
                         Ok(x)
                     }
-                }
-            ),
-        ]), HashMap::new());
+                }),
+            ]),
+            HashMap::new(),
+        );
         let Bool = Class::new("Bool".into(), HashMap::new(), HashMap::new());
         let Number = Class::new("Number".into(), HashMap::new(), HashMap::new());
         let String = Class::new(
@@ -177,6 +161,23 @@ impl ClassManager {
         let List = Class::new(
             "List".into(),
             Class::map_from_funcs(vec![
+                NativeFunction::new("push", ["self", "x"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let x = args.next().unwrap();
+                    owner.borrow_mut().push(x);
+                    Ok(Value::Nil)
+                }),
+                NativeFunction::new("pop", ["self"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let r = owner.borrow_mut().pop();
+                    if let Some(x) = r {
+                        Ok(x)
+                    } else {
+                        Err(rterr!("Pop from empty list"))
+                    }
+                }),
                 NativeFunction::new("map", ["self", "f"], None, |globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;

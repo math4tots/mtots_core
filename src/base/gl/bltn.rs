@@ -36,9 +36,7 @@ impl Globals {
                 let f = args.next().unwrap();
                 let trace_len = globals.trace().len();
                 match f.apply(globals, vec![], None) {
-                    Ok(_) => {
-                        Err(rterr!("Expected an exception to be thrown"))
-                    }
+                    Ok(_) => Err(rterr!("Expected an exception to be thrown")),
                     Err(_) => {
                         globals.trace_unwind(trace_len);
                         Ok(Value::Nil)
@@ -59,6 +57,61 @@ impl Globals {
                 let owner = args.next().unwrap();
                 let name = args.next().unwrap().into_string()?;
                 owner.getattr(&name)
+            }),
+            NativeFunction::new(
+                "throw",
+                ["message"],
+                concat!(
+                    "Makeshift function for throwing runtime exceptions\n",
+                    "API of this function is likely to change a lot in the future\n",
+                ),
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let error = Error::try_from(args.next().unwrap())?;
+                    Err(error)
+                },
+            ),
+            NativeFunction::new(
+                "pcall",
+                ["f", "on_error"],
+                concat!(
+                    "Makeshift function for handling exceptions\n",
+                    "Calls the function passed as the first argument.\n",
+                    "If it finishes without any errors, this function will return that value.\n",
+                    "If it throws, the second argument is called with the exception information ",
+                    "and whatever is returned from it is returned.\n",
+                    "API of this function is likely to change a lot in the future\n",
+                ),
+                |globals, args, _| {
+                    let trace_len = globals.trace().len();
+                    let mut args = args.into_iter();
+                    let f = args.next().unwrap();
+                    let on_error = args.next().unwrap();
+                    match f.apply(globals, vec![], None) {
+                        Ok(value) => Ok(value),
+                        Err(error) => {
+                            // we wait on unwinding the stack trace, so that the stack
+                            // can be inspected from inside the error handler
+                            // If we error from inside the handler, we let the
+                            // trace accumulate.
+                            let value = Value::from(error);
+                            let result = on_error.apply(globals, vec![value], None)?;
+                            globals.trace_unwind(trace_len);
+                            Ok(result)
+                        }
+                    }
+                },
+            ),
+            NativeFunction::new("hash", ["x"], None, |_globals, args, _| {
+                use std::hash::Hash;
+                use std::hash::Hasher;
+                use std::collections::hash_map::DefaultHasher;
+                let mut args = args.into_iter();
+                let x = args.next().unwrap();
+                let key = Key::try_from(x)?;
+                let mut s = DefaultHasher::new();
+                key.hash(&mut s);
+                Ok(Value::from(s.finish()))
             }),
             NativeFunction::new("getmethod", ["cls", "name"], None, |_globals, args, _| {
                 let mut args = args.into_iter();

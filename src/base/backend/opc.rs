@@ -4,6 +4,7 @@ use super::*;
 pub(crate) enum Opcode {
     Pop,
     Dup,
+    Pull2,
     Swap01,
     Unpack(u32),
 
@@ -59,7 +60,9 @@ impl Opcode {
 #[derive(Debug)]
 pub(crate) struct CallFunctionDesc {
     pub argc: usize,
+    pub variadic: bool,
     pub kwargs: Vec<RcStr>,
+    pub kwmap: bool,
 }
 
 #[derive(Debug)]
@@ -106,15 +109,23 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
     }
 
     macro_rules! get0 {
-        ($expr:expr) => {
+        ($expr:expr) => {{
+            // We explicitly borrow a reference to _g here so that
+            // it can't be used inside $expr.
+            // If globals is required, we really need to use `get1!`
+            let _g = &globals;
             match $expr {
                 Ok(t) => t,
                 Err(error) => {
+                    #[allow(path_statements)]
+                    {
+                        _g;
+                    }
                     addtrace!();
                     return StepResult::Err(error);
                 }
             }
-        };
+        }};
     }
 
     macro_rules! get1 {
@@ -148,8 +159,11 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::Dup => {
             frame.push(frame.peek().clone());
         }
+        Opcode::Pull2 => {
+            frame.pull(2);
+        }
         Opcode::Swap01 => {
-            frame.swap01();
+            frame.swap(0, 1);
         }
         Opcode::Unpack(len) => {
             let packed = frame.pop();
@@ -244,6 +258,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     }),
                     _ => operr!(),
                 },
+                Binop::Sub => match lhs {
+                    Value::Number(a) => Value::Number(a - get0!(rhs.number())),
+                    _ => operr!(),
+                },
                 Binop::Mul => match lhs {
                     Value::Number(a) => Value::Number(a * get0!(rhs.number())),
                     Value::String(a) => Value::String({
@@ -254,6 +272,18 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                         }
                         ret.into()
                     }),
+                    _ => operr!(),
+                },
+                Binop::Div => match lhs {
+                    Value::Number(a) => Value::Number(a / get0!(rhs.number())),
+                    _ => operr!(),
+                },
+                Binop::TruncDiv => match lhs {
+                    Value::Number(a) => Value::Number((a / get0!(rhs.number())).trunc()),
+                    _ => operr!(),
+                },
+                Binop::Rem => match lhs {
+                    Value::Number(a) => Value::Number(a % get0!(rhs.number())),
                     _ => operr!(),
                 },
                 Binop::Pow => match lhs {
@@ -268,7 +298,6 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 Binop::Ne => Value::from(lhs != rhs),
                 Binop::Is => Value::from(lhs.is(&rhs)),
                 Binop::IsNot => Value::from(!lhs.is(&rhs)),
-                _ => panic!("TODO step Binop {:?}", op),
             };
             frame.push(result);
         }
@@ -301,12 +330,12 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::GetItem => {
             let index = frame.pop();
             let owner = frame.pop();
-            let value = get0!(owner.getitem(globals, &index));
+            let value = get1!(owner.getitem(globals, &index));
             frame.push(value);
         }
         Opcode::Iter => {
             let container = frame.pop();
-            let iter = get0!(container.iter(globals));
+            let iter = get1!(container.iter(globals));
             frame.push(iter);
         }
         Opcode::Next => {
@@ -365,13 +394,35 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             }
         }
         Opcode::CallFunction(desc) => {
-            let kwargs = if desc.kwargs.is_empty() {
-                None
+            let kwmap = if desc.kwmap {
+                let map = get0!(frame.pop().into_map());
+                Some(get0!(map.to_string_keys()))
             } else {
-                let values = frame.popn(desc.kwargs.len());
-                Some(desc.kwargs.iter().map(Clone::clone).zip(values).collect())
+                None
             };
-            let args = frame.popn(desc.argc);
+            let kwargs = if desc.kwargs.is_empty() {
+                kwmap
+            } else {
+                let mut map = kwmap.unwrap_or_else(HashMap::new);
+                let values = frame.popn(desc.kwargs.len());
+                for (key, val) in desc.kwargs.iter().map(Clone::clone).zip(values) {
+                    match map.entry(key) {
+                        Entry::Occupied(_) => {}
+                        Entry::Vacant(entry) => {
+                            entry.insert(val);
+                        }
+                    }
+                }
+                Some(map)
+            };
+            let args = if desc.variadic {
+                let extra_args = get1!(frame.pop().unpack(globals));
+                let mut vec = frame.popn(desc.argc);
+                vec.extend(extra_args);
+                vec
+            } else {
+                frame.popn(desc.argc)
+            };
             let func = frame.pop();
             let result = get1!(func.apply(globals, args, kwargs));
             frame.push(result);

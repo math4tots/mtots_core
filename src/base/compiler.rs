@@ -275,6 +275,10 @@ impl Builder {
                 self.expr(valexpr, true)?;
                 self.target(target, !used)?;
             }
+            ExprDesc::AugAssign(target, op, valexpr) => {
+                self.expr(valexpr, true)?;
+                self.augtarget(target, *op, !used)?;
+            }
             ExprDesc::NonlocalAssign(name, valexpr) => {
                 self.expr(valexpr, true)?;
                 let variable = self.varspec.get(name).unwrap();
@@ -442,7 +446,13 @@ impl Builder {
         for arg in &args.args {
             self.expr(arg, true)?;
         }
+        if let Some(arg) = &args.varargs {
+            self.expr(arg, true)?;
+        }
         for (_, arg) in &args.kwargs {
+            self.expr(arg, true)?;
+        }
+        if let Some(arg) = &args.kwmap {
             self.expr(arg, true)?;
         }
         Ok(())
@@ -469,6 +479,39 @@ impl Builder {
             }
             AssignTargetDesc::Attr(owner, attr) => {
                 self.expr(owner, true)?;
+                if consume {
+                    self.add(Opcode::SetAttr(attr.clone()), mark);
+                } else {
+                    self.add(Opcode::TeeAttr(attr.clone()), mark);
+                }
+            }
+        }
+        Ok(())
+    }
+    fn augtarget(&mut self, target: &AssignTarget, op: Binop, consume: bool) -> Result<()> {
+        let mark = target.mark().clone();
+        match target.desc() {
+            AssignTargetDesc::Name(name) => {
+                let variable = self.varspec.get(name).unwrap();
+                self.add(Opcode::GetVar(variable.clone().into()), mark.clone());
+                self.add(Opcode::Swap01, mark.clone());
+                self.add(Opcode::Binop(op), mark.clone());
+                if consume {
+                    self.add(Opcode::SetVar(variable.into()), mark);
+                } else {
+                    self.add(Opcode::TeeVar(variable.into()), mark);
+                }
+            }
+            AssignTargetDesc::List(_) => {
+                // Should be caught in the annotator
+                panic!("List pattern as augassign target")
+            }
+            AssignTargetDesc::Attr(owner, attr) => {
+                self.expr(owner, true)?;
+                self.add(Opcode::Dup, mark.clone());
+                self.add(Opcode::GetAttr(attr.clone()), mark.clone());
+                self.add(Opcode::Pull2, mark.clone());
+                self.add(Opcode::Binop(op), mark.clone());
                 if consume {
                     self.add(Opcode::SetAttr(attr.clone()), mark);
                 } else {

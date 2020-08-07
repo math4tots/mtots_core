@@ -347,3 +347,28 @@ try_from_for_int!(u64);
 try_from_for_int!(u32);
 try_from_for_int!(u16);
 try_from_for_int!(u8);
+
+impl From<Error> for Value {
+    fn from(error: Error) -> Self {
+        // For now, we just convert error objects to a pair
+        // of strings
+        Value::from(vec![
+            Value::from(error.type_()),
+            Value::from(error.message()),
+        ])
+    }
+}
+
+impl TryFrom<Value> for Error {
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        if let Value::String(message) = value {
+            Ok(Error::rt(message, vec![]))
+        } else {
+            let [type_, message] = value.unpack2_limited()?;
+            let type_ = type_.into_string()?;
+            let message = message.into_string()?;
+            Ok(Error::new(type_, message, vec![]))
+        }
+    }
+}

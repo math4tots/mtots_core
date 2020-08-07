@@ -18,6 +18,7 @@ use crate::VarSpec;
 use crate::Variable;
 use crate::VariableType;
 use std::cell::RefCell;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;

@@ -41,8 +41,26 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable", self)),
         }
     }
+    pub fn unpack_limited(self) -> Result<Vec<Value>> {
+        match self {
+            Self::List(list) => match Rc::try_unwrap(list) {
+                Ok(list) => Ok(list.into_inner()),
+                Err(list) => Ok(list.borrow().clone()),
+            },
+            _ => Err(rterr!("{:?} is not unpackable in this context", self)),
+        }
+    }
     pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
         let vec = self.unpack(globals)?;
+        if vec.len() != 2 {
+            Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
+        } else {
+            let mut iter = vec.into_iter();
+            Ok([iter.next().unwrap(), iter.next().unwrap()])
+        }
+    }
+    pub fn unpack2_limited(self) -> Result<[Value; 2]> {
+        let vec = self.unpack_limited()?;
         if vec.len() != 2 {
             Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
         } else {

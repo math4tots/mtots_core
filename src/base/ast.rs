@@ -152,17 +152,31 @@ impl ModuleDisplay {
 #[derive(Debug)]
 pub struct Args {
     pub args: Vec<Expr>,
+    pub varargs: Option<Box<Expr>>,
     pub kwargs: Vec<(RcStr, Expr)>,
+    pub kwmap: Option<Box<Expr>>,
 }
 
 impl Args {
-    pub fn new(args: Vec<Expr>, kwargs: Vec<(RcStr, Expr)>) -> Self {
-        Self { args, kwargs }
+    pub fn new(
+        args: Vec<Expr>,
+        varargs: Option<Box<Expr>>,
+        kwargs: Vec<(RcStr, Expr)>,
+        kwmap: Option<Box<Expr>>,
+    ) -> Self {
+        Self {
+            args,
+            varargs,
+            kwargs,
+            kwmap,
+        }
     }
     pub(crate) fn call_function_info(&self) -> CallFunctionDesc {
         CallFunctionDesc {
             argc: self.args.len(),
+            variadic: self.varargs.is_some(),
             kwargs: self.kwargs.iter().map(|(name, _)| name.clone()).collect(),
+            kwmap: self.kwmap.is_some(),
         }
     }
     pub(crate) fn call_method_info(&self, method_name: RcStr) -> CallMethodDesc {

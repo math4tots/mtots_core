@@ -42,7 +42,11 @@ impl Module {
     pub fn map(&self) -> &HashMap<RcStr, Rc<RefCell<Value>>> {
         &self.map
     }
-    pub fn get(&self, name: &RcStr) -> Option<Value> {
+    pub fn get<M>(&self, name: &M) -> Option<Value>
+    where
+        M: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + ?Sized,
+        RcStr: std::borrow::Borrow<M>,
+    {
         self.map.get(name).map(|cell| cell.borrow().clone())
     }
     pub fn doc(&self) -> &Option<RcStr> {

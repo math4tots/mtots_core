@@ -115,11 +115,22 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             gettarget(target, out)?;
             get(valexpr, out)?;
         }
+        ExprDesc::AugAssign(target, _op, valexpr) => {
+            getaugtarget(target, out)?;
+            get(valexpr, out)?;
+        }
         ExprDesc::NonlocalAssign(name, valexpr) => {
             if !out.nonlocal.contains_key(name) {
                 out.nonlocal.insert(name.clone(), mark);
             }
             get(valexpr, out)?;
+        }
+        ExprDesc::Nonlocal(names) => {
+            for name in names {
+                if !out.nonlocal.contains_key(name) {
+                    out.nonlocal.insert(name.clone(), mark.clone());
+                }
+            }
         }
         ExprDesc::New(hidden_class_name, pairs) => {
             if let Some(hidden_name) = out.class_stack.last() {
@@ -200,7 +211,13 @@ fn getargs(args: &mut Args, out: &mut State) -> Result<()> {
     for arg in &mut args.args {
         get(arg, out)?;
     }
+    if let Some(arg) = &mut args.varargs {
+        get(arg, out)?;
+    }
     for (_, arg) in &mut args.kwargs {
+        get(arg, out)?;
+    }
+    if let Some(arg) = &mut args.kwmap {
         get(arg, out)?;
     }
     Ok(())
@@ -217,6 +234,29 @@ fn gettarget(target: &mut AssignTarget, out: &mut State) -> Result<()> {
             for child in targets {
                 gettarget(child, out)?;
             }
+        }
+        AssignTargetDesc::Attr(owner, _attr) => {
+            get(owner, out)?;
+        }
+    }
+    Ok(())
+}
+
+fn getaugtarget(target: &mut AssignTarget, out: &mut State) -> Result<()> {
+    let mark = target.mark().clone();
+    match target.desc_mut() {
+        AssignTargetDesc::Name(name) => {
+            if !out.write.contains_key(name) {
+                out.write.insert(name.clone(), mark.clone());
+            }
+            if !out.read.contains_key(name) {
+                out.read.insert(name.clone(), mark);
+            }
+        }
+        AssignTargetDesc::List(_) => {
+            return Err(rterr!(
+                "List patterns cannot be the target of an augmented assignment"
+            ));
         }
         AssignTargetDesc::Attr(owner, _attr) => {
             get(owner, out)?;

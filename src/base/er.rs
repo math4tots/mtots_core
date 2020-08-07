@@ -119,6 +119,12 @@ impl Error {
         }
         Self::new("RuntimeError".into(), message, trace)
     }
+    pub fn type_(&self) -> &RcStr {
+        &self.0.type_
+    }
+    pub fn message(&self) -> &RcStr {
+        &self.0.message
+    }
     pub fn format(&self) -> String {
         format!("{}", self)
     }

@@ -183,6 +183,20 @@ impl Value {
             Err(self.terr("list"))
         }
     }
+    pub fn map(&self) -> Result<&Rc<Map>> {
+        if let Self::Map(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("map"))
+        }
+    }
+    pub fn into_map(self) -> Result<Rc<Map>> {
+        if let Self::Map(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("map"))
+        }
+    }
     pub fn function(&self) -> Result<&Rc<Function>> {
         if let Self::Function(func) = self {
             Ok(func)
@@ -336,13 +350,17 @@ impl Value {
             _ => Err(rterr!("{:?} is not a function", self)),
         }
     }
-    pub fn apply_method(
+    pub fn apply_method<M>(
         &self,
         globals: &mut Globals,
-        method_name: &RcStr,
+        method_name: &M,
         mut args: Vec<Value>,
         kwargs: Option<HashMap<RcStr, Value>>,
-    ) -> Result<Value> {
+    ) -> Result<Value>
+    where
+        M: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + ?Sized,
+        RcStr: std::borrow::Borrow<M>,
+    {
         match self {
             Self::Class(cls) => match cls.static_map().get(method_name) {
                 Some(method) => method.apply(globals, args, kwargs),
@@ -423,7 +441,7 @@ impl Value {
                 let i = index.to_index(list.len())?;
                 Ok(list[i].clone())
             }
-            _ => self.apply_method(globals, &"__getitem".into(), vec![index.clone()], None),
+            _ => self.apply_method(globals, "__getitem", vec![index.clone()], None),
         }
     }
 }

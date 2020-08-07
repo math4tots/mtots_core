@@ -213,6 +213,7 @@ define_punctuators! {
     Nonlocal "nonlocal",
     Not "not",
     Or "or",
+    Raise "raise",
     Return "return",
     Static "static",
     Switch "switch",

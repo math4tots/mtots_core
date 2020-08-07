@@ -394,9 +394,6 @@ impl Function {
         bindings: Vec<Rc<RefCell<Value>>>,
         is_generator: bool,
     ) -> Self {
-        if argspec.nparams() != code.params().len() {
-            println!("code.name = {}", code.name());
-        }
         assert_eq!(argspec.nparams(), code.params().len());
         Self {
             argspec,
