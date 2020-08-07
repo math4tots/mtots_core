@@ -8,11 +8,100 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::path::MAIN_SEPARATOR;
 
 pub(super) fn new() -> NativeModule {
     NativeModule::new("a.fs", |builder| {
         builder
             .doc("Module for interacting with the file system")
+            .val(
+                "sep",
+                concat!(
+                    "File path separator\n",
+                    "Basically \\ on windows and / everywhere else",
+                ),
+                MAIN_SEPARATOR,
+            )
+            .func(
+                "dirname",
+                ["path"],
+                concat!(
+                    "Gets the directory component of a path ",
+                    "(essentially a path's parent)",
+                ),
+                |_globals, args, _| {
+                    let arg = args.into_iter().next().unwrap();
+                    let path = Path::new(arg.string()?);
+                    println!("path -> {:?}, parent -> {:?}", path, path.parent());
+                    match path.parent() {
+                        Some(parent) => Value::try_from(parent.as_os_str()),
+                        None => Ok(Value::from("")),
+                    }
+                },
+            )
+            .func(
+                "basename",
+                ["path"],
+                concat!("Gets the file name of a path",),
+                |_globals, args, _| {
+                    let arg = args.into_iter().next().unwrap();
+                    let path = Path::new(arg.string()?);
+                    match path.file_name() {
+                        Some(name) => Value::try_from(name),
+                        None => Ok(Value::from("")),
+                    }
+                },
+            )
+            .func(
+                "stem",
+                ["path"],
+                concat!("Extracts the stem (non-extension) portion of a paths' file name",),
+                |_globals, args, _| {
+                    let arg = args.into_iter().next().unwrap();
+                    let path = Path::new(arg.string()?);
+                    match path.file_stem() {
+                        Some(name) => Value::try_from(name),
+                        None => Ok(Value::from("")),
+                    }
+                },
+            )
+            .func(
+                "relpath",
+                ["start", "end"],
+                concat!("Returns the relative path that when joined with start will result in end",),
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let startval = args.next().unwrap();
+                    let start = Path::new(startval.string()?);
+                    let endval = args.next().unwrap();
+                    let end = Path::new(endval.string()?);
+                    if let Some(common) = common_path(end, start) {
+                        let mut ret = PathBuf::new();
+                        for _ in 0..start.strip_prefix(common).unwrap().iter().count() {
+                            ret.push("..");
+                        }
+                        ret.push(end.strip_prefix(common).unwrap());
+                        Ok(Value::try_from(ret.into_os_string())?)
+                    } else {
+                        // If there's no common ancestor, there's no way to get
+                        // from one to the other, so just return itself
+                        Ok(endval)
+                    }
+                },
+            )
+            .func(
+                "join",
+                ArgSpec::builder().var("parts"),
+                concat!("Creates a new path from parts",),
+                |_globals, args, _| {
+                    let mut path = PathBuf::new();
+                    for part in args {
+                        let part = part.string()?;
+                        path.push(part.str());
+                    }
+                    Value::try_from(path.into_os_string())
+                },
+            )
             .func("isfile", ["path"], "", |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
                 let path = Path::new(arg.string()?);
@@ -23,6 +112,22 @@ pub(super) fn new() -> NativeModule {
                 let path = Path::new(arg.string()?);
                 Ok(Value::from(path.is_dir()))
             })
+            .func(
+                "canon",
+                ["path"],
+                concat!(
+                    "Returns the canonical, absolute form of a path with all ",
+                    "intermediate components normalized and symbolic links ",
+                    "resolved\n",
+                    "Will throw if the resulting path is not valid UTF-8",
+                ),
+                |_globals, args, _| {
+                    let arg = args.into_iter().next().unwrap();
+                    let path = Path::new(arg.string()?);
+                    let path = path.canonicalize()?;
+                    Ok(Value::try_from(path.into_os_string())?)
+                },
+            )
             .func(
                 "cwd",
                 (),
@@ -187,4 +292,15 @@ pub(super) fn new() -> NativeModule {
             )
             .build()
     })
+}
+
+fn common_path<'a>(a: &'a Path, b: &Path) -> Option<&'a Path> {
+    let mut cur = Some(a);
+    while let Some(new_path) = cur {
+        if b.starts_with(new_path) {
+            return Some(new_path);
+        }
+        cur = new_path.parent();
+    }
+    None
 }

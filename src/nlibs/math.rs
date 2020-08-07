@@ -9,9 +9,9 @@ use std::collections::HashMap;
 pub(super) fn new() -> NativeModule {
     NativeModule::new("a.math", |builder| {
         builder
-            .val("PI", "", std::f64::consts::PI)
-            .val("TAU", "", std::f64::consts::PI * 2.0)
-            .val("E", "", std::f64::consts::E)
+            .val("pi", "", std::f64::consts::PI)
+            .val("tau", "", std::f64::consts::PI * 2.0)
+            .val("e", "", std::f64::consts::E)
             .func("sin", ["x"], "Computes sin in radians", wrap1(f64::sin))
             .func("cos", ["x"], "Computes cos in radians", wrap1(f64::cos))
             .func("tan", ["x"], "Computes tan in radians", wrap1(f64::tan))

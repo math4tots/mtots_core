@@ -31,8 +31,8 @@ impl Globals {
     }
     fn find_source(&self, name: &RcStr) -> Result<Option<Rc<Source>>> {
         if let Some(path) = self.find_source_path(name) {
-            let srcpath = Some(format!("{:?}", path).into());
-            let data = fs::read_to_string(path)?;
+            let data = fs::read_to_string(path.clone())?;
+            let srcpath = Some(path.into());
             Ok(Some(Source::new(name.clone(), srcpath, data.into()).into()))
         } else {
             Ok(None)

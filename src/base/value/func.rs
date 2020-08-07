@@ -52,6 +52,7 @@ impl ArgSpec {
 
     pub fn apply(
         &self,
+        flatten_varargs: bool,
         mut args: Vec<Value>,
         mut kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<(Vec<Value>, Option<HashMap<RcStr, Value>>)> {
@@ -116,7 +117,7 @@ impl ArgSpec {
                 args.push(defval.into());
             }
         }
-        if self.var.is_some() {
+        if self.var.is_some() && flatten_varargs {
             let vec: Vec<_> = args.drain(upper..).collect();
             args.push(vec.into());
         }
@@ -130,7 +131,7 @@ impl ArgSpec {
         args: Vec<Value>,
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Vec<Value>> {
-        let (mut args, kwargs) = self.apply(args, kwargs)?;
+        let (mut args, kwargs) = self.apply(true, args, kwargs)?;
         if self.key.is_some() {
             if let Some(kwargs) = kwargs {
                 args.push(kwargs.into());
@@ -248,12 +249,12 @@ impl ArgSpecBuilder {
         self.def.push((name.into(), value.into()));
         self
     }
-    pub fn var<S: Into<Option<RcStr>>>(mut self, optname: S) -> Self {
-        self.var = optname.into();
+    pub fn var<S: Into<RcStr>>(mut self, optname: S) -> Self {
+        self.var = Some(optname.into());
         self
     }
-    pub fn key<S: Into<Option<RcStr>>>(mut self, keyname: S) -> Self {
-        self.key = keyname.into();
+    pub fn key<S: Into<RcStr>>(mut self, keyname: S) -> Self {
+        self.key = Some(keyname.into());
         self
     }
 }
@@ -324,7 +325,7 @@ impl NativeFunction {
         args: Vec<Value>,
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
-        let (args, kwargs) = self.argspec.apply(args, kwargs)?;
+        let (args, kwargs) = self.argspec.apply(false, args, kwargs)?;
         (self.body)(globals, args, kwargs)
     }
 }
@@ -402,6 +403,9 @@ impl Function {
     pub fn is_generator(&self) -> bool {
         self.is_generator
     }
+    pub fn code(&self) -> &Rc<Code> {
+        &self.code
+    }
     pub fn apply(
         &self,
         globals: &mut Globals,
@@ -410,7 +414,7 @@ impl Function {
     ) -> Result<Value> {
         let args = self.argspec.apply_and_append_kwmap(args, kwargs)?;
         if self.is_generator {
-            let frame = self.code.new_frame(self.bindings.clone());
+            let frame = self.code.new_frame_with_args(self.bindings.clone(), args);
             Ok(Generator::new(self.code.clone(), frame).into())
         } else {
             self.code

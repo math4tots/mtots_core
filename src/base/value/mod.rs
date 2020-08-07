@@ -107,6 +107,27 @@ impl Value {
     fn terr(&self, etype: &str) -> Error {
         rterr!("Expected {} but got {}", etype, self.debug_typename())
     }
+    pub fn is(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Invalid, Self::Invalid) => true,
+            (Self::Nil, Self::Nil) => true,
+            (Self::Bool(a), Self::Bool(b)) => a == b,
+            (Self::Number(a), Self::Number(b)) => a == b,
+            (Self::String(a), Self::String(b)) => a.as_ptr() == b.as_ptr(),
+            (Self::List(a), Self::List(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Set(a), Self::Set(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Map(a), Self::Map(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Table(a), Self::Table(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Function(a), Self::Function(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::NativeFunction(a), Self::NativeFunction(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Generator(a), Self::Generator(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::NativeGenerator(a), Self::NativeGenerator(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Class(a), Self::Class(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Module(a), Self::Module(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Handle(a), Self::Handle(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            _ => false,
+        }
+    }
     pub fn is_nil(&self) -> bool {
         matches!(self, Value::Nil)
     }
@@ -131,7 +152,21 @@ impl Value {
             Err(self.terr("string"))
         }
     }
+    pub fn into_string(self) -> Result<RcStr> {
+        if let Self::String(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("string"))
+        }
+    }
     pub fn list(&self) -> Result<&Rc<List>> {
+        if let Self::List(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("list"))
+        }
+    }
+    pub fn into_list(self) -> Result<Rc<List>> {
         if let Self::List(x) = self {
             Ok(x)
         } else {
@@ -176,6 +211,13 @@ impl Value {
             Err(self.terr("module"))
         }
     }
+    pub fn into_module(self) -> Result<Rc<Module>> {
+        if let Self::Module(m) = self {
+            Ok(m)
+        } else {
+            Err(self.terr("module"))
+        }
+    }
     pub fn handle<T: Any>(self) -> Result<Handle<T>> {
         if let Self::Handle(data) = self {
             HandleData::downcast(data)
@@ -196,7 +238,7 @@ impl Value {
     pub fn unwrap_or_clone_handle<T: Any + Clone>(self) -> Result<T> {
         Ok(self.handle::<T>()?.unwrap_or_clone())
     }
-    pub fn into_rcstr(self) -> RcStr {
+    pub fn convert_to_rcstr(self) -> RcStr {
         match self {
             Self::String(r) => r,
             _ => format!("{}", self).into(),

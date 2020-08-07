@@ -71,6 +71,16 @@ impl Code {
         )
     }
 
+    pub(crate) fn new_frame_with_args(
+        &self,
+        bindings: Vec<Rc<RefCell<Value>>>,
+        args: Vec<Value>,
+    ) -> Frame {
+        let mut frame = self.new_frame(bindings);
+        frame.setargs(self.params(), args);
+        frame
+    }
+
     /// For function calls
     /// runs this code object with the given bindings and arguments
     pub fn apply_for_function(
@@ -79,8 +89,7 @@ impl Code {
         bindings: Vec<Rc<RefCell<Value>>>,
         args: Vec<Value>,
     ) -> Result<Value> {
-        let mut frame = self.new_frame(bindings);
-        frame.setargs(self.params(), args);
+        let mut frame = self.new_frame_with_args(bindings, args);
         self.run_frame(globals, &mut frame)
     }
 
@@ -185,5 +194,20 @@ impl Code {
                 StepResult::Err(error) => return ResumeResult::Err(error),
             }
         }
+    }
+
+    pub fn disasm(&self) -> Result<String> {
+        let mut ret = String::new();
+        let out = &mut ret;
+        writeln!(out, "DISASM for {}", self.name)?;
+        writeln!(out, "    PARAMS ({})", self.params.len())?;
+        for (loc, param) in self.params.iter().enumerate() {
+            writeln!(out, "        {:<4} {:?}", loc, param)?;
+        }
+        writeln!(out, "    OPCODES")?;
+        for (loc, op) in self.ops.iter().enumerate() {
+            writeln!(out, "        {:<8} {:?}", loc, op)?;
+        }
+        Ok(ret)
     }
 }

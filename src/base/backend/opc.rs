@@ -246,6 +246,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     Value::Number(a) => Value::Bool(a < get0!(rhs.number())),
                     _ => operr!(),
                 },
+                Binop::Eq => Value::from(lhs == rhs),
+                Binop::Ne => Value::from(lhs != rhs),
+                Binop::Is => Value::from(lhs.is(&rhs)),
+                Binop::IsNot => Value::from(!lhs.is(&rhs)),
                 _ => panic!("TODO step Binop {:?}", op),
             };
             frame.push(result);
@@ -260,6 +264,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             // and pushes two values: the value, and true/false depending
             // on whether there was a next value
             let iter = frame.peek();
+            addtrace!();
             match iter.resume(globals, Value::Nil) {
                 ResumeResult::Yield(value) => {
                     frame.push(value);
@@ -270,10 +275,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     frame.push(false.into());
                 }
                 ResumeResult::Err(error) => {
-                    addtrace!();
                     return StepResult::Err(error);
                 }
             }
+            globals.trace_pop();
         }
         Opcode::Yield => {
             let value = frame.pop();

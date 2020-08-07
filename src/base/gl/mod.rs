@@ -22,6 +22,7 @@ use std::cell::RefCell;
 use std::cmp;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::rc::Rc;
 mod bltn;
 mod clss;
@@ -113,19 +114,28 @@ impl Globals {
     }
     pub fn exec(&mut self, source: Rc<Source>) -> Result<Rc<Module>> {
         let name = source.name().clone();
-        let pathstr = source.path().clone().map(RcStr::from);
+        let path = source.path().clone();
         let mut display = self.parse(source)?;
         annotate(&mut display)?;
         let code = compile(&display)?;
         let mut map = self.builtins.clone();
         map.insert("__name".into(), name.into());
-        if let Some(pathstr) = pathstr {
-            map.insert("__file".into(), pathstr.into());
+        if let Some(path) = path {
+            if let Some(pathstr) = path.to_str() {
+                map.insert("__file".into(), pathstr.into());
+            }
         }
         code.apply_for_module(self, &map)
     }
     pub fn exec_str(&mut self, name: &str, path: Option<&str>, data: &str) -> Result<Rc<Module>> {
-        self.exec(Source::new(name.into(), path.map(RcStr::from), data.into()).into())
+        self.exec(
+            Source::new(
+                name.into(),
+                path.map(PathBuf::from).map(Rc::from),
+                data.into(),
+            )
+            .into(),
+        )
     }
     pub fn exec_repl(&mut self, data: &str) -> Result<Value> {
         let mut display = self.parse(Rc::new(Source::new("[repl]".into(), None, data.into())))?;

@@ -86,6 +86,12 @@ impl From<f64> for Value {
     }
 }
 
+impl From<char> for Value {
+    fn from(c: char) -> Self {
+        Self::String(format!("{}", c).into())
+    }
+}
+
 impl From<&str> for Value {
     fn from(s: &str) -> Self {
         Self::String(s.into())

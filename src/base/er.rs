@@ -1,18 +1,19 @@
 use crate::RcStr;
 use std::fmt;
 use std::fmt::Write;
+use std::path::Path;
 use std::rc::Rc;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Source {
     name: RcStr,
-    path: Option<RcStr>,
+    path: Option<Rc<Path>>,
     data: RcStr,
 }
 
 impl Source {
-    pub fn new(name: RcStr, path: Option<RcStr>, data: RcStr) -> Self {
+    pub fn new(name: RcStr, path: Option<Rc<Path>>, data: RcStr) -> Self {
         Self { name, path, data }
     }
     // the name of this source
@@ -22,7 +23,7 @@ impl Source {
     }
     // the path where this source was found, if available
     // Sometimes there's no good path for a source (e.g. REPL, one-of strings)
-    pub fn path(&self) -> &Option<RcStr> {
+    pub fn path(&self) -> &Option<Rc<Path>> {
         &self.path
     }
     pub fn data(&self) -> &RcStr {
@@ -61,8 +62,8 @@ impl Mark {
             out,
             "in {}{} on line {}",
             self.source.name,
-            if let Some(pathstr) = self.source.path() {
-                format!(" (file {:?})", pathstr)
+            if let Some(path) = self.source.path() {
+                format!(" (file {:?})", path)
             } else {
                 "".to_owned()
             },
@@ -130,6 +131,12 @@ impl Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Self::new("IOError".into(), format!("{:?}", e).into(), vec![])
+    }
+}
+
+impl From<std::fmt::Error> for Error {
+    fn from(e: std::fmt::Error) -> Self {
+        Self::rt(format!("{:?}", e).into(), vec![])
     }
 }
 

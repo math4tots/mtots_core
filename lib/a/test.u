@@ -1,12 +1,14 @@
 # cargo run libs/ -m a.test -- folder_with_test_sources/ [package_to_test]
-import a.os
-import a.os::PIPE
-import a.os::UTF8
-import a.os::Process
-import a.os::Path
+# import a.os
+# import a.os::PIPE
+# import a.os::UTF8
+# import a.os::Process
+# import a.os::Path
+import a.fs
+import a.env
 
 def main() {
-    args = os.args()
+    args = env.args()
     if args.len() is 1 {
         [root_dir] = args
         test_pkg = ''
@@ -17,12 +19,13 @@ def main() {
 }
 
 def run(root_dir, test_pkg=nil) {
+    print(['root_dir', root_dir])
     if test_pkg is nil { test_pkg = '' }
-    root_dir = Path(root_dir).canon()
+    root_dir = fs.canon(root_dir)
     for module_name in _get_module_names(root_dir, test_pkg) {
         print(module_name)
         module = __import(module_name)
-        keys = module.keys().filter(def(k) = str(k).starts_with('__test_')).to(List)
+        keys = __module_keys(module).filter(def(k) = k.starts_with('__test_'))
         if keys {
             for attr in keys {
                 attr_str = str(attr)
@@ -36,14 +39,14 @@ def run(root_dir, test_pkg=nil) {
 }
 
 def* _get_module_names(root, package_name) {
-    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name.replace('.', os::sep))) {
-        if filepaths.map(def(fp) = fp.basename()).has('__init.u') {
-            yield str(dirpath.relpath(root)).replace(os::sep, '.')
+    for [dirpath, _dirnames, filenames] in fs.walk(fs.join(root, package_name.replace('.', fs.sep))) {
+        if filenames.map(fs.basename).has('__init.u') {
+            yield str(fs.relpath(root, dirpath)).replace(fs.sep, '.')
         }
-        for filepath in sorted(filepaths) {
-            basename = filepath.basename()
-            if basename.ends_with('.u') and basename != '__init.u' {
-                yield str(filepath.relpath(root)).rstrip('.u').replace(os::sep, '.')
+        for filename in sorted(filenames) {
+            filepath = fs.join(dirpath, filename)
+            if filename.ends_with('.u') and filename != '__init.u' {
+                yield str(fs.relpath(root, filepath)).rstrip('.u').replace(fs.sep, '.')
             }
         }
     }

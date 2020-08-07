@@ -14,7 +14,7 @@ impl Globals {
                 Ok(Value::Nil)
             }),
             NativeFunction::new("str", ["x"], None, |_globals, args, _| {
-                Ok(args.into_iter().next().unwrap().into_rcstr().into())
+                Ok(args.into_iter().next().unwrap().convert_to_rcstr().into())
             }),
             NativeFunction::new("sorted", ["x"], None, |globals, args, _| {
                 let mut list = args.into_iter().next().unwrap().unpack(globals)?;
@@ -25,6 +25,21 @@ impl Globals {
                 let name = args.into_iter().next().unwrap();
                 let name = name.string()?;
                 Ok(globals.load(name)?.into())
+            }),
+            NativeFunction::new("__module_keys", ["module"], None, |_globals, args, _| {
+                let module = args.into_iter().next().unwrap().into_module()?;
+                Ok(module
+                    .map()
+                    .iter()
+                    .map(|(key, _)| Value::from(key.clone()))
+                    .collect::<Vec<_>>()
+                    .into())
+            }),
+            NativeFunction::new("__disasm", ["func"], None, |_globals, args, _| {
+                let func = args.into_iter().next().unwrap();
+                let func = func.function()?;
+                let string = func.code().disasm()?;
+                Ok(Value::from(string))
             }),
             NativeFunction::new("__main", (), None, |globals, _args, _| {
                 Ok(globals

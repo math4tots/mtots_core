@@ -23,8 +23,120 @@ impl ClassManager {
         let Nil = Class::new("Nil".into(), HashMap::new(), HashMap::new());
         let Bool = Class::new("Bool".into(), HashMap::new(), HashMap::new());
         let Number = Class::new("Number".into(), HashMap::new(), HashMap::new());
-        let String = Class::new("String".into(), HashMap::new(), HashMap::new());
-        let List = Class::new("List".into(), HashMap::new(), HashMap::new());
+        let String = Class::new(
+            "String".into(),
+            Class::map_from_funcs(vec![
+                NativeFunction::new(
+                    "replace",
+                    ["self", "old", "new"],
+                    "Returns a new string with the old pattern replaced with the new",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let owner = owner.string()?;
+                        let old = args.next().unwrap();
+                        let old = old.string()?;
+                        let new = args.next().unwrap();
+                        let new = new.string()?;
+                        Ok(owner.replace(old.str(), new.str()).into())
+                    },
+                ),
+                NativeFunction::new(
+                    "starts_with",
+                    ["self", "prefix"],
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let prefix = args.next().unwrap().into_string()?;
+                        Ok(owner.starts_with(prefix.str()).into())
+                    },
+                ),
+                NativeFunction::new(
+                    "ends_with",
+                    ["self", "suffix"],
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let suffix = args.next().unwrap().into_string()?;
+                        Ok(owner.ends_with(suffix.str()).into())
+                    },
+                ),
+                NativeFunction::new(
+                    "rstrip",
+                    ["self", "suffix"],
+                    "Returns self with suffix removed, if it ends with the given suffix",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let suffix = args.next().unwrap().into_string()?;
+                        if owner.ends_with(suffix.str()) {
+                            let stripped = &owner[..owner.len() - suffix.len()];
+                            Ok(stripped.into())
+                        } else {
+                            Ok(owner.into())
+                        }
+                    },
+                ),
+                NativeFunction::new(
+                    "lstrip",
+                    ["self", "prefix"],
+                    "Returns self with prefix removed, if it starts with the given prefix",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let prefix = args.next().unwrap().into_string()?;
+                        if owner.starts_with(prefix.str()) {
+                            let stripped = &owner[prefix.len()..];
+                            Ok(stripped.into())
+                        } else {
+                            Ok(owner.into())
+                        }
+                    },
+                ),
+            ]),
+            HashMap::new(),
+        );
+        let List = Class::new(
+            "List".into(),
+            Class::map_from_funcs(vec![
+                NativeFunction::new("map", ["self", "f"], None, |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let f = args.next().unwrap();
+                    let mut ret = Vec::<Value>::new();
+                    for x in owner.borrow().iter() {
+                        ret.push(f.apply(globals, vec![x.clone()], None)?);
+                    }
+                    Ok(ret.into())
+                }),
+                NativeFunction::new("filter", ["self", "f"], None, |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let f = args.next().unwrap();
+                    let mut ret = Vec::<Value>::new();
+                    for x in owner.borrow().iter() {
+                        if f.apply(globals, vec![x.clone()], None)?.truthy() {
+                            ret.push(x.clone());
+                        }
+                    }
+                    Ok(ret.into())
+                }),
+                NativeFunction::new("has", ["self", "x"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let x = args.next().unwrap();
+                    for value in owner.borrow().iter() {
+                        if &x == value {
+                            return Ok(true.into());
+                        }
+                    }
+                    Ok(false.into())
+                }),
+            ]),
+            HashMap::new(),
+        );
         let Set = Class::new(
             "Set".into(),
             HashMap::new(),
