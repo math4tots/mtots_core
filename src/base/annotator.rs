@@ -93,6 +93,9 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             get(lhs, out)?;
             get(rhs, out)?;
         }
+        ExprDesc::Unop(_op, expr) => {
+            get(expr, out)?;
+        }
         ExprDesc::Attr(owner, _attr) => {
             get(owner, out)?;
         }

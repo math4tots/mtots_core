@@ -231,6 +231,13 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::Unop(op, arg) => {
+                self.expr(arg, true)?;
+                self.add(Opcode::Unop(*op), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Attr(owner, attr) => {
                 self.expr(owner, true)?;
                 self.add(Opcode::GetAttr(attr.clone()), mark.clone());

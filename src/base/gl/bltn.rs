@@ -21,6 +21,22 @@ impl Globals {
                 list.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
                 Ok(list.into())
             }),
+            NativeFunction::new("assert_eq", ["a", "b"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let a = args.next().unwrap();
+                let b = args.next().unwrap();
+                if a != b {
+                    Err(rterr!("Expected {:?} to equal {:?}", a, b))
+                } else {
+                    Ok(Value::Nil)
+                }
+            }),
+            NativeFunction::new("getattr", ["owner", "name"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap();
+                let name = args.next().unwrap().into_string()?;
+                owner.getattr(&name)
+            }),
             NativeFunction::new("__import", ["name"], None, |globals, args, _| {
                 let name = args.into_iter().next().unwrap();
                 let name = name.string()?;

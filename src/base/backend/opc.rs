@@ -24,6 +24,7 @@ pub(crate) enum Opcode {
 
     New(Box<Vec<RcStr>>),
     Binop(Binop),
+    Unop(Unop),
 
     Iter,
     Next,
@@ -242,6 +243,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     }),
                     _ => operr!(),
                 },
+                Binop::Pow => match lhs {
+                    Value::Number(a) => Value::Number(a.powf(get0!(rhs.number()))),
+                    _ => operr!(),
+                },
                 Binop::Lt => match lhs {
                     Value::Number(a) => Value::Bool(a < get0!(rhs.number())),
                     _ => operr!(),
@@ -251,6 +256,32 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 Binop::Is => Value::from(lhs.is(&rhs)),
                 Binop::IsNot => Value::from(!lhs.is(&rhs)),
                 _ => panic!("TODO step Binop {:?}", op),
+            };
+            frame.push(result);
+        }
+        Opcode::Unop(op) => {
+            let arg = frame.pop();
+
+            macro_rules! operr {
+                () => {
+                    err!(
+                        "Unop {:?} not supported for {:?}",
+                        op,
+                        arg.get_class(globals)
+                    )
+                };
+            }
+
+            let result = match op {
+                Unop::Pos => match arg {
+                    Value::Number(_) => arg,
+                    _ => operr!(),
+                },
+                Unop::Neg => match arg {
+                    Value::Number(a) => Value::Number(-a),
+                    _ => operr!(),
+                },
+                Unop::Not => Value::from(!arg.truthy()),
             };
             frame.push(result);
         }

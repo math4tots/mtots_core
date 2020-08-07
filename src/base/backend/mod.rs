@@ -8,6 +8,7 @@ use crate::IndexMap;
 use crate::Key;
 use crate::Mark;
 use crate::Module;
+use crate::Unop;
 use crate::RcStr;
 use crate::Result;
 use crate::ResumeResult;

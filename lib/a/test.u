@@ -30,7 +30,7 @@ def run(root_dir, test_pkg=nil) {
             for attr in keys {
                 attr_str = str(attr)
                 print('  ' + attr_str)
-                module.get(attr)()
+                getattr(module, attr)()
             }
         } else {
             print('  no tests')
