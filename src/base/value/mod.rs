@@ -25,6 +25,7 @@ use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::cmp;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
@@ -155,6 +156,13 @@ impl Value {
         }
     }
     pub fn class(&self) -> Result<&Rc<Class>> {
+        if let Self::Class(cls) = self {
+            Ok(cls)
+        } else {
+            Err(self.terr("class"))
+        }
+    }
+    pub fn into_class(self) -> Result<Rc<Class>> {
         if let Self::Class(cls) = self {
             Ok(cls)
         } else {

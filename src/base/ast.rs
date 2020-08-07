@@ -151,7 +151,6 @@ impl ModuleDisplay {
 
 #[derive(Debug)]
 pub struct Args {
-    pub method: Option<RcStr>,
     pub args: Vec<Expr>,
     pub kwargs: Vec<(RcStr, Expr)>,
 }
@@ -159,7 +158,6 @@ pub struct Args {
 impl Args {
     pub fn new(args: Vec<Expr>, kwargs: Vec<(RcStr, Expr)>) -> Self {
         Self {
-            method: None,
             args,
             kwargs,
         }

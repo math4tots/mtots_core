@@ -57,6 +57,11 @@ impl Frame {
         self.stack.drain(len - n..).collect()
     }
     #[inline(always)]
+    pub(super) fn popn_iter<'a>(&'a mut self, n: usize) -> impl Iterator<Item = Value> + 'a {
+        let len = self.stack.len();
+        self.stack.drain(len - n..)
+    }
+    #[inline(always)]
     pub(super) fn pushn<I: IntoIterator<Item = Value>>(&mut self, vec: I) {
         self.stack.extend(vec);
     }

@@ -1,5 +1,6 @@
 use crate::ArgSpec;
 use crate::Binop;
+use crate::Class;
 use crate::Error;
 use crate::Function;
 use crate::Globals;

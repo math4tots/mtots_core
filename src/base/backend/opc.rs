@@ -38,6 +38,7 @@ pub(crate) enum Opcode {
     CallMethod(Box<CallMethodDesc>),
 
     NewFunction(Box<NewFunctionDesc>),
+    NewClass(Box<NewClassDesc>),
 }
 
 impl Opcode {
@@ -75,6 +76,14 @@ pub(crate) struct NewFunctionDesc {
     pub freevar_binding_slots: Vec<usize>,
 
     pub is_generator: bool,
+}
+
+#[derive(Debug)]
+pub(crate) struct NewClassDesc {
+    pub name: RcStr,
+    pub nbases: usize,
+    pub method_names: Vec<RcStr>,
+    pub static_method_names: Vec<RcStr>,
 }
 
 #[inline(always)]
@@ -158,13 +167,16 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         }
         Opcode::NewMap(len) => {
             let len = *len as usize;
-            let mut iter = frame.popn(2 * len).into_iter();
-            let mut map = IndexMap::new();
-            while let Some(key) = iter.next() {
-                let key = get0!(Key::try_from(key));
-                let value = iter.next().unwrap();
-                map.insert(key, value);
-            }
+            let map = {
+                let mut iter = frame.popn_iter(2 * len);
+                let mut map = IndexMap::new();
+                while let Some(key) = iter.next() {
+                    let key = get0!(Key::try_from(key));
+                    let value = iter.next().unwrap();
+                    map.insert(key, value);
+                }
+                map
+            };
             frame.push(map.into());
         }
         Opcode::GetVar(var) => {
@@ -322,6 +334,32 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 desc.is_generator,
             );
             frame.push(func.into());
+        }
+        Opcode::NewClass(desc) => {
+            let static_methods = frame.popn_iter(desc.static_method_names.len());
+            let static_map = desc
+                .static_method_names
+                .iter()
+                .map(Clone::clone)
+                .zip(static_methods)
+                .collect::<HashMap<_, _>>();
+
+            let methods = frame.popn(desc.method_names.len());
+            let map = desc
+                .method_names
+                .iter()
+                .map(Clone::clone)
+                .zip(methods)
+                .collect::<HashMap<_, _>>();
+            let bases: Vec<_> = get0!(frame
+                .popn_iter(desc.nbases)
+                .map(Value::into_class)
+                .collect());
+            let map = Class::join_class_maps(map, bases);
+
+            let cls = Class::new(desc.name.clone(), map, static_map);
+
+            frame.push(cls.into());
         }
     }
     StepResult::Ok

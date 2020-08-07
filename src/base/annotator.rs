@@ -138,6 +138,23 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
             *varspec = Some(spec);
         }
+        ExprDesc::Class {
+            name: _,
+            bases,
+            docstr: _,
+            methods,
+            static_methods,
+        } => {
+            for base in bases {
+                get(base, out)?;
+            }
+            for (_, expr) in methods {
+                get(expr, out)?;
+            }
+            for (_, expr) in static_methods {
+                get(expr, out)?;
+            }
+        }
         desc => panic!("TODO: annotate {:?}", desc),
     }
     Ok(())

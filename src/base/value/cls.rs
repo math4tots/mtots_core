@@ -40,6 +40,24 @@ impl Class {
         }
         map
     }
+
+    pub fn join_class_maps<C: AsRef<Class>>(
+        mut map: HashMap<RcStr, Value>,
+        classes: Vec<C>,
+    ) -> HashMap<RcStr, Value> {
+        for cls in classes {
+            let cls = cls.as_ref();
+            for (key, val) in &cls.map {
+                match map.entry(key.clone()) {
+                    Entry::Occupied(_) => {}
+                    Entry::Vacant(entry) => {
+                        entry.insert(val.clone());
+                    }
+                }
+            }
+        }
+        map
+    }
 }
 
 impl cmp::PartialEq for Class {

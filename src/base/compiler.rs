@@ -2,6 +2,7 @@ use crate::base::ast::*;
 use crate::Code;
 use crate::Error;
 use crate::Mark;
+use crate::NewClassDesc;
 use crate::NewFunctionDesc;
 use crate::Opcode;
 use crate::RcStr;
@@ -211,7 +212,10 @@ impl Builder {
             ExprDesc::Binop(op, lhs, rhs) => {
                 self.expr(lhs, true)?;
                 self.expr(rhs, true)?;
-                self.add(Opcode::Binop(*op), mark);
+                self.add(Opcode::Binop(*op), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::LogicalBinop(op, lhs, rhs) => {
                 self.expr(lhs, true)?;
@@ -223,6 +227,9 @@ impl Builder {
                 };
                 self.expr(rhs, true)?;
                 self.patch_jump(jump_id);
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::Attr(owner, attr) => {
                 self.expr(owner, true)?;
@@ -273,7 +280,10 @@ impl Builder {
                     Type::Generator => {}
                 }
                 self.expr(valexpr, true)?;
-                self.add(Opcode::Yield, mark);
+                self.add(Opcode::Yield, mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             ExprDesc::Return(valexpr) => {
                 match self.type_ {
@@ -345,7 +355,44 @@ impl Builder {
                     freevar_binding_slots,
                     is_generator: *is_generator,
                 };
-                self.add(Opcode::NewFunction(desc.into()), mark);
+                self.add(Opcode::NewFunction(desc.into()), mark.clone());
+
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
+            ExprDesc::Class {
+                name,
+                bases,
+                docstr: _,
+                methods,
+                static_methods,
+            } => {
+                let name = RcStr::from(format!("{}#{}", self.name, name));
+                for base in bases {
+                    self.expr(base, true)?;
+                }
+                let mut method_names = Vec::new();
+                for (name, method) in methods {
+                    method_names.push(name.clone());
+                    self.expr(method, true)?;
+                }
+                let mut static_method_names = Vec::new();
+                for (name, method) in static_methods {
+                    static_method_names.push(name.clone());
+                    self.expr(method, true)?;
+                }
+                let desc = NewClassDesc {
+                    name,
+                    nbases: bases.len(),
+                    method_names,
+                    static_method_names,
+                };
+                self.add(Opcode::NewClass(desc.into()), mark.clone());
+
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
             }
             desc => panic!("TODO compile {:?}", desc),
         }

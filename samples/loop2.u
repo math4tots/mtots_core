@@ -66,3 +66,13 @@ print(['env.var(HOME)', env.var('HOME')])
 for [key, val] in env.vars() {
     print(['var', key, val])
 }
+
+class Foo {
+    new(a, b) = 0
+    def foo() = 10
+    static def foo(m) = 'static foo ' + m
+}
+
+print(['Foo.foo(asdf)', Foo.foo('asdf')])
+# new(Foo)
+print(Foo(1, 2))

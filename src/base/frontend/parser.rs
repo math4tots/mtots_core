@@ -341,26 +341,40 @@ impl<'a> ParserState<'a> {
             }
         }
 
+        // functions and classes declared at the statement level will always be
+        // included in a module's documentation regardless of whether they have
+        // explicit docs.
+        // This differs form with values explicitly assigned with '=', that are
+        // only included if there are explicit docs.
+        // If you want to avoid including a function or class in a module's docs,
+        // you can do something like
+        //
+        //   some_func = def some_func() = { .. }
+        //
+        // without any followup docs.
+        //
+        fn assign_with_doc(expr: Expr, name: RcStr, docstr: Option<RcStr>) -> Expr {
+            let mark = expr.mark().clone();
+            let assign_expr = assign_name(name.clone(), expr);
+            let docstr = docstr.unwrap_or("".into());
+            Expr::new(mark, ExprDesc::AssignDoc(assign_expr.into(), name, docstr))
+        }
+
         Ok(match expr.desc() {
             ExprDesc::Function {
                 name: Some(name),
                 docstr,
                 ..
             } => {
-                let mark = expr.mark().clone();
                 let name = name.clone();
                 let docstr = docstr.clone();
-                let assigned_func = assign_name(name.clone(), expr);
-                if let Some(docstr) = docstr {
-                    Expr::new(
-                        mark,
-                        ExprDesc::AssignDoc(assigned_func.into(), name, docstr),
-                    )
-                } else {
-                    assigned_func
-                }
+                assign_with_doc(expr, name, docstr)
             }
-            // ExprDesc::ClassDisplay(_, name, ..) => assign_name(name.clone(), expr),
+            ExprDesc::Class { name, docstr, .. } => {
+                let name = name.clone();
+                let docstr = docstr.clone();
+                assign_with_doc(expr, name, docstr)
+            }
             _ => expr,
         })
     }
@@ -826,13 +840,13 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                             );
                             static_methods.push((RcStr::from("__call"), member));
                         } else {
+                            let mark = state.mark();
                             let out = if state.consume(TokenKind::Punctuator(Punctuator::Static)) {
                                 &mut static_methods
                             } else {
                                 &mut methods
                             };
                             let stmt = state.stmt()?;
-                            let mark = state.mark();
                             let (name, member) = match break_assignment(stmt) {
                                 Some((name, member)) => (name, member),
                                 None => {
@@ -1145,6 +1159,7 @@ fn break_assignment(expr: Expr) -> Option<(RcStr, Expr)> {
             (_mark, AssignTargetDesc::Name(name)) => Some((name, *expr)),
             _ => None,
         },
+        (_mark, ExprDesc::AssignDoc(expr, _, _)) => break_assignment(*expr),
         _ => None,
     }
 }
