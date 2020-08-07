@@ -82,7 +82,7 @@ pub(super) fn new() -> NativeModule {
                     "Walk the entire tree, yielding a [dirpath, dirnames, filenames] triple ",
                     "at every directory along the way\n\n",
                     "  'dirpath' is a string, path to the directory\n",
-                    "  'dirnames' is a list of strings containings the names of directories ",
+                    "  'dirnames' is a list of strings containing the names of directories ",
                     "in the current directory (note: these are not full paths)\n",
                     "  'filenames' is a list of strings containing the names of non-directory ",
                     "files in the current directory\n",
