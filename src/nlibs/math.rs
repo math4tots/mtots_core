@@ -35,7 +35,12 @@ pub(super) fn new() -> NativeModule {
             )
             .func("log10", ["x"], "Computes log base 10", wrap1(f64::log10))
             .func("abs", ["x"], "Absolute value", wrap1(f64::abs))
-            .func("sqrt", ["x"], "Returns the square root of a number", wrap1(f64::sqrt))
+            .func(
+                "sqrt",
+                ["x"],
+                "Returns the square root of a number",
+                wrap1(f64::sqrt),
+            )
             .func(
                 "ln",
                 ["x"],

@@ -1,7 +1,7 @@
-use crate::ResumeResult;
-use crate::NativeGenerator;
 use crate::ArgSpec;
+use crate::NativeGenerator;
 use crate::NativeModule;
+use crate::ResumeResult;
 use crate::Value;
 use std::convert::TryFrom;
 use std::env;
@@ -81,7 +81,7 @@ pub(super) fn new() -> NativeModule {
                 concat!(
                     "Walk the entire tree, yielding a [dirpath, dirnames, filenames] triple ",
                     "at every directory along the way\n\n",
-                    "  'dirpath' is a string, a path to the directory\n",
+                    "  'dirpath' is a string, path to the directory\n",
                     "  'dirnames' is a list of strings containings the names of directories ",
                     "in the current directory (note: these are not full paths)\n",
                     "  'filenames' is a list of strings containing the names of non-directory ",
@@ -90,29 +90,75 @@ pub(super) fn new() -> NativeModule {
                 |_globals, args, _| {
                     let pathval = args.into_iter().next().unwrap();
                     let mut stack = vec![PathBuf::from(pathval.unwrap_string_or_clone()?)];
-                    Ok(Value::from(NativeGenerator::new("fs.walk", move |_globals, _| {
-                        if let Some(dirpath) = stack.pop() {
-                            let mut filenames = Vec::new();
-                            let mut dirnames = Vec::new();
-                            for entry in gentry!(fs::read_dir(&dirpath)) {
-                                let entry = gentry!(entry);
-                                let name = gentry!(Value::try_from(entry.file_name()));
-                                if gentry!(entry.file_type()).is_dir() {
-                                    dirnames.push(name);
-                                    stack.push(entry.path());
+                    Ok(Value::from(NativeGenerator::new(
+                        "fs.walk",
+                        move |_globals, _| {
+                            if let Some(dirpath) = stack.pop() {
+                                let mut filenames = Vec::new();
+                                let mut dirnames = Vec::new();
+                                for entry in gentry!(fs::read_dir(&dirpath)) {
+                                    let entry = gentry!(entry);
+                                    let name = gentry!(Value::try_from(entry.file_name()));
+                                    if gentry!(entry.file_type()).is_dir() {
+                                        dirnames.push(name);
+                                        stack.push(entry.path());
+                                    } else {
+                                        filenames.push(name);
+                                    }
+                                }
+                                ResumeResult::Yield(
+                                    vec![
+                                        gentry!(Value::try_from(dirpath.into_os_string())),
+                                        Value::from(dirnames),
+                                        Value::from(filenames),
+                                    ]
+                                    .into(),
+                                )
+                            } else {
+                                ResumeResult::Return(Value::Nil)
+                            }
+                        },
+                    )))
+                },
+            )
+            .func(
+                "files",
+                ["top"],
+                concat!(
+                    "Walk the entire tree, yielding a path for every non-directory ",
+                    "file along the way\n\n",
+                    "NOTE: empty directories are effectively ignored and directories ",
+                    "themselves are never visited on, only files.\n",
+                    "If you need to visit directories, you might want the fs.walk() ",
+                    "function instead",
+                ),
+                |_globals, args, _| {
+                    let pathval = args.into_iter().next().unwrap();
+                    let mut dirs = vec![PathBuf::from(pathval.unwrap_string_or_clone()?)];
+                    let mut files = vec![];
+                    Ok(Value::from(NativeGenerator::new(
+                        "fs.files",
+                        move |_globals, _| {
+                            while files.is_empty() {
+                                if let Some(dir) = dirs.pop() {
+                                    for entry in gentry!(fs::read_dir(&dir)) {
+                                        let entry = gentry!(entry);
+                                        let path = entry.path();
+                                        if gentry!(entry.file_type()).is_dir() {
+                                            dirs.push(path);
+                                        } else {
+                                            files.push(gentry!(Value::try_from(
+                                                path.into_os_string()
+                                            )));
+                                        }
+                                    }
                                 } else {
-                                    filenames.push(name);
+                                    return ResumeResult::Return(Value::Nil);
                                 }
                             }
-                            ResumeResult::Yield(vec![
-                                gentry!(Value::try_from(dirpath.into_os_string())),
-                                Value::from(dirnames),
-                                Value::from(filenames),
-                            ].into())
-                        } else {
-                            ResumeResult::Return(Value::Nil)
-                        }
-                    })))
+                            ResumeResult::Yield(Value::from(files.pop().unwrap()))
+                        },
+                    )))
                 },
             )
             .build()

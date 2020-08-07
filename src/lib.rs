@@ -1,4 +1,3 @@
-
 /// try for generators (where '?' operator won't work)
 #[macro_export]
 macro_rules! gentry {
