@@ -7,7 +7,7 @@ use crate::Value;
 use std::collections::HashMap;
 
 pub(super) fn new() -> NativeModule {
-    NativeModule::new("a.math", |_globals, builder| {
+    NativeModule::new("a.math", |builder| {
         builder
             .val("PI", "", std::f64::consts::PI)
             .val("TAU", "", std::f64::consts::PI * 2.0)

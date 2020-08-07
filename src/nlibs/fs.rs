@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub(super) fn new() -> NativeModule {
-    NativeModule::new("a.fs", |_globals, builder| {
+    NativeModule::new("a.fs", |builder| {
         builder
             .doc("Module for interacting with the file system")
             .func("isfile", ["path"], "", |_globals, args, _| {

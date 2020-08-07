@@ -17,21 +17,18 @@ impl NativeModule {
     pub fn new<N, F>(name: N, f: F) -> Self
     where
         N: Into<RcStr>,
-        F: FnOnce(&mut Globals, NativeModuleBuilder) -> NativeModuleData + 'static,
+        F: FnOnce(NativeModuleBuilder) -> NativeModuleData + 'static,
     {
         Self {
             name: name.into(),
-            data: Box::new(|globals| {
-                f(
-                    globals,
-                    NativeModuleBuilder {
-                        doc: None,
-                        deps: vec![],
-                        fields: vec![],
-                        docmap: HashMap::new(),
-                        action: None,
-                    },
-                )
+            data: Box::new(|_globals| {
+                f(NativeModuleBuilder {
+                    doc: None,
+                    deps: vec![],
+                    fields: vec![],
+                    docmap: HashMap::new(),
+                    action: None,
+                })
             }),
         }
     }
@@ -71,7 +68,7 @@ impl NativeModuleBuilder {
         F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value> + 'static,
     {
         let name = name.into();
-        if let Some(doc) = doc.into().get() {
+        if let Some(doc) = doc.into().as_ref() {
             self.docmap.insert(name.clone(), doc.clone());
         }
         self.fields.push((name, Box::new(body)));
@@ -96,9 +93,23 @@ impl NativeModuleBuilder {
         let name = name.into();
         let argspec = argspec.into();
         let doc = doc.into();
-        self.field(name.clone(), doc.get().clone(), |_globals, _map| {
+        self.field(name.clone(), doc.as_ref().clone(), |_globals, _map| {
             Ok(NativeFunction::new(name, argspec, doc, body).into())
         })
+    }
+    pub fn class<T>(self, name: &str) -> NativeClassBuilder
+    where
+        T: Any,
+    {
+        NativeClassBuilder {
+            module_builder: self,
+            typeid: TypeId::of::<T>(),
+            typename: std::any::type_name::<T>(),
+            name: name.into(),
+            doc: None,
+            map: HashMap::new(),
+            static_map: HashMap::new(),
+        }
     }
     pub fn action<F>(mut self, body: F) -> NativeModuleData
     where
@@ -131,5 +142,35 @@ impl NativeModuleBuilder {
             doc,
             docmap,
         }
+    }
+}
+
+pub struct NativeClassBuilder {
+    module_builder: NativeModuleBuilder,
+    typeid: TypeId,
+    typename: &'static str,
+    name: RcStr,
+    doc: Option<RcStr>,
+    map: HashMap<RcStr, Value>,
+    static_map: HashMap<RcStr, Value>,
+}
+
+impl NativeClassBuilder {
+    pub fn doc<D: Into<DocStr>>(mut self, doc: D) -> Self {
+        self.doc = doc.into().get();
+        self
+    }
+    pub fn build(self) -> NativeModuleBuilder {
+        let mb = self.module_builder;
+        let typeid = self.typeid;
+        let typename = self.typename;
+        let name = self.name;
+        let map = self.map;
+        let static_map = self.static_map;
+        mb.field(name.clone(), self.doc, move |globals, _| {
+            let cls = Class::new(name, map, static_map);
+            globals.set_handle_class_by_id(typeid, typename, cls.clone())?;
+            Ok(cls.into())
+        })
     }
 }

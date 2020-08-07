@@ -261,8 +261,11 @@ impl ArgSpecBuilder {
 pub struct DocStr(Option<RcStr>);
 
 impl DocStr {
-    pub(crate) fn get(&self) -> &Option<RcStr> {
+    pub(crate) fn as_ref(&self) -> &Option<RcStr> {
         &self.0
+    }
+    pub(crate) fn get(self) -> Option<RcStr> {
+        self.0
     }
 }
 

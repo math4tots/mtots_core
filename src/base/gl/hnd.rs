@@ -14,10 +14,18 @@ impl Globals {
         }
     }
     pub fn set_handle_class<T: Any>(&mut self, cls: Rc<Class>) -> Result<()> {
-        match self.handle_class_map.entry(TypeId::of::<T>()) {
+        self.set_handle_class_by_id(TypeId::of::<T>(), std::any::type_name::<T>(), cls)
+    }
+    pub(crate) fn set_handle_class_by_id(
+        &mut self,
+        id: TypeId,
+        typename: &'static str,
+        cls: Rc<Class>,
+    ) -> Result<()> {
+        match self.handle_class_map.entry(id) {
             Entry::Occupied(_) => Err(rterr!(
                 "Tried to register a handle class for {} when one was already registered",
-                std::any::type_name::<T>(),
+                typename,
             )),
             Entry::Vacant(entry) => {
                 entry.insert(cls);
