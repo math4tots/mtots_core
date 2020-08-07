@@ -8,6 +8,7 @@ use std::path::Path;
 
 fn main() {
     let mut source_roots = Vec::new();
+    let mut script_args = Vec::new();
     let mut mode = Mode::Normal;
     let mut command = Command::Unspecified;
 
@@ -18,6 +19,7 @@ fn main() {
                 "-m" => mode = Mode::SetRunModule,
                 "-d" => mode = Mode::SetDocModule,
                 "-r" => command = Command::Repl,
+                "--" => mode = Mode::ScriptArgs,
                 _ => {
                     let path = Path::new(arg);
                     if !path.exists() {
@@ -35,6 +37,9 @@ fn main() {
                 command = Command::DocModule(argstr);
                 mode = Mode::Normal;
             }
+            Mode::ScriptArgs => {
+                script_args.push(RcStr::from(argstr));
+            }
         }
     }
 
@@ -47,6 +52,7 @@ fn main() {
     }
 
     let mut globals = mtots_core::Globals::new();
+    globals.set_argv(script_args);
     for source_root in source_roots {
         globals.add(source_root).unwrap();
     }
@@ -64,6 +70,7 @@ enum Mode {
     Normal,
     SetRunModule,
     SetDocModule,
+    ScriptArgs,
 }
 
 enum Command {
@@ -122,9 +129,8 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
     }
     println!("");
     if let Some(doc) = module.doc() {
-        println!("\n{}", doc.trim());
+        println!("\n{}", format_doc(doc, 0));
     }
-    println!("");
     println!("Members");
     println!("=======");
     let mut pairs: Vec<_> = module.docmap().iter().collect();
@@ -152,7 +158,7 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
             }
             _ => println!("{}", field_name),
         }
-        println!("{}", format_field_doc(field_doc));
+        println!("{}", format_doc(field_doc, 8));
     }
 }
 
@@ -166,7 +172,7 @@ fn short_printable_value(value: &Value) -> bool {
     }
 }
 
-fn format_field_doc(doc: &str) -> String {
+fn format_doc(doc: &str, indent: usize) -> String {
     const LINE_WIDTH: usize = 80;
     doc.lines()
         .flat_map(|line| {
@@ -177,12 +183,12 @@ fn format_field_doc(doc: &str) -> String {
                 line.trim()
                     .chars()
                     .collect::<Vec<_>>()
-                    .chunks(LINE_WIDTH)
+                    .chunks(LINE_WIDTH - indent)
                     .map(|chars| chars.iter().collect::<String>())
                     .collect::<Vec<_>>()
             }
         })
-        .map(|line| format!("        {}\n", line))
+        .map(|line| format!("{}{}\n", " ".repeat(indent), line))
         .collect::<Vec<_>>()
         .join("")
 }

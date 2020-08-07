@@ -56,6 +56,9 @@ pub struct Globals {
 
     // interfacing with native types (i.e. Handles)
     handle_class_map: HashMap<TypeId, Rc<Class>>,
+
+    // command line arguments; need to be explicitly set to be nonempty
+    argv: Option<Vec<RcStr>>,
 }
 
 impl Globals {
@@ -74,6 +77,7 @@ impl Globals {
             builtins,
             repl_scope: None,
             handle_class_map: HashMap::new(),
+            argv: None,
         };
         globals.add_builtin_native_libraries();
         globals
@@ -138,5 +142,11 @@ impl Globals {
             self.repl_scope = Some(scope);
         }
         self.repl_scope.as_mut().unwrap()
+    }
+    pub fn argv(&self) -> &Option<Vec<RcStr>> {
+        &self.argv
+    }
+    pub fn set_argv(&mut self, argv: Vec<RcStr>) {
+        self.argv = Some(argv);
     }
 }

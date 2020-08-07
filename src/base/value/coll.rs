@@ -1,4 +1,5 @@
 use super::*;
+use std::iter::FromIterator;
 
 /// Wrapper around RefCell<Vec<Value>>
 /// Having a wrapper keeps the possibility open for e.g.
@@ -28,6 +29,22 @@ impl List {
                 ResumeResult::Return(Value::Nil)
             }
         })
+    }
+}
+
+impl FromIterator<Value> for List {
+    fn from_iter<I: IntoIterator<Item = Value>>(iter: I) -> Self {
+        List {
+            vec: RefCell::new(Vec::from_iter(iter)),
+        }
+    }
+}
+
+impl FromIterator<Key> for List {
+    fn from_iter<I: IntoIterator<Item = Key>>(iter: I) -> Self {
+        List {
+            vec: RefCell::new(iter.into_iter().map(Value::from).collect()),
+        }
     }
 }
 
@@ -67,6 +84,14 @@ impl Set {
 impl cmp::PartialOrd for Set {
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         self.sorted().partial_cmp(&other.sorted())
+    }
+}
+
+impl FromIterator<Key> for Set {
+    fn from_iter<I: IntoIterator<Item = Key>>(iter: I) -> Self {
+        Set {
+            set: RefCell::new(IndexSet::from_iter(iter)),
+        }
     }
 }
 
@@ -180,5 +205,13 @@ impl From<IndexMap<Key, Value>> for Value {
             }
             .into(),
         )
+    }
+}
+
+impl FromIterator<(Key, Value)> for Map {
+    fn from_iter<I: IntoIterator<Item = (Key, Value)>>(iter: I) -> Self {
+        Map {
+            map: RefCell::new(IndexMap::from_iter(iter)),
+        }
     }
 }

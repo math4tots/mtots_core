@@ -61,3 +61,21 @@ impl From<RcStr> for Key {
         Self::String(s)
     }
 }
+
+impl From<String> for Key {
+    fn from(s: String) -> Self {
+        Self::String(s.into())
+    }
+}
+
+impl From<&String> for Key {
+    fn from(s: &String) -> Self {
+        Self::String(s.into())
+    }
+}
+
+impl From<&str> for Key {
+    fn from(s: &str) -> Self {
+        Self::String(s.into())
+    }
+}

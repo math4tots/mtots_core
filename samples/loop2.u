@@ -57,3 +57,12 @@ for path in fs.files('./src') {
     print(['path', path])
 }
 fs.write('hi.txt', 'hello data\nthis is some data in hi.txt')
+
+import a.env
+
+print(env)
+print(['env.var(HOME)', env.var('HOME')])
+# print(env.vars())
+for [key, val] in env.vars() {
+    print(['var', key, val])
+}
