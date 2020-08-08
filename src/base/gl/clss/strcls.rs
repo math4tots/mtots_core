@@ -124,9 +124,52 @@ pub(super) fn new() -> Rc<Class> {
                     if fin {
                         ResumeResult::Return(Value::Nil)
                     } else {
-                        let j = owner[i..].find(char::is_whitespace).unwrap_or(len);
+                        let j = owner[i..].find(char::is_whitespace).map(|j| i + j).unwrap_or(len);
                         let next = Value::from(&owner[i..j]);
-                        i = owner[j..].find(|c: char| !c.is_whitespace()).unwrap_or(len);
+                        i = owner[j..].find(|c: char| !c.is_whitespace()).map(|i| i + j).unwrap_or(len);
+                        if j == len {
+                            fin = true;
+                        }
+                        ResumeResult::Yield(next)
+                    }
+                })
+                .into())
+            }),
+            NativeFunction::new("lines", ["self"], "", |_globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                let len = owner.len();
+                let mut i = 0;
+                let mut fin = false;
+                Ok(NativeGenerator::new("String.lines", move |_globals, _| {
+                    if fin {
+                        ResumeResult::Return(Value::Nil)
+                    } else {
+                        let j = owner[i..].find(|c: char| c == '\n').map(|j| i + j).unwrap_or(len);
+                        let next = Value::from(&owner[i..j]);
+                        i = j + 1;
+                        if j == len {
+                            fin = true;
+                        }
+                        ResumeResult::Yield(next)
+                    }
+                })
+                .into())
+            }),
+            NativeFunction::new("split", ["self", "sep"], "", |_globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                let sep = args.next().unwrap().into_string()?;
+                let len = owner.len();
+                let mut i = 0;
+                let mut fin = false;
+                Ok(NativeGenerator::new("String.split", move |_globals, _| {
+                    if fin {
+                        ResumeResult::Return(Value::Nil)
+                    } else {
+                        let j = owner[i..].find(sep.str()).map(|j| i + j).unwrap_or(len);
+                        let next = Value::from(&owner[i..j]);
+                        i = j + sep.len();
                         if j == len {
                             fin = true;
                         }

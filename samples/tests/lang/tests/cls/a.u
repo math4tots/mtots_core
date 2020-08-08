@@ -1,65 +1,60 @@
 
-trait Foo {
-    static def foo() = 'Foo::foo return value'
+class Foo {
+    static def foo() = 'Foo#foo return value'
 }
 
 class Bar {
+    static def __call() = new()
 
-    static def __call() = __malloc(Bar, [])
-
-    static def bar() = 'Bar::bar ---'
+    static def bar() = 'Bar#bar ---'
 }
 
 class Baz(Foo) {
-    [foo, bar]
-
-    new(foo, bar) = new(foo, bar)
+    new(foo, bar) = new(foo=foo, bar=bar)
 
     def add_one_to_foo(self) = self.foo + 1
 }
 
-case class NoExplicitFields(Foo)
+class NoExplicitConstructor(Foo)
 
 def __test_static_method_call() {
-    assert_eq(Foo::foo(), 'Foo::foo return value')
-    assert_eq(Bar::bar(), 'Bar::bar ---')
+    assert_eq(Foo.foo(), 'Foo#foo return value')
+    assert_eq(Bar.bar(), 'Bar#bar ---')
 
     """
     When an invalid attribute is retrieved, we should throw
     """
-    assert_raises(AttributeError, def = Foo::not_a_valid_attr)
+    assert_throws(def = Foo.not_a_valid_attr)
 
     """
     Static methods are not inherited
     """
-    assert_raises(AttributeError, def = Baz::foo())
+    assert_throws(def = Baz.foo())
 }
 
 def __test_class_with_call() {
     r###"
     Test custom static '__call' methods
-
-    By default, calling a class acts as though it redirects to __malloc,
-    but classes can override this behavior by explicitly defining a __call method
     "###
     class ClassWithCall {
-        [a, b]
-        static def __call(x) = __malloc(ClassWithCall, [x, x + x])
+        static def __call(x) = new(a = x, b = x + x)
     }
     cwc = ClassWithCall(5)
+    assert(type(cwc) is ClassWithCall)
     assert_eq(type(cwc), ClassWithCall)
+    assert(type(cwc) != Baz)
     assert_eq(cwc.a, 5)
     assert_eq(cwc.b, 10)
 
-    trait TraitWithCall {
+    class TraitWithCall {
         static def __call() = 12345
     }
 
     assert_eq(TraitWithCall(), 12345)
 
-    trait TraitWithoutCall {}
+    class TraitWithoutCall {}
 
-    assert_raises(AttributeError, def = TraitWithoutCall())
+    assert_throws(def = TraitWithoutCall())
 }
 
 def __test_instantiation() {
@@ -74,8 +69,7 @@ def __test_instantiation() {
     baz = Baz(foo=150, bar='j')
     assert_eq(baz.add_one_to_foo(), 151)
 
-    no_explicit_fields = NoExplicitFields()
-    assert_eq(type(no_explicit_fields), NoExplicitFields)
+    assert_throws(def = NoExplicitConstructor())
 }
 
 def __test_str() {
@@ -83,6 +77,6 @@ def __test_str() {
     Make sure that classes display their full names when being printed.
     Full names of builtin classes are actually same as their short names
     """
-    assert_eq(str(Baz), '<class lang.tests.cls.a::Baz>')
+    assert_eq(str(Baz), '<class lang.tests.cls.a#Baz>')
     assert_eq(str(String), '<class String>')
 }

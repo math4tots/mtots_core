@@ -131,6 +131,11 @@ impl Globals {
                 key.hash(&mut s);
                 Ok(Value::from(s.finish()))
             }),
+            NativeFunction::new("type", ["x"], None, |globals, args, _| {
+                let mut args = args.into_iter();
+                let x = args.next().unwrap();
+                Ok(Value::from(x.get_class(globals)))
+            }),
             NativeFunction::new("int", ["x"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let x = args.next().unwrap();

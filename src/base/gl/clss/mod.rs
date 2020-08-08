@@ -1,4 +1,5 @@
 use super::*;
+mod iter;
 mod list;
 mod nil;
 mod strcls;
@@ -14,6 +15,7 @@ pub struct ClassManager {
     pub Map: Rc<Class>,
     pub Function: Rc<Class>,
     pub NativeFunction: Rc<Class>,
+    pub Iterator: Rc<Class>,
     pub Generator: Rc<Class>,
     pub NativeGenerator: Rc<Class>,
     pub Class: Rc<Class>,
@@ -71,8 +73,17 @@ impl ClassManager {
             ]),
             HashMap::new(),
         );
-        let Generator = Class::new("Generator".into(), HashMap::new(), HashMap::new());
-        let NativeGenerator = Class::new("NativeGenerator".into(), HashMap::new(), HashMap::new());
+        let Iterator = iter::new();
+        let Generator = Class::new(
+            "Generator".into(),
+            Class::join_class_maps(HashMap::new(), vec![&Iterator]),
+            HashMap::new(),
+        );
+        let NativeGenerator = Class::new(
+            "NativeGenerator".into(),
+            Class::join_class_maps(HashMap::new(), vec![&Iterator]),
+            HashMap::new(),
+        );
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());
         let Module = Class::new("Module".into(), HashMap::new(), HashMap::new());
         Self {
@@ -85,6 +96,7 @@ impl ClassManager {
             Map,
             Function,
             NativeFunction,
+            Iterator,
             Generator,
             NativeGenerator,
             Class,

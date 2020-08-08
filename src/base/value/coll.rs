@@ -30,6 +30,12 @@ impl List {
             }
         })
     }
+    pub fn unwrap_or_clone(list: Rc<Self>) -> Vec<Value> {
+        match Rc::try_unwrap(list) {
+            Ok(list) => list.into_inner(),
+            Err(list) => list.borrow().clone(),
+        }
+    }
 }
 
 impl FromIterator<Value> for List {

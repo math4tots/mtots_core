@@ -55,6 +55,17 @@ pub(super) fn new() -> Rc<Class> {
                 Ok(false.into())
             }),
         ]),
-        HashMap::new(),
+        Class::map_from_funcs(vec![NativeFunction::new(
+            "__from_iterable",
+            ["iterable"],
+            "",
+            |globals, args, _| {
+                let iter = args.into_iter().next().unwrap();
+                match iter {
+                    Value::List(list) => Ok(Value::from(List::unwrap_or_clone(list))),
+                    _ => Ok(Value::from(iter.unpack(globals)?))
+                }
+            },
+        )]),
     )
 }

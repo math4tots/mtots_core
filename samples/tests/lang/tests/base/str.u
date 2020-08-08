@@ -1,5 +1,5 @@
 def __test_split() {
-    assert_eq(''.words().to(List), [])
+    assert_eq(''.words().to(List), [''])
     assert_eq('asdf'.words().to(List), ['asdf'])
     assert_eq('aaa bbb ccdd'.words().to(List), ['aaa', 'bbb', 'ccdd'])
     assert_eq("hello world".words().to(List), ['hello', 'world'])
