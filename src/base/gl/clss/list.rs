@@ -38,6 +38,17 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     let i = args.next().unwrap().to_index(owner.len())?;
                     Ok(owner.remove(i))
                 }),
+                NativeFunction::new("__mul", ["self", "n"], "", |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let owner = owner.borrow();
+                    let n = usize::try_from(args.next().unwrap())?;
+                    let mut ret = Vec::new();
+                    for _ in 0..n {
+                        ret.extend(owner.iter().map(Clone::clone));
+                    }
+                    Ok(ret.into())
+                }),
                 NativeFunction::new(
                     "all",
                     ArgSpec::builder().req("self").def("f", ()),
