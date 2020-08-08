@@ -147,3 +147,8 @@ def __test_char_escapes() {
     assert_eq('\u{1F914}', '🤔')
     assert_eq('\d{81}\u{1F914}', 'Q🤔')
 }
+
+def __test_mul() {
+    assert_eq('asdf' * 2, 'asdfasdf')
+    assert_eq('' * 20, '')
+}

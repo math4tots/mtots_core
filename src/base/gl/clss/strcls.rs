@@ -114,6 +114,16 @@ pub(super) fn new() -> Rc<Class> {
                 let args = args.next().unwrap().unpack(globals)?;
                 Ok(Value::from(Value::format_string(owner.str(), args)?))
             }),
+            NativeFunction::new("__mul", ["self", "n"], "Repeats a string n times", |_globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                let n = usize::try_from(args.next().unwrap())?;
+                let mut ret = String::new();
+                for _ in 0..n {
+                    ret.push_str(&owner);
+                }
+                Ok(ret.into())
+            }),
             NativeFunction::new("words", ["self"], "", |_globals, args, _| {
                 let mut args = args.into_iter();
                 let owner = args.next().unwrap().into_string()?;
