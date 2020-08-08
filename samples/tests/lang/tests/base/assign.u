@@ -13,3 +13,39 @@ def __test_variable_augassign() {
     assert_eq(x *= 5, 20)
     assert_eq(x, 20)
 }
+
+def __test_subscripts() {
+    list = [1, 2, 3]
+    assert_eq(list[0], 1)
+    assert_eq(list[0] = 5, 5)
+    assert_eq(list, [5, 2, 3])
+
+    list[0] = 25
+    assert_eq(list, [25, 2, 3])
+
+    # check op return results
+    assert_eq(list[1] += 42, 2 + 42)
+    assert_eq(list[1], 44)
+    assert_eq(list, [25, 44, 3])
+
+    # when ops return result is unused
+    list[1] += 42
+    assert_eq(list, [25, 44 + 42, 3])
+}
+
+class Foo {
+    new() = new(a = 'aaa', b = 333)
+}
+
+def __test_attributes() {
+    foo = Foo()
+    assert_eq(foo.a, 'aaa')
+    assert_eq(foo.a = 5, 5)
+    assert_eq(foo.a, 5)
+    assert_eq(foo.a += 40, 45)
+    assert_eq(foo.a, 45)
+
+    assert_eq(foo.b, 333)
+    foo.b = 'asdf'
+    assert_eq(foo.b, 'asdf')
+}

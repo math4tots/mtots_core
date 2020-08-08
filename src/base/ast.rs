@@ -308,6 +308,7 @@ pub enum AssignTargetDesc {
     Name(RcStr),
     List(Vec<AssignTarget>),
     Attr(Box<Expr>, RcStr),
+    Subscript(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy)]

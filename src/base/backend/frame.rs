@@ -41,6 +41,15 @@ impl Frame {
         self.stack.push(x);
     }
     #[inline(always)]
+    pub(super) fn unpull(&mut self, pos: usize) {
+        // aka, rotate
+        // reposition the top of stack and shift all other elements
+        // so that it ends up in the new given position
+        let x = self.stack.pop().unwrap();
+        let len = self.stack.len();
+        self.stack.insert(len - pos, x);
+    }
+    #[inline(always)]
     pub(super) fn swap(&mut self, a: usize, b: usize) {
         let len = self.stack.len();
         self.stack.swap(len - 1 - a, len - 1 - b);
@@ -56,6 +65,11 @@ impl Frame {
     #[inline(always)]
     pub(super) fn peek(&self) -> &Value {
         self.stack.last().unwrap()
+    }
+    #[inline(always)]
+    pub(super) fn peekn(&self, n: usize) -> Vec<Value> {
+        let len = self.stack.len();
+        self.stack[len - n..].to_vec()
     }
     #[inline(always)]
     pub(super) fn popn(&mut self, n: usize) -> Vec<Value> {

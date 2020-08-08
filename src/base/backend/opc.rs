@@ -4,7 +4,10 @@ use super::*;
 pub(crate) enum Opcode {
     Pop,
     Dup,
+    Dup2,
     Pull2,
+    Pull3,
+    Unpull2,
     Swap01,
     Unpack(u32),
 
@@ -27,6 +30,8 @@ pub(crate) enum Opcode {
     Binop(Binop),
     Unop(Unop),
     GetItem,
+    SetItem,
+    TeeItem,
 
     Iter,
     Next,
@@ -159,8 +164,17 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::Dup => {
             frame.push(frame.peek().clone());
         }
+        Opcode::Dup2 => {
+            frame.pushn(frame.peekn(2));
+        }
         Opcode::Pull2 => {
             frame.pull(2);
+        }
+        Opcode::Pull3 => {
+            frame.pull(3);
+        }
+        Opcode::Unpull2 => {
+            frame.unpull(2);
         }
         Opcode::Swap01 => {
             frame.swap(0, 1);
@@ -332,6 +346,18 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let owner = frame.pop();
             let value = get1!(owner.getitem(globals, &index));
             frame.push(value);
+        }
+        Opcode::SetItem => {
+            let index = frame.pop();
+            let owner = frame.pop();
+            let value = frame.pop();
+            get1!(owner.setitem(globals, &index, value));
+        }
+        Opcode::TeeItem => {
+            let index = frame.pop();
+            let owner = frame.pop();
+            let value = frame.peek();
+            get1!(owner.setitem(globals, &index, value.clone()));
         }
         Opcode::Iter => {
             let container = frame.pop();

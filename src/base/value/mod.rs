@@ -483,6 +483,19 @@ impl Value {
             _ => self.apply_method(globals, "__getitem", vec![index.clone()], None),
         }
     }
+    pub fn setitem(&self, globals: &mut Globals, index: &Value, value: Value) -> Result<()> {
+        match self {
+            Self::List(list) => {
+                let mut list = list.borrow_mut();
+                let i = index.to_index(list.len())?;
+                list[i] = value;
+            }
+            _ => {
+                self.apply_method(globals, "__setitem", vec![index.clone()], None)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl cmp::PartialOrd for Value {

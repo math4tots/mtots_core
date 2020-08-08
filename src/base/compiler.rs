@@ -543,6 +543,15 @@ impl Builder {
                     self.add(Opcode::TeeAttr(attr.clone()), mark);
                 }
             }
+            AssignTargetDesc::Subscript(owner, index) => {
+                self.expr(owner, true)?;
+                self.expr(index, true)?;
+                if consume {
+                    self.add(Opcode::SetItem, mark);
+                } else {
+                    self.add(Opcode::TeeItem, mark);
+                }
+            }
         }
         Ok(())
     }
@@ -570,10 +579,25 @@ impl Builder {
                 self.add(Opcode::GetAttr(attr.clone()), mark.clone());
                 self.add(Opcode::Pull2, mark.clone());
                 self.add(Opcode::Binop(op), mark.clone());
+                self.add(Opcode::Swap01, mark.clone());
                 if consume {
                     self.add(Opcode::SetAttr(attr.clone()), mark);
                 } else {
                     self.add(Opcode::TeeAttr(attr.clone()), mark);
+                }
+            }
+            AssignTargetDesc::Subscript(owner, index) => {
+                self.expr(owner, true)?;
+                self.expr(index, true)?;
+                self.add(Opcode::Dup2, mark.clone());
+                self.add(Opcode::GetItem, mark.clone());
+                self.add(Opcode::Pull3, mark.clone());
+                self.add(Opcode::Binop(op), mark.clone());
+                self.add(Opcode::Unpull2, mark.clone());
+                if consume {
+                    self.add(Opcode::SetItem, mark.clone());
+                } else {
+                    self.add(Opcode::TeeItem, mark.clone());
                 }
             }
         }

@@ -247,6 +247,10 @@ fn gettarget(target: &mut AssignTarget, out: &mut State) -> Result<()> {
         AssignTargetDesc::Attr(owner, _attr) => {
             get(owner, out)?;
         }
+        AssignTargetDesc::Subscript(owner, index) => {
+            get(owner, out)?;
+            get(index, out)?;
+        }
     }
     Ok(())
 }
@@ -269,6 +273,10 @@ fn getaugtarget(target: &mut AssignTarget, out: &mut State) -> Result<()> {
         }
         AssignTargetDesc::Attr(owner, _attr) => {
             get(owner, out)?;
+        }
+        AssignTargetDesc::Subscript(owner, index) => {
+            get(owner, out)?;
+            get(index, out)?;
         }
     }
     Ok(())

@@ -1376,6 +1376,7 @@ fn to_target(expr: Expr) -> Result<AssignTarget> {
             AssignTargetDesc::List(vec.into_iter().map(to_target).collect::<Result<_>>()?)
         }
         ExprDesc::Attr(owner, name) => AssignTargetDesc::Attr(owner, name),
+        ExprDesc::Subscript(owner, index) => AssignTargetDesc::Subscript(owner, index),
         _ => {
             return Err(Error::rt(
                 "The target expression is not assignable".into(),
