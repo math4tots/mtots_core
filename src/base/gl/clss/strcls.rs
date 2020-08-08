@@ -108,17 +108,21 @@ pub(super) fn new() -> Rc<Class> {
                         .unwrap_or(Value::Nil))
                 },
             ),
-            NativeFunction::new(
-                "__rem",
-                ["self", "args"],
-                "",
-                |globals, args, _| {
-                    let mut args = args.into_iter();
-                    let owner = args.next().unwrap().into_string()?;
-                    let args = args.next().unwrap().unpack(globals)?;
-                    Ok(Value::from(Value::format_string(owner.str(), args)?))
-                },
-            ),
+            NativeFunction::new("__rem", ["self", "args"], "", |globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                let args = args.next().unwrap().unpack(globals)?;
+                Ok(Value::from(Value::format_string(owner.str(), args)?))
+            }),
+            NativeFunction::new("words", ["self"], "", |globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                Ok(owner
+                    .split_whitespace()
+                    .map(Value::from)
+                    .collect::<Vec<_>>()
+                    .into())
+            }),
             NativeFunction::new(
                 "slice",
                 ["self", "start", "end"],

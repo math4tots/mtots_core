@@ -1,7 +1,7 @@
 use super::*;
-mod strcls;
-mod nil;
 mod list;
+mod nil;
+mod strcls;
 
 #[allow(non_snake_case)]
 pub struct ClassManager {
