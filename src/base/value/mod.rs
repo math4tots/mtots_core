@@ -473,22 +473,35 @@ impl Value {
             self.to_slice_index(len)
         }
     }
-    pub fn getitem(&self, globals: &mut Globals, index: &Value) -> Result<Value> {
+    pub fn getitem(&self, globals: &mut Globals, index: Value) -> Result<Value> {
         match self {
             Self::List(list) => {
                 let list = list.borrow();
                 let i = index.to_index(list.len())?;
                 Ok(list[i].clone())
             }
+            Self::Map(map) => {
+                let map = map.borrow();
+                let key = Key::try_from(index)?;
+                match map.get(&key) {
+                    Some(value) => Ok(value.clone()),
+                    None => Err(rterr!("Key {:?} not found in map", key)),
+                }
+            }
             _ => self.apply_method(globals, "__getitem", vec![index.clone()], None),
         }
     }
-    pub fn setitem(&self, globals: &mut Globals, index: &Value, value: Value) -> Result<()> {
+    pub fn setitem(&self, globals: &mut Globals, index: Value, value: Value) -> Result<()> {
         match self {
             Self::List(list) => {
                 let mut list = list.borrow_mut();
                 let i = index.to_index(list.len())?;
                 list[i] = value;
+            }
+            Self::Map(map) => {
+                let mut map = map.borrow_mut();
+                let key = Key::try_from(index)?;
+                map.insert(key, value);
             }
             _ => {
                 self.apply_method(globals, "__setitem", vec![index.clone()], None)?;

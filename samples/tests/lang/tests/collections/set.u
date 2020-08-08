@@ -13,7 +13,7 @@ def __test_set() {
 }
 
 def __test_set_iter() {
-    list = @[]
+    list = []
     for x in Set(['a', 'b', 'c']) {
         list.push(x)
     }
@@ -21,7 +21,7 @@ def __test_set_iter() {
 }
 
 def __test_mutable_set() {
-    ms = MutableSet([])
+    ms = Set([])
     for i in range(5, 10) {
         ms.add(i)
     }
@@ -33,7 +33,7 @@ def __test_mutable_set() {
 }
 
 def __test_sets_as_keys() {
-    d = @[:]
+    d = [:]
     d[Set([1, 2, 3])] = 123
     assert_eq(d[Set([1, 2, 3])], 123)
     assert_eq(d[Set([3, 1, 2])], 123)

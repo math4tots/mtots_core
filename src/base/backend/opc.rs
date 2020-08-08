@@ -336,20 +336,20 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::GetItem => {
             let index = frame.pop();
             let owner = frame.pop();
-            let value = get1!(owner.getitem(globals, &index));
+            let value = get1!(owner.getitem(globals, index));
             frame.push(value);
         }
         Opcode::SetItem => {
             let index = frame.pop();
             let owner = frame.pop();
             let value = frame.pop();
-            get1!(owner.setitem(globals, &index, value));
+            get1!(owner.setitem(globals, index, value));
         }
         Opcode::TeeItem => {
             let index = frame.pop();
             let owner = frame.pop();
             let value = frame.peek();
-            get1!(owner.setitem(globals, &index, value.clone()));
+            get1!(owner.setitem(globals, index, value.clone()));
         }
         Opcode::Iter => {
             let container = frame.pop();

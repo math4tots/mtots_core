@@ -11,11 +11,6 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     let owner = owner.borrow();
                     Ok(owner.len().into())
                 }),
-                NativeFunction::new("__getitem", ["self", "key"], "", |globals, args, _| {
-                    let mut args = args.into_iter();
-                    let owner = args.next().unwrap();
-                    owner.getitem(globals, &args.next().unwrap())
-                }),
                 NativeFunction::new(
                     "get",
                     ArgSpec::builder()
@@ -38,6 +33,13 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         }
                     },
                 ),
+                NativeFunction::new("has_key", ["self", "key"], "", |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_map()?;
+                    let owner = owner.borrow();
+                    let key = Key::try_from(args.next().unwrap())?;
+                    Ok(owner.contains_key(&key).into())
+                }),
             ]),
             vec![iterable],
         ),
