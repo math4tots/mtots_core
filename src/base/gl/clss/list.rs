@@ -22,6 +22,22 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         Err(rterr!("Pop from empty list"))
                     }
                 }),
+                NativeFunction::new("insert", ["self", "i", "x"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    let i = args.next().unwrap().to_index(owner.len())?;
+                    let x = args.next().unwrap();
+                    owner.insert(i, x);
+                    Ok(Value::Nil)
+                }),
+                NativeFunction::new("remove", ["self", "i"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    let i = args.next().unwrap().to_index(owner.len())?;
+                    Ok(owner.remove(i))
+                }),
                 NativeFunction::new(
                     "all",
                     ArgSpec::builder().req("self").def("f", ()),

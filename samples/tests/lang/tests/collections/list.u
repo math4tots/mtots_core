@@ -28,22 +28,6 @@ def __test_from_iterator() {
     assert(list is not original)
 }
 
-def __test_mutable_list() {
-    list = [1, 2, 3]
-    assert_eq(list[0], 1)
-    list[0] = 'aaa'
-    assert_eq(list[0], 'aaa')
-    assert_eq(list, ['aaa', 2, 3])
-    assert_eq(list.move(), ['aaa', 2, 3])
-
-    list = []
-    for i in range(5, 9) {
-        list.push(i)
-    }
-    assert_eq(list, [5, 6, 7, 8])
-    assert_eq(list.move(), [5, 6, 7, 8])
-}
-
 def __test_repeat() {
     list = [1, 2, 3]
     assert_eq(list * 3, [1, 2, 3, 1, 2, 3, 1, 2, 3])
@@ -108,9 +92,6 @@ def __test_remove() {
     assert_eq(list, ['b', 'd', 'e'])
 
     assert_throws(def = list.remove(1000))
-    assert_eq(list, ['b', 'd', 'e'])
-
-    assert_eq(list.remove(1000, 'some-default'), 'some-default')
     assert_eq(list, ['b', 'd', 'e'])
 }
 

@@ -444,7 +444,7 @@ impl Value {
                 len
             ))
         } else {
-            Ok(i as usize)
+            Ok(adjusted as usize)
         }
     }
     pub fn to_slice_index(&self, len: usize) -> Result<usize> {

@@ -286,7 +286,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                         }
                         ret.into()
                     }),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__mul", vec![rhs], None)),
                 },
                 Binop::Div => match lhs {
                     Value::Number(a) => Value::Number(a / get0!(rhs.number())),
