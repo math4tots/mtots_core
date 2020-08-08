@@ -215,12 +215,9 @@ impl Globals {
             }),
             NativeFunction::new("__module_keys", ["module"], None, |_globals, args, _| {
                 let module = args.into_iter().next().unwrap().into_module()?;
-                Ok(module
-                    .map()
-                    .iter()
-                    .map(|(key, _)| Value::from(key.clone()))
-                    .collect::<Vec<_>>()
-                    .into())
+                let mut keys = module.map().keys().collect::<Vec<_>>();
+                keys.sort();
+                Ok(keys.into_iter().map(Value::from).collect::<Vec<_>>().into())
             }),
             NativeFunction::new("__disasm", ["func"], None, |_globals, args, _| {
                 let func = args.into_iter().next().unwrap();

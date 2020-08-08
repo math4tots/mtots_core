@@ -107,6 +107,73 @@ impl ClassManager {
                     },
                 ),
                 NativeFunction::new(
+                    "find",
+                    ArgSpec::builder()
+                        .req("self")
+                        .req("pattern")
+                        .def("start", ())
+                        .def("end", ()),
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let len = owner.charlen();
+                        let pattern = args.next().unwrap().into_string()?;
+                        let start = args.next().unwrap().to_start_index(len)?;
+                        let end = args.next().unwrap().to_end_index(len)?;
+                        let owner = if start == 0 && end == 0 {
+                            owner
+                        } else {
+                            owner.charslice(start, end)
+                        };
+                        Ok(owner
+                            .char_find(pattern.str())
+                            .map(|i| start + i)
+                            .map(Value::from)
+                            .unwrap_or(Value::Nil))
+                    },
+                ),
+                NativeFunction::new(
+                    "rfind",
+                    ArgSpec::builder()
+                        .req("self")
+                        .req("pattern")
+                        .def("start", ())
+                        .def("end", ()),
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let len = owner.charlen();
+                        let pattern = args.next().unwrap().into_string()?;
+                        let start = args.next().unwrap().to_start_index(len)?;
+                        let end = args.next().unwrap().to_end_index(len)?;
+                        let owner = if start == 0 && end == 0 {
+                            owner
+                        } else {
+                            owner.charslice(start, end)
+                        };
+                        Ok(owner
+                            .char_rfind(pattern.str())
+                            .map(|i| start + i)
+                            .map(Value::from)
+                            .unwrap_or(Value::Nil))
+                    },
+                ),
+                NativeFunction::new(
+                    "slice",
+                    ["self", "start", "end"],
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let len = owner.charlen();
+                        let start = args.next().unwrap().to_start_index(len)?;
+                        let end = args.next().unwrap().to_end_index(len)?;
+                        Ok(Value::from(owner.charslice(start, end)))
+                    },
+                ),
+                NativeFunction::new(
                     "starts_with",
                     ["self", "prefix"],
                     "",

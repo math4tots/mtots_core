@@ -80,6 +80,13 @@ impl RcStr {
             Chars::Chars(chars) => chars.get(index).cloned(),
         }
     }
+    pub fn char_find(&self, s: &str) -> Option<usize> {
+        self.find(s).map(|i| self[..i].chars().count())
+    }
+    pub fn char_rfind(&self, s: &str) -> Option<usize> {
+        self.rfind(s)
+            .map(|i| self.charlen() - self[i..].chars().count())
+    }
 }
 
 impl fmt::Debug for RcStr {
