@@ -161,6 +161,17 @@ impl ClassManager {
                     },
                 ),
                 NativeFunction::new(
+                    "__rem",
+                    ["self", "args"],
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let args = args.next().unwrap().unpack_limited()?;
+                        Ok(Value::from(Value::format_string(owner.str(), args)?))
+                    },
+                ),
+                NativeFunction::new(
                     "slice",
                     ["self", "start", "end"],
                     "",

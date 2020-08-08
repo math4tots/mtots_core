@@ -9,6 +9,7 @@ mod hnd;
 mod key;
 mod m;
 mod num;
+mod strs;
 mod table;
 mod unpack;
 use crate::Code;

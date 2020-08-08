@@ -284,7 +284,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 },
                 Binop::Rem => match lhs {
                     Value::Number(a) => Value::Number(a % get0!(rhs.number())),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__rem", vec![rhs], None)),
                 },
                 Binop::Pow => match lhs {
                     Value::Number(a) => Value::Number(a.powf(get0!(rhs.number()))),
