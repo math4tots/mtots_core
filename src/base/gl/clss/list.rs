@@ -155,6 +155,17 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                     Ok(false.into())
                 }),
+                NativeFunction::new("splice", ["self", "start", "stop", "replacement"], None, |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    let len = owner.len();
+                    let start = args.next().unwrap().to_start_index(len)?;
+                    let end = args.next().unwrap().to_end_index(len)?;
+                    let replacement = args.next().unwrap().unpack(globals)?;
+                    let removed = owner.splice(start..end, replacement).collect::<Vec<_>>();
+                    Ok(removed.into())
+                }),
             ]),
             vec![iterable],
         ),
