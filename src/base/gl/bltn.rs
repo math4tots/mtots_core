@@ -34,43 +34,53 @@ impl Globals {
                     Ok(Value::from(c as u32))
                 }
             }),
-            NativeFunction::new("range", ArgSpec::builder().req("start").def("stop", ()).def("step", 1), None, |_globals, args, _| {
-                let args1_is_nil = args[1].is_nil();
-                let mut args = args.into_iter();
-                let (mut start, stop) = if args1_is_nil {
-                    let stop = args.next().unwrap().number()?;
-                    args.next().unwrap();
-                    (0.0, stop)
-                } else {
-                    let start = args.next().unwrap().number()?;
-                    let stop = args.next().unwrap().number()?;
-                    (start, stop)
-                };
-                let step = args.next().unwrap().number()?;
-                if step > 0.0 {
-                    Ok(NativeGenerator::new("range", move |_globals, _| {
-                        if start < stop {
-                            let x = start;
-                            start += step;
-                            ResumeResult::Yield(Value::from(x))
-                        } else {
-                            ResumeResult::Return(Value::Nil)
-                        }
-                    }).into())
-                } else if step < 0.0 {
-                    Ok(NativeGenerator::new("range", move |_globals, _| {
-                        if start > stop {
-                            let x = start;
-                            start += step;
-                            ResumeResult::Yield(Value::from(x))
-                        } else {
-                            ResumeResult::Return(Value::Nil)
-                        }
-                    }).into())
-                } else {
-                    Err(rterr!("Invalid range step: {}", step))
-                }
-            }),
+            NativeFunction::new(
+                "range",
+                ArgSpec::builder()
+                    .req("start")
+                    .def("stop", ())
+                    .def("step", 1),
+                None,
+                |_globals, args, _| {
+                    let args1_is_nil = args[1].is_nil();
+                    let mut args = args.into_iter();
+                    let (mut start, stop) = if args1_is_nil {
+                        let stop = args.next().unwrap().number()?;
+                        args.next().unwrap();
+                        (0.0, stop)
+                    } else {
+                        let start = args.next().unwrap().number()?;
+                        let stop = args.next().unwrap().number()?;
+                        (start, stop)
+                    };
+                    let step = args.next().unwrap().number()?;
+                    if step > 0.0 {
+                        Ok(NativeGenerator::new("range", move |_globals, _| {
+                            if start < stop {
+                                let x = start;
+                                start += step;
+                                ResumeResult::Yield(Value::from(x))
+                            } else {
+                                ResumeResult::Return(Value::Nil)
+                            }
+                        })
+                        .into())
+                    } else if step < 0.0 {
+                        Ok(NativeGenerator::new("range", move |_globals, _| {
+                            if start > stop {
+                                let x = start;
+                                start += step;
+                                ResumeResult::Yield(Value::from(x))
+                            } else {
+                                ResumeResult::Return(Value::Nil)
+                            }
+                        })
+                        .into())
+                    } else {
+                        Err(rterr!("Invalid range step: {}", step))
+                    }
+                },
+            ),
             NativeFunction::new("sorted", ["x"], None, |globals, args, _| {
                 let mut list = args.into_iter().next().unwrap().unpack(globals)?;
                 list.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
