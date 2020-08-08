@@ -113,6 +113,16 @@ impl Globals {
                 key.hash(&mut s);
                 Ok(Value::from(s.finish()))
             }),
+            NativeFunction::new("int", ["x"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let x = args.next().unwrap();
+                Ok(Value::from(x.convert_to_int()?))
+            }),
+            NativeFunction::new("float", ["x"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let x = args.next().unwrap();
+                Ok(Value::from(x.convert_to_float()?))
+            }),
             NativeFunction::new("getmethod", ["cls", "name"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let cls = args.next().unwrap().into_class()?;

@@ -288,6 +288,11 @@ impl Builder {
                     self.add(Opcode::SetVar(variable.into()), mark);
                 }
             }
+            ExprDesc::Nonlocal(_names) => {
+                if used {
+                    self.add(Opcode::Nil, mark);
+                }
+            }
             ExprDesc::New(hidden_class_name, kwargs) => {
                 // load the associated class object
                 let variable = self
@@ -344,7 +349,30 @@ impl Builder {
                 self.add(Opcode::Return, mark);
             }
             ExprDesc::Import(name) => {
-                self.add(Opcode::Import(name.clone()), mark.clone());
+                let name = if name.starts_with('.') {
+                    let mut depth = 1;
+                    let mut prefix = self.name.str();
+                    while name[depth..].starts_with('.') {
+                        depth += 1;
+                        if let Some(i) = prefix.rfind('.') {
+                            prefix = &prefix[..i];
+                        } else {
+                            return Err(Error::rt(format!(
+                                concat!(
+                                    "{:?} requires at least {} level of unwraping ",
+                                    "but {:?} is not that far nested",
+                                ),
+                                name,
+                                depth,
+                                self.name,
+                            ).into(), vec![]))
+                        }
+                    }
+                    format!("{}.{}", prefix, &name[depth..]).into()
+                } else {
+                    name.clone()
+                };
+                self.add(Opcode::Import(name), mark.clone());
                 if !used {
                     self.add(Opcode::Pop, mark);
                 }

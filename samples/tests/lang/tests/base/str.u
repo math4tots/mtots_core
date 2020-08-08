@@ -1,28 +1,3 @@
-def __test_mutable_string() {
-    s = MutableString("")
-    s.extend('hello')
-    assert_eq(s.move(), 'hello')
-    assert_eq(s.move(), '')
-
-    s.extend('hello ')
-    s.extend('world')
-    assert_eq(s.len(), 'hello world'.len())
-    assert_eq(s, MutableString('hello world'))
-    assert_eq(s.move(), 'hello world')
-    assert(s != MutableString('hello world'))
-    assert_eq(s, MutableString(''))
-
-    assert_eq(MutableString(''), @'')
-
-    s = @''
-    for i in range(4) {
-        s.extend(' ' + str(i))
-    }
-    assert_eq(repr(s), '@" 0 1 2 3"')
-    assert_eq(str(s), ' 0 1 2 3')
-    assert_eq(s.move(), ' 0 1 2 3')
-}
-
 def __test_split() {
     assert_eq(''.words().to(List), [])
     assert_eq('asdf'.words().to(List), ['asdf'])
@@ -170,14 +145,4 @@ def __test_char_escapes() {
     assert_eq('\o{100}\o{100}', '@@')
     assert_eq('\u{1F914}', '🤔')
     assert_eq('\d{81}\u{1F914}', 'Q🤔')
-}
-
-def __test_pop() {
-    a = @'abc'
-    assert_eq(a, @'abc')
-    assert(a != @'ab')
-
-    a.pop()
-    assert_eq(a, @'ab')
-    assert(a != @'abc')
 }

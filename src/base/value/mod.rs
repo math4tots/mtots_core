@@ -279,6 +279,20 @@ impl Value {
     pub fn unwrap_or_clone_handle<T: Any + Clone>(self) -> Result<T> {
         Ok(self.handle::<T>()?.unwrap_or_clone())
     }
+    pub fn convert_to_int(self) -> Result<i64> {
+        match self {
+            Self::Number(x) => Ok(x as i64),
+            Self::String(r) => Ok(r.parse::<i64>()?),
+            x => Err(rterr!("Could not convert {:?} into int", x)),
+        }
+    }
+    pub fn convert_to_float(self) -> Result<f64> {
+        match self {
+            Self::Number(x) => Ok(x),
+            Self::String(r) => Ok(r.parse::<f64>()?),
+            x => Err(rterr!("Could not convert {:?} into float", x)),
+        }
+    }
     pub fn convert_to_rcstr(self) -> RcStr {
         match self {
             Self::String(r) => r,
