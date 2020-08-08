@@ -46,6 +46,20 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     owner.resize_with(i, || Value::Nil);
                     Ok(Value::Nil)
                 }),
+                NativeFunction::new("reverse", ["self"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    owner.reverse();
+                    Ok(Value::Nil)
+                }),
+                NativeFunction::new("sort", ["self"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    List::sort(&mut owner)?;
+                    Ok(Value::Nil)
+                }),
                 NativeFunction::new("__mul", ["self", "n"], "", |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;

@@ -36,6 +36,21 @@ impl List {
             Err(list) => list.borrow().clone(),
         }
     }
+    pub fn sort(vec: &mut Vec<Value>) -> Result<()> {
+        let mut error: Option<Error> = None;
+        vec.sort_by(|a, b| {
+            match a.partial_cmp(&b) {
+                Some(ord) => ord,
+                None => {
+                    if error.is_none() {
+                        error = Some(rterr!("{:?} and {:?} are not comparable", a, b));
+                    }
+                    cmp::Ordering::Equal
+                }
+            }
+        });
+        error.map(Err).unwrap_or(Ok(()))
+    }
 }
 
 impl FromIterator<Value> for List {

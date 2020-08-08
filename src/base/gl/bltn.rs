@@ -34,6 +34,16 @@ impl Globals {
                     Ok(Value::from(c as u32))
                 }
             }),
+            NativeFunction::new("reversed", ["iterable"], None, |globals, args, _| {
+                let mut vec = args.into_iter().next().unwrap().unpack(globals)?;
+                vec.reverse();
+                Ok(vec.into())
+            }),
+            NativeFunction::new("sorted", ["iterable"], None, |globals, args, _| {
+                let mut vec = args.into_iter().next().unwrap().unpack(globals)?;
+                List::sort(&mut vec)?;
+                Ok(vec.into())
+            }),
             NativeFunction::new(
                 "range",
                 ArgSpec::builder()
