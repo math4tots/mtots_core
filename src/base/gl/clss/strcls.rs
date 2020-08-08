@@ -114,14 +114,26 @@ pub(super) fn new() -> Rc<Class> {
                 let args = args.next().unwrap().unpack(globals)?;
                 Ok(Value::from(Value::format_string(owner.str(), args)?))
             }),
-            NativeFunction::new("words", ["self"], "", |globals, args, _| {
+            NativeFunction::new("words", ["self"], "", |_globals, args, _| {
                 let mut args = args.into_iter();
                 let owner = args.next().unwrap().into_string()?;
-                Ok(owner
-                    .split_whitespace()
-                    .map(Value::from)
-                    .collect::<Vec<_>>()
-                    .into())
+                let len = owner.len();
+                let mut i = 0;
+                let mut fin = false;
+                Ok(NativeGenerator::new("String.words", move |_globals, _| {
+                    if fin {
+                        ResumeResult::Return(Value::Nil)
+                    } else {
+                        let j = owner[i..].find(char::is_whitespace).unwrap_or(len);
+                        let next = Value::from(&owner[i..j]);
+                        i = owner[j..].find(|c: char| !c.is_whitespace()).unwrap_or(len);
+                        if j == len {
+                            fin = true;
+                        }
+                        ResumeResult::Yield(next)
+                    }
+                })
+                .into())
             }),
             NativeFunction::new(
                 "slice",
