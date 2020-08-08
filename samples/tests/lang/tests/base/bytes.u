@@ -76,8 +76,8 @@
 #     # Should throw on invalid bytecount
 #     # (For floats, bytecount must be 4 or 8,
 #     # for integers, it must be 1, 2, 4 or 8)
-#     assert_raises(RuntimeError, def = BE(0, 0))
-#     assert_raises(RuntimeError, def = BE(3, 0))
+#     assert_throws(def = BE(0, 0))
+#     assert_throws(def = BE(3, 0))
 # }
 
 # def __test_iter() {
@@ -136,7 +136,7 @@
 #     assert_eq(bytes.int(4, 0, endian=:big), be(4))
 
 #     # uint of 8-bytes won't fit in Int
-#     assert_raises(RuntimeError, def = bytes.uint(8, 0))
+#     assert_throws(def = bytes.uint(8, 0))
 #     assert_eq(bytes.uint(4, 0), le(4))
 #     assert_eq(bytes.uint(2, 0), le(2))
 #     assert_eq(bytes.uint(1, 0), le(1))

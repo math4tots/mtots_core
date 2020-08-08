@@ -67,21 +67,21 @@ def __test_maps_as_keys() {
 def __test_map_getters() {
     d = [1: 2, 'a': 'b']
     assert_eq(d.get(1), 2)
-    assert_raises(RuntimeError, def = d.get(2))
+    assert_throws(def = d.get(2))
     assert_eq(d.get(2, nil), nil)
     assert(d.has_key('a'))
     assert(!d.has_key('b'))
     assert_eq(d.len(), 2)
     assert_eq(d[1], 2)
-    assert_raises(RuntimeError, def = d[2])
+    assert_throws(def = d[2])
 
     d = @[1: 2, 'a': 'b']
     assert_eq(d.get(1), 2)
-    assert_raises(RuntimeError, def = d.get(2))
+    assert_throws(def = d.get(2))
     assert_eq(d.get(2, nil), nil)
     assert(d.has_key('a'))
     assert(!d.has_key('b'))
     assert_eq(d.len(), 2)
     assert_eq(d[1], 2)
-    assert_raises(RuntimeError, def = d[2])
+    assert_throws(def = d[2])
 }

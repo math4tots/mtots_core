@@ -3,7 +3,7 @@ def __test_get_method() {
     len = String.get_method(:len)
     assert_eq(len('hello'), 'hello'.len())
 
-    assert_raises(RuntimeError, def = String.get_method(:no_such_method))
+    assert_throws(def = String.get_method(:no_such_method))
 }
 
 trait SomeTrait {}

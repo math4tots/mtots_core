@@ -10,7 +10,7 @@ import ..mwd
 #     assert_eq(mwd::__doc_var, mwd.doc(:var))
 
 #     assert_eq(mwd.doc(:func_with_doc), 'Some docs\n')
-#     assert_raises(RuntimeError, def = mwd.get(:__doc_func_with_doc))
+#     assert_throws(def = mwd.get(:__doc_func_with_doc))
 #     assert_eq(mwd.get(:__doc_func_with_doc, nil), nil)
 
 #     # Of course in the assembly of func_with_var_doc, the variable 'foo'

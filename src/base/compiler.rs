@@ -1,5 +1,6 @@
 use crate::base::ast::*;
 use crate::Code;
+use crate::CallMethodDesc;
 use crate::Error;
 use crate::Mark;
 use crate::NewClassDesc;
@@ -242,6 +243,27 @@ impl Builder {
                 self.expr(owner, true)?;
                 self.expr(index, true)?;
                 self.add(Opcode::GetItem, mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
+            ExprDesc::Slice(owner, start, end) => {
+                self.expr(owner, true)?;
+                if let Some(start) = start {
+                    self.expr(start, true)?;
+                } else {
+                    self.add(Opcode::Nil, mark.clone());
+                }
+                if let Some(end) = end {
+                    self.expr(end, true)?;
+                } else {
+                    self.add(Opcode::Nil, mark.clone());
+                }
+                self.add(Opcode::CallMethod(CallMethodDesc {
+                    argc: 2,
+                    kwargs: vec![],
+                    method_name: "__slice".into(),
+                }.into()), mark.clone());
                 if !used {
                     self.add(Opcode::Pop, mark);
                 }

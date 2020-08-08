@@ -15,13 +15,13 @@ def __test_exc() {
 
     # Of course, calling 'new' directly should raise
     # an error
-    assert_raises(RuntimeError, def = new())
+    assert_throws(def = new())
 
     # Calling a function that improperly calls new
     # should raise an error
-    assert_raises(RuntimeError, def = other_func())
+    assert_throws(def = other_func())
 
     # If 'new' is called indirectly, from a constructor,
     # that should also raise
-    assert_raises(RuntimeError, def = Foo())
+    assert_throws(def = Foo())
 }

@@ -100,6 +100,15 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             get(owner, out)?;
             get(index, out)?;
         }
+        ExprDesc::Slice(owner, start, end) => {
+            get(owner, out)?;
+            if let Some(start) = start {
+                get(start, out)?;
+            }
+            if let Some(end) = end {
+                get(end, out)?;
+            }
+        }
         ExprDesc::Attr(owner, _attr) => {
             get(owner, out)?;
         }
