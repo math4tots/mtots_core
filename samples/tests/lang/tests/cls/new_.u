@@ -2,26 +2,19 @@
 
 
 class Foo {
-    new() = other_func()
-}
-
-def other_func() {
-    # This should raise an exception
-    new()
+    new() = new()
+    static def other(x) = new(x = x)
 }
 
 def __test_exc() {
-    #
+    # If an object was created without a given field, it's not possible
+    # to add it
+    foo1 = Foo()
+    assert_throws(def = foo1.x = 10)
 
-    # Of course, calling 'new' directly should raise
-    # an error
-    assert_throws(def = new())
-
-    # Calling a function that improperly calls new
-    # should raise an error
-    assert_throws(def = other_func())
-
-    # If 'new' is called indirectly, from a constructor,
-    # that should also raise
-    assert_throws(def = Foo())
+    # But if it was created with a given field, it's mutable
+    foo2 = Foo.other(42)
+    assert_eq(foo2.x, 42)
+    foo2.x = 'new x value'
+    assert_eq(foo2.x, 'new x value')
 }
