@@ -34,22 +34,48 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         let mut args = args.into_iter();
                         let owner = args.next().unwrap();
                         let mut i = args.next().unwrap().number()?;
-                        Ok(NativeGenerator::new(
-                            "Iterator.enumerate",
-                            move |globals, arg| {
+                        Ok(
+                            NativeGenerator::new("Iterator.enumerate", move |globals, arg| {
                                 match owner.resume(globals, arg) {
                                     ResumeResult::Yield(value) => {
                                         let n = i;
                                         i += 1.0;
-                                        ResumeResult::Yield(vec![
-                                            Value::from(n),
-                                            value,
-                                        ].into())
+                                        ResumeResult::Yield(vec![Value::from(n), value].into())
                                     }
                                     r => r,
                                 }
-                            },
-                        ).into())
+                            })
+                            .into(),
+                        )
+                    },
+                ),
+                NativeFunction::new(
+                    "filter",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    "Converts this iterator into a list",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let f = args.next().unwrap();
+                        Ok(
+                            NativeGenerator::new("Iterator.filter", move |globals, _| loop {
+                                match owner.resume(globals, Value::Nil) {
+                                    ResumeResult::Yield(value) => {
+                                        let cond = if f.is_nil() {
+                                            value.truthy()
+                                        } else {
+                                            gentry!(f.apply(globals, vec![value.clone()], None))
+                                                .truthy()
+                                        };
+                                        if cond {
+                                            return ResumeResult::Yield(value);
+                                        }
+                                    }
+                                    r => return r,
+                                }
+                            })
+                            .into(),
+                        )
                     },
                 ),
             ]),
