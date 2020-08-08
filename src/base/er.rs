@@ -158,6 +158,12 @@ impl From<std::num::ParseFloatError> for Error {
     }
 }
 
+impl From<std::char::CharTryFromError> for Error {
+    fn from(e: std::char::CharTryFromError) -> Self {
+        Self::rt(format!("{:?}", e).into(), vec![])
+    }
+}
+
 impl From<std::convert::Infallible> for Error {
     fn from(_: std::convert::Infallible) -> Self {
         panic!("An Infallible Error has Ocurred")

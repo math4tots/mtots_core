@@ -19,7 +19,6 @@ def main() {
 }
 
 def run(root_dir, test_pkg=nil) {
-    print(['root_dir', root_dir])
     if test_pkg is nil { test_pkg = '' }
     root_dir = fs.canon(root_dir)
     for module_name in _get_module_names(root_dir, test_pkg) {

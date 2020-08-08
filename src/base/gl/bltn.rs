@@ -16,6 +16,20 @@ impl Globals {
             NativeFunction::new("str", ["x"], None, |_globals, args, _| {
                 Ok(args.into_iter().next().unwrap().convert_to_rcstr().into())
             }),
+            NativeFunction::new("chr", ["x"], None, |_globals, args, _| {
+                let i = u32::try_from(args.into_iter().next().unwrap())?;
+                let c = char::try_from(i)?;
+                Ok(Value::from(c))
+            }),
+            NativeFunction::new("ord", ["c"], None, |_globals, args, _| {
+                let s = args.into_iter().next().unwrap().into_string()?;
+                if s.charlen() != 1 {
+                    Err(rterr!("ord requires a string of length 1, but got {:?} (len = {})", s, s.charlen()))
+                } else {
+                    let c = s.chars().next().unwrap();
+                    Ok(Value::from(c as u32))
+                }
+            }),
             NativeFunction::new("sorted", ["x"], None, |globals, args, _| {
                 let mut list = args.into_iter().next().unwrap().unpack(globals)?;
                 list.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
