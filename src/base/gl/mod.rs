@@ -9,6 +9,7 @@ use crate::Key;
 use crate::LexErrorKind;
 use crate::Lexer;
 use crate::List;
+use crate::Map;
 use crate::Mark;
 use crate::Module;
 use crate::ModuleDisplay;

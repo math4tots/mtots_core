@@ -78,6 +78,43 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         )
                     },
                 ),
+                NativeFunction::new(
+                    "map",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    concat!(
+                        "Duals as a map (in the sense of monads) and map as in, ",
+                        "the data structure.\n",
+                        "It is determined based on the presence of a second argument",
+                    ),
+                    |globals, args, _| {
+                        if args[1].is_nil() {
+                            // converts the iterable into a Map
+                            let mut args = args.into_iter();
+                            let owner = args.next().unwrap();
+                            let map = owner
+                                .unpack(globals)?
+                                .into_iter()
+                                .map(|p| p.unpack_keyval(globals))
+                                .collect::<Result<Map>>()?;
+                            Ok(map.into())
+                        } else {
+                            // creates a new iterable with 'f' applied to all arguments
+                            let mut args = args.into_iter();
+                            let owner = args.next().unwrap();
+                            let f = args.next().unwrap();
+                            Ok(NativeGenerator::new(
+                                "Iterator.map",
+                                move |globals, arg| match owner.resume(globals, arg) {
+                                    ResumeResult::Yield(value) => ResumeResult::Yield(gentry!(
+                                        f.apply(globals, vec![value], None)
+                                    )),
+                                    r => r,
+                                },
+                            )
+                            .into())
+                        }
+                    },
+                ),
             ]),
             vec![iterable],
         ),

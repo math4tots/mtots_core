@@ -50,6 +50,11 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable in this context", self)),
         }
     }
+    pub fn unpack_keyval(self, globals: &mut Globals) -> Result<(Key, Value)> {
+        let [key, val] = self.unpack2(globals)?;
+        let key = Key::try_from(key)?;
+        Ok((key, val))
+    }
     pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
         let vec = self.unpack(globals)?;
         if vec.len() != 2 {
