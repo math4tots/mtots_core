@@ -3,6 +3,7 @@ use super::*;
 /// Describes a parse time constant value
 #[derive(Debug, Clone)]
 pub enum ConstVal {
+    Invalid,
     Nil,
     Bool(bool),
     Number(f64),
@@ -12,6 +13,7 @@ pub enum ConstVal {
 impl fmt::Display for ConstVal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Invalid => write!(f, "<invalid>"),
             Self::Nil => write!(f, "nil"),
             Self::Bool(b) => write!(f, "{}", if *b { "true" } else { "false" }),
             Self::Number(n) => write!(f, "{}", n),

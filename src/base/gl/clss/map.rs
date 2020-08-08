@@ -4,17 +4,41 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
     Class::new(
         "Map".into(),
         Class::join_class_maps(
-            Class::map_from_funcs(vec![NativeFunction::new(
-                "len",
-                ["self"],
-                "",
-                |_globals, args, _| {
+            Class::map_from_funcs(vec![
+                NativeFunction::new("len", ["self"], "", |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_map()?;
                     let owner = owner.borrow();
                     Ok(owner.len().into())
-                },
-            )]),
+                }),
+                NativeFunction::new("__getitem", ["self", "key"], "", |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap();
+                    owner.getitem(globals, &args.next().unwrap())
+                }),
+                NativeFunction::new(
+                    "get",
+                    ArgSpec::builder()
+                        .req("self")
+                        .req("key")
+                        .def("default", ConstVal::Invalid),
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_map()?;
+                        let owner = owner.borrow();
+                        let key = Key::try_from(args.next().unwrap())?;
+                        let default = args.next().unwrap();
+                        if let Some(value) = owner.get(&key) {
+                            Ok(value.clone())
+                        } else if let Value::Invalid = default {
+                            Err(rterr!("Key {:?} not found in map", key))
+                        } else {
+                            Ok(default)
+                        }
+                    },
+                ),
+            ]),
             vec![iterable],
         ),
         Class::map_from_funcs(vec![NativeFunction::new(

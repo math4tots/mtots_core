@@ -265,6 +265,7 @@ impl From<Key> for Value {
 impl From<ConstVal> for Value {
     fn from(cv: ConstVal) -> Self {
         match cv {
+            ConstVal::Invalid => Value::Invalid,
             ConstVal::Nil => Value::Nil,
             ConstVal::Bool(x) => Value::Bool(x),
             ConstVal::Number(x) => Value::Number(x),
