@@ -29,10 +29,11 @@ def __test_enumerate() {
         [[-5, 'a'], [-4, 'b'], [-3, 'c']],
     )
 
-    # The 'start' argument for enumerate only works with
-    # integers
-    assert_throws(
-        def = ['a', 'b', 'c'].iter().enumerate(1.1).list(),
+    # Enumerate works with any numbers, including
+    # non-integers
+    assert_eq(
+        ['a', 'b', 'c'].iter().enumerate(1.1).list(),
+        [[1.1, "a"], [2.1, "b"], [3.1, "c"]],
     )
 }
 
