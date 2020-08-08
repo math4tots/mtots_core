@@ -53,6 +53,13 @@ pub struct NativeModuleBuilder {
 }
 
 impl NativeModuleBuilder {
+    /// For grouping chained calls
+    pub fn group<F>(self, _name: &'static str, f: F) -> Self
+    where
+        F: FnOnce(Self) -> Self,
+    {
+        f(self)
+    }
     pub fn doc<D: Into<RcStr>>(mut self, doc: D) -> Self {
         self.doc = Some(doc.into());
         self

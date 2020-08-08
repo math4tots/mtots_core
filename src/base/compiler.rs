@@ -1,6 +1,6 @@
 use crate::base::ast::*;
-use crate::Code;
 use crate::CallMethodDesc;
+use crate::Code;
 use crate::Error;
 use crate::Mark;
 use crate::NewClassDesc;
@@ -259,11 +259,17 @@ impl Builder {
                 } else {
                     self.add(Opcode::Nil, mark.clone());
                 }
-                self.add(Opcode::CallMethod(CallMethodDesc {
-                    argc: 2,
-                    kwargs: vec![],
-                    method_name: "__slice".into(),
-                }.into()), mark.clone());
+                self.add(
+                    Opcode::CallMethod(
+                        CallMethodDesc {
+                            argc: 2,
+                            kwargs: vec![],
+                            method_name: "__slice".into(),
+                        }
+                        .into(),
+                    ),
+                    mark.clone(),
+                );
                 if !used {
                     self.add(Opcode::Pop, mark);
                 }
@@ -379,15 +385,17 @@ impl Builder {
                         if let Some(i) = prefix.rfind('.') {
                             prefix = &prefix[..i];
                         } else {
-                            return Err(Error::rt(format!(
-                                concat!(
-                                    "{:?} requires at least {} level of unwraping ",
-                                    "but {:?} is not that far nested",
-                                ),
-                                name,
-                                depth,
-                                self.name,
-                            ).into(), vec![]))
+                            return Err(Error::rt(
+                                format!(
+                                    concat!(
+                                        "{:?} requires at least {} level of unwraping ",
+                                        "but {:?} is not that far nested",
+                                    ),
+                                    name, depth, self.name,
+                                )
+                                .into(),
+                                vec![],
+                            ));
                         }
                     }
                     format!("{}.{}", prefix, &name[depth..]).into()

@@ -24,7 +24,11 @@ impl Globals {
             NativeFunction::new("ord", ["c"], None, |_globals, args, _| {
                 let s = args.into_iter().next().unwrap().into_string()?;
                 if s.charlen() != 1 {
-                    Err(rterr!("ord requires a string of length 1, but got {:?} (len = {})", s, s.charlen()))
+                    Err(rterr!(
+                        "ord requires a string of length 1, but got {:?} (len = {})",
+                        s,
+                        s.charlen()
+                    ))
                 } else {
                     let c = s.chars().next().unwrap();
                     Ok(Value::from(c as u32))
@@ -117,9 +121,9 @@ impl Globals {
                 },
             ),
             NativeFunction::new("hash", ["x"], None, |_globals, args, _| {
+                use std::collections::hash_map::DefaultHasher;
                 use std::hash::Hash;
                 use std::hash::Hasher;
-                use std::collections::hash_map::DefaultHasher;
                 let mut args = args.into_iter();
                 let x = args.next().unwrap();
                 let key = Key::try_from(x)?;
