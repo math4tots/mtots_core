@@ -29,7 +29,7 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                 NativeFunction::new(
                     "enumerate",
                     ArgSpec::builder().req("self").def("start", 0),
-                    "Converts this iterator into a list",
+                    "",
                     |_globals, args, _| {
                         let mut args = args.into_iter();
                         let owner = args.next().unwrap();
@@ -50,9 +50,34 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     },
                 ),
                 NativeFunction::new(
+                    "zip",
+                    ArgSpec::builder().req("self").var("others"),
+                    "",
+                    |globals, args, _| {
+                        let iters = args
+                            .into_iter()
+                            .map(|v| v.iter(globals))
+                            .collect::<Result<Vec<_>>>()?;
+                        Ok(NativeGenerator::new("Iterator.zip", move |globals, _arg| {
+                            let mut results = Vec::new();
+                            for iter in &iters {
+                                match iter.resume(globals, Value::Nil) {
+                                    ResumeResult::Yield(x) => results.push(x),
+                                    r @ ResumeResult::Err(_) => return r,
+                                    ResumeResult::Return(_) => {
+                                        return ResumeResult::Return(Value::Nil)
+                                    }
+                                }
+                            }
+                            ResumeResult::Yield(results.into())
+                        })
+                        .into())
+                    },
+                ),
+                NativeFunction::new(
                     "filter",
                     ArgSpec::builder().req("self").def("f", ()),
-                    "Converts this iterator into a list",
+                    "",
                     |_globals, args, _| {
                         let mut args = args.into_iter();
                         let owner = args.next().unwrap();
