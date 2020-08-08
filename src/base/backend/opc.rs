@@ -252,29 +252,17 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let rhs = frame.pop();
             let lhs = frame.pop();
 
-            macro_rules! operr {
-                () => {
-                    err!(
-                        "Binop {:?} not supported for {:?}",
-                        op,
-                        lhs.get_class(globals)
-                    )
-                };
-            }
-
+            // for arithmetic operations it's critical to keep overhead
+            // as low as possible, but in all other cases we call a method
+            // corresponding to each operation instead
             let result = match op {
                 Binop::Add => match lhs {
                     Value::Number(a) => Value::Number(a + get0!(rhs.number())),
-                    Value::String(a) => Value::String({
-                        let mut string = a.unwrap_or_clone();
-                        string.push_str(get0!(rhs.string()));
-                        string.into()
-                    }),
                     _ => get1!(lhs.apply_method(globals, "__add", vec![rhs], None)),
                 },
                 Binop::Sub => match lhs {
                     Value::Number(a) => Value::Number(a - get0!(rhs.number())),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__sub", vec![rhs], None)),
                 },
                 Binop::Mul => match lhs {
                     Value::Number(a) => Value::Number(a * get0!(rhs.number())),
@@ -282,11 +270,11 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 },
                 Binop::Div => match lhs {
                     Value::Number(a) => Value::Number(a / get0!(rhs.number())),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__div", vec![rhs], None)),
                 },
                 Binop::TruncDiv => match lhs {
                     Value::Number(a) => Value::Number((a / get0!(rhs.number())).trunc()),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__truncdiv", vec![rhs], None)),
                 },
                 Binop::Rem => match lhs {
                     Value::Number(a) => Value::Number(a % get0!(rhs.number())),
@@ -294,7 +282,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 },
                 Binop::Pow => match lhs {
                     Value::Number(a) => Value::Number(a.powf(get0!(rhs.number()))),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__pow", vec![rhs], None)),
                 },
                 Binop::Lt => Value::from(get0!(lhs.lt(&rhs))),
                 Binop::Le => Value::from(!get0!(rhs.lt(&lhs))),

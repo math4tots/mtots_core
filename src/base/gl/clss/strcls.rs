@@ -21,6 +21,18 @@ pub(super) fn new() -> Rc<Class> {
                 },
             ),
             NativeFunction::new(
+                "__add",
+                ["self", "other"],
+                "Concatenates the two strings",
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let mut owner = args.next().unwrap().into_string()?.unwrap_or_clone();
+                    let other = args.next().unwrap().into_string()?;
+                    owner.push_str(other.str());
+                    Ok(Value::from(owner))
+                },
+            ),
+            NativeFunction::new(
                 "join",
                 ["self", "parts"],
                 "Returns a new string with the old pattern replaced with the new",
