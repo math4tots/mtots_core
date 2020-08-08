@@ -92,6 +92,25 @@ impl ClassManager {
                     },
                 ),
                 NativeFunction::new(
+                    "join",
+                    ["self", "parts"],
+                    "Returns a new string with the old pattern replaced with the new",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_string()?;
+                        let mut parts = args.next().unwrap().unpack(globals)?.into_iter();
+                        let mut ret = String::new();
+                        if let Some(part) = parts.next() {
+                            ret.push_str(part.into_string()?.str());
+                            while let Some(part) = parts.next() {
+                                ret.push_str(owner.str());
+                                ret.push_str(part.into_string()?.str());
+                            }
+                        }
+                        Ok(Value::from(ret))
+                    },
+                ),
+                NativeFunction::new(
                     "replace",
                     ["self", "old", "new"],
                     "Returns a new string with the old pattern replaced with the new",
@@ -164,10 +183,10 @@ impl ClassManager {
                     "__rem",
                     ["self", "args"],
                     "",
-                    |_globals, args, _| {
+                    |globals, args, _| {
                         let mut args = args.into_iter();
                         let owner = args.next().unwrap().into_string()?;
-                        let args = args.next().unwrap().unpack_limited()?;
+                        let args = args.next().unwrap().unpack(globals)?;
                         Ok(Value::from(Value::format_string(owner.str(), args)?))
                     },
                 ),
