@@ -100,17 +100,22 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
             ]),
             vec![iterable],
         ),
-        Class::map_from_funcs(vec![NativeFunction::new(
-            "__from_iterable",
-            ["iterable"],
-            "",
-            |globals, args, _| {
+        Class::map_from_funcs(vec![
+            NativeFunction::new("__from_iterable", ["iterable"], "", |globals, args, _| {
                 let iter = args.into_iter().next().unwrap();
-                match iter {
-                    Value::List(list) => Ok(Value::from(List::unwrap_or_clone(list))),
-                    _ => Ok(Value::from(iter.unpack(globals)?)),
-                }
-            },
-        )]),
+                list_from_iterable(globals, iter)
+            }),
+            NativeFunction::new("__call", ["iterable"], "", |globals, args, _| {
+                let iter = args.into_iter().next().unwrap();
+                list_from_iterable(globals, iter)
+            }),
+        ]),
     )
+}
+
+fn list_from_iterable(globals: &mut Globals, iter: Value) -> Result<Value> {
+    match iter {
+        Value::List(list) => Ok(Value::from(List::unwrap_or_clone(list))),
+        _ => Ok(Value::from(iter.unpack(globals)?)),
+    }
 }

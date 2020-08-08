@@ -1,13 +1,18 @@
 def __test_from_list() {
     """
-    Ensure that creating a list from pre-existing list
-    does not create a new copy
+    Ensure that a new list created with 'List' will have
+    a distinct identity from the original
     """
     list = [1, 2, 3]
     other_list = List(list)
-    assert(list is other_list)
+    assert(list is not other_list)
+    assert(list == other_list)
     assert(list is not [1, 2, 3])
     assert_eq(list, [1, 2, 3])
+    list.push('zxcv')
+    assert(list != other_list)
+    assert_eq(list, [1, 2, 3, 'zxcv'])
+    assert_eq(other_list, [1, 2, 3])
 }
 
 def __test_from_iterator() {
