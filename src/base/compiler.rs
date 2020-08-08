@@ -154,6 +154,41 @@ impl Builder {
                     }
                 }
             }
+            ExprDesc::Switch(valexpr, pairs, default) => {
+                // In the future, we may detect special cases and speed things up,
+                // but for now switch statements are basically syntactic sugar for
+                // if-else chains
+                self.expr(valexpr, true)?;
+                let mut end_jumps = Vec::new();
+                let mut last = None;
+                for (cond, body) in pairs {
+                    if let Some(last) = last {
+                        self.patch_jump(last);
+                    }
+                    self.add(Opcode::Dup, mark.clone());
+                    self.expr(cond, true)?;
+                    self.add(Opcode::Binop(Binop::Eq), mark.clone());
+                    last = Some(self.add(Opcode::JumpIfFalse(INVALID_JUMP), mark.clone()));
+                    self.expr(body, used)?;
+                    end_jumps.push(self.add(Opcode::Jump(INVALID_JUMP), mark.clone()));
+                }
+                if let Some(last) = last {
+                    self.patch_jump(last);
+                }
+                if let Some(default) = default {
+                    self.expr(default, used)?;
+                } else if used {
+                    self.add(Opcode::Nil, mark.clone());
+                }
+                for id in end_jumps {
+                    self.patch_jump(id);
+                }
+                // remove the switch comparison value
+                if used {
+                    self.add(Opcode::Swap01, mark.clone());
+                }
+                self.add(Opcode::Pop, mark.clone());
+            }
             ExprDesc::If(pairs, other) => {
                 let mut end_jumps = Vec::new();
                 let mut last = None;

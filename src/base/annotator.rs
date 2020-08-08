@@ -67,6 +67,16 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 get(child, out)?;
             }
         }
+        ExprDesc::Switch(valexpr, pairs, default) => {
+            get(valexpr, out)?;
+            for (case, body) in pairs {
+                get(case, out)?;
+                get(body, out)?;
+            }
+            if let Some(default) = default {
+                get(default, out)?;
+            }
+        }
         ExprDesc::If(pairs, other) => {
             for (cond, body) in pairs {
                 get(cond, out)?;
