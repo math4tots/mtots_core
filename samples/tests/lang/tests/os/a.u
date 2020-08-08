@@ -1,17 +1,18 @@
 import a.os
+import a.fs
 
 def __test_dir_list() {
-    assert(__file.is_file())
+    assert(fs.isfile(__file))
 
     "Check that this script is in this directory"
-    dir = __file.parent()
-    assert(dir.is_dir())
-    assert(dir.list().has(__file))
+    dir = fs.dirname(__file)
+    assert(fs.isdir(dir))
+    assert(fs.ls(dir, path=true).has(__file))
 
     "Check that the 'os/' directory exists in the grandparent directory"
-    dir = dir.parent()
-    assert(dir.is_dir())
-    assert(dir.list().map(def(d) = d.basename()).has('os'))
+    dir = fs.dirname(dir)
+    assert(fs.isdir(dir))
+    assert(fs.ls(dir).map(def(d) = fs.basename(d)).has('os'))
 }
 
 def __test_rename() {
@@ -42,7 +43,7 @@ def __test_write() {
     contents = 'hello, contents of write'
     assert(!path.is_file())
 
-    __try(def {
+    pcall(def {
         path.write(contents)
         assert_eq(path.read(), contents)
     }, def {
@@ -72,12 +73,12 @@ def __test_process_with_working_dir() {
     """
     TODO: Try to address this for windows
     """
-    if os::name != "windows" {
+    if os.name != "windows" {
         paths = (
-            os::run(
+            os.run(
                 "ls",
-                stdout=:pipe,
-                encoding=:utf8,
+                stdout='pipe',
+                encoding='utf8',
                 dir=__file.parent().parent())[1]
                     .words()
                     .list()
@@ -85,10 +86,10 @@ def __test_process_with_working_dir() {
         assert(paths.has(str(__file.parent().basename())))
 
         paths = (
-            os::run(
+            os.run(
                 "ls",
-                stdout=:pipe,
-                encoding=:utf8,
+                stdout='pipe',
+                encoding='utf8',
                 dir=__file.parent())[1]
                     .words()
                     .list()
@@ -96,21 +97,21 @@ def __test_process_with_working_dir() {
         assert(!paths.has(str(__file.parent().basename())))
 
         "Check that clearing the env works"
-        env = os::run("env", stdout=:pipe, encoding=:utf8)[1].trim()
+        env = os.run("env", stdout='pipe', encoding='utf8')[1].trim()
         assert(env)
-        env = os::run("env", stdout=:pipe, encoding=:utf8, clear_envs=true)[1].trim()
+        env = os.run("env", stdout='pipe', encoding='utf8', clear_envs=true)[1].trim()
         assert_eq(env, '')
-        env = os::run(
+        env = os.run(
             "env",
-            stdout=:pipe,
-            encoding=:utf8,
+            stdout='pipe',
+            encoding='utf8',
             clear_envs=true,
-            envs=[:foo : :hi],
+            envs=['foo' : 'hi'],
         )[1].trim()
         assert_eq(env, 'foo=hi')
     }
 }
 
 def __test_env() {
-    assert(os::home() is not nil)
+    assert(os.home() is not nil)
 }

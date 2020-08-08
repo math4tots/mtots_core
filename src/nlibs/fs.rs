@@ -10,11 +10,31 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR;
 
-pub(super) fn new() -> NativeModule {
-    NativeModule::new("a.fs", |builder| {
-        let builder = builder.doc("Module for interacting with the file system");
+const NAME: &'static str = "a.fs";
 
-        // path stuff
+pub(super) fn new() -> NativeModule {
+    NativeModule::new(NAME, |builder| {
+        let builder = builder.doc("Module with tools for interacting with the file system");
+
+        // Path operations that touch the file system
+        let builder = builder.func(
+            "canon",
+            ["path"],
+            concat!(
+                "Returns the canonical, absolute form of a path with all ",
+                "intermediate components normalized and symbolic links ",
+                "resolved\n",
+                "Will throw if the resulting path is not valid UTF-8",
+            ),
+            |_globals, args, _| {
+                let arg = args.into_iter().next().unwrap();
+                let path = Path::new(arg.string()?);
+                let path = path.canonicalize()?;
+                Ok(Value::try_from(path.into_os_string())?)
+            },
+        );
+
+        // path operations that DO NOT touch the file system
         let builder =
             builder
                 .val(
@@ -149,7 +169,7 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
-        // files and folders
+        // files and folders (readonly)
         let builder = builder
             .func("isfile", ["path"], "", |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
@@ -161,22 +181,6 @@ pub(super) fn new() -> NativeModule {
                 let path = Path::new(arg.string()?);
                 Ok(Value::from(path.is_dir()))
             })
-            .func(
-                "canon",
-                ["path"],
-                concat!(
-                    "Returns the canonical, absolute form of a path with all ",
-                    "intermediate components normalized and symbolic links ",
-                    "resolved\n",
-                    "Will throw if the resulting path is not valid UTF-8",
-                ),
-                |_globals, args, _| {
-                    let arg = args.into_iter().next().unwrap();
-                    let path = Path::new(arg.string()?);
-                    let path = path.canonicalize()?;
-                    Ok(Value::try_from(path.into_os_string())?)
-                },
-            )
             .func(
                 "cwd",
                 (),
@@ -350,6 +354,23 @@ pub(super) fn new() -> NativeModule {
                     )))
                 },
             );
+
+        // files and folders (operations that will cause mutations)
+        let builder = builder.func(
+            "rename",
+            ["src", "dst"],
+            concat!(
+                "Renames a given file to another file\n",
+                "Calls Rust's std::fs::rename\n",
+            ),
+            |_globals, args, _| {
+                let src = Path::new(args[0].string()?);
+                let dst = Path::new(args[1].string()?);
+                fs::rename(src, dst)?;
+                Ok(Value::Nil)
+            },
+        );
+
         builder.build()
     })
 }
