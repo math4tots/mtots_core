@@ -2,6 +2,6 @@ import ..foo
 import ....nested
 
 def __test_relative_imports() {
-    assert_eq(foo::asdf, 'asdf asdf')
-    assert_eq(nested::x, 9595)
+    assert_eq(foo.asdf, 'asdf asdf')
+    assert_eq(nested.x, 9595)
 }
