@@ -38,15 +38,13 @@ impl List {
     }
     pub fn sort(vec: &mut Vec<Value>) -> Result<()> {
         let mut error: Option<Error> = None;
-        vec.sort_by(|a, b| {
-            match a.partial_cmp(&b) {
-                Some(ord) => ord,
-                None => {
-                    if error.is_none() {
-                        error = Some(rterr!("{:?} and {:?} are not comparable", a, b));
-                    }
-                    cmp::Ordering::Equal
+        vec.sort_by(|a, b| match a.partial_cmp(&b) {
+            Some(ord) => ord,
+            None => {
+                if error.is_none() {
+                    error = Some(rterr!("{:?} and {:?} are not comparable", a, b));
                 }
+                cmp::Ordering::Equal
             }
         });
         error.map(Err).unwrap_or(Ok(()))
@@ -165,6 +163,12 @@ impl Map {
                 ResumeResult::Return(Value::Nil)
             }
         })
+    }
+    pub fn unwrap_or_clone(map: Rc<Self>) -> IndexMap<Key, Value> {
+        match Rc::try_unwrap(map) {
+            Ok(map) => map.into_inner(),
+            Err(map) => map.borrow().clone(),
+        }
     }
 }
 

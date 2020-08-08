@@ -71,15 +71,20 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                     Ok(ret.into())
                 }),
-                NativeFunction::new("__slice", ["self", "start", "end"], "", |_globals, args, _| {
-                    let mut args = args.into_iter();
-                    let owner = args.next().unwrap().into_list()?;
-                    let owner = owner.borrow();
-                    let len = owner.len();
-                    let start = args.next().unwrap().to_start_index(len)?;
-                    let end = args.next().unwrap().to_end_index(len)?;
-                    Ok(owner[start..end].to_vec().into())
-                }),
+                NativeFunction::new(
+                    "__slice",
+                    ["self", "start", "end"],
+                    "",
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_list()?;
+                        let owner = owner.borrow();
+                        let len = owner.len();
+                        let start = args.next().unwrap().to_start_index(len)?;
+                        let end = args.next().unwrap().to_end_index(len)?;
+                        Ok(owner[start..end].to_vec().into())
+                    },
+                ),
                 NativeFunction::new(
                     "all",
                     ArgSpec::builder().req("self").def("f", ()),
@@ -155,25 +160,35 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                     Ok(false.into())
                 }),
-                NativeFunction::new("splice", ["self", "start", "stop", "replacement"], None, |globals, args, _| {
-                    let mut args = args.into_iter();
-                    let owner = args.next().unwrap().into_list()?;
-                    let mut owner = owner.borrow_mut();
-                    let len = owner.len();
-                    let start = args.next().unwrap().to_start_index(len)?;
-                    let end = args.next().unwrap().to_end_index(len)?;
-                    let replacement = args.next().unwrap().unpack(globals)?;
-                    let removed = owner.splice(start..end, replacement).collect::<Vec<_>>();
-                    Ok(removed.into())
-                }),
-                NativeFunction::new("zip", ArgSpec::builder().req("self").var("others"), None, |globals, args, _| {
-                    let mut args = args.into_iter();
-                    let owner_iter = args.next().unwrap().iter(globals)?;
-                    let rem = args.collect::<Vec<_>>();
-                    let zipped = owner_iter.apply_method(globals, "zip", rem, None)?;
-                    let vec = zipped.unpack(globals)?;
-                    Ok(vec.into())
-                }),
+                NativeFunction::new(
+                    "splice",
+                    ["self", "start", "stop", "replacement"],
+                    None,
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_list()?;
+                        let mut owner = owner.borrow_mut();
+                        let len = owner.len();
+                        let start = args.next().unwrap().to_start_index(len)?;
+                        let end = args.next().unwrap().to_end_index(len)?;
+                        let replacement = args.next().unwrap().unpack(globals)?;
+                        let removed = owner.splice(start..end, replacement).collect::<Vec<_>>();
+                        Ok(removed.into())
+                    },
+                ),
+                NativeFunction::new(
+                    "zip",
+                    ArgSpec::builder().req("self").var("others"),
+                    None,
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner_iter = args.next().unwrap().iter(globals)?;
+                        let rem = args.collect::<Vec<_>>();
+                        let zipped = owner_iter.apply_method(globals, "zip", rem, None)?;
+                        let vec = zipped.unpack(globals)?;
+                        Ok(vec.into())
+                    },
+                ),
             ]),
             vec![iterable],
         ),
