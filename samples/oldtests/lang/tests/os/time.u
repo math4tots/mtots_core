@@ -1,0 +1,14 @@
+import a.time
+
+def __test_now() {
+    now = time::now()
+    assert(now > 1591251957)
+}
+
+def __test_sleep() {
+    dur = 0.1
+    start = time::now()
+    time::sleep(dur)
+    end = time::now()
+    assert(end - start > dur)
+}

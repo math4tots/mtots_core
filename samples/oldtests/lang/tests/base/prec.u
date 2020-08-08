@@ -1,0 +1,17 @@
+# Operator precedence
+
+
+def __test_exp() {
+    assert((1.1 ** 1.1) ** 1.1 != 1.1 ** (1.1 ** 1.1))
+    assert_eq(1.1 ** 1.1 ** 1.1, 1.1 ** (1.1 ** 1.1))
+}
+
+def __test_chained_assignment() {
+    a = b = 15
+    assert_eq(a, 15)
+    assert_eq(b, 15)
+
+    a = 'aaa'
+    assert_eq(a, 'aaa')
+    assert_eq(b, 15)
+}

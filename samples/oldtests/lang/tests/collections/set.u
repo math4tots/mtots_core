@@ -1,0 +1,53 @@
+def __test_set() {
+    s = Set([1, 2, 3])
+    assert(s is s)
+    assert_eq(s, s)
+    assert_eq(s, Set([1, 2, 3]))
+
+    assert(s.has(1))
+    assert(s.has(2))
+    assert(s.has(3))
+    assert(!s.has(4))
+
+    assert_eq(s.len(), 3)
+}
+
+def __test_set_iter() {
+    list = @[]
+    for x in Set(['a', 'b', 'c']) {
+        list.push(x)
+    }
+    assert_eq(list.move(), ['a', 'b', 'c'])
+}
+
+def __test_mutable_set() {
+    ms = MutableSet([])
+    for i in range(5, 10) {
+        ms.add(i)
+    }
+    assert(ms.has(5))
+    assert(!ms.has(4))
+    assert_eq(ms.len(), 5)
+
+    assert_eq(ms.move(), Set([5, 6, 7, 8, 9]))
+}
+
+def __test_sets_as_keys() {
+    d = @[:]
+    d[Set([1, 2, 3])] = 123
+    assert_eq(d[Set([1, 2, 3])], 123)
+    assert_eq(d[Set([3, 1, 2])], 123)
+    assert_eq(d[Set([3, 2, 1])], 123)
+    assert_eq(d.len(), 1)
+}
+
+def __test_set_add() {
+    a = Set([1, 2, 3])
+    b = Set([3, 4, 5])
+    assert_eq(a + b, Set([1, 2, 3, 4, 5]))
+}
+
+def __test_from_iter() {
+    set = ['a', 'b', 'c', 1, 2, 3].iter().set()
+    assert_eq(set, Set(['a', 'b', 'c', 1, 2, 3]))
+}

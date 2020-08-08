@@ -1,0 +1,108 @@
+import a.fs
+
+def __test_path_parent_loop() {
+    """
+    Eventually calling 'dirname' should return an empty string
+    """
+    path = __file
+
+    while path {
+        path = fs.dirname(path)
+    }
+
+    assert_eq(path, '')
+}
+
+def __test_nil() {
+    assert_eq(nil, nil)
+    assert(nil is nil)
+    assert(!(nil is not nil))
+    assert(!nil)
+}
+
+def __test_bool() {
+    assert(true)
+    assert(!false)
+    assert_eq(true, true)
+    assert_eq(false, false)
+    assert_eq(true, !false)
+    assert_eq(!true, false)
+    assert(!(true and false))
+    assert(true or false)
+    assert(false or true)
+    assert_eq(1 and 2, 2)
+    assert_eq(1 or 2, 1)
+    assert((1 and 2) != 1)
+}
+
+def __test_cmp() {
+    assert(1 < 2)
+    assert(2 > 1)
+    assert(!(2 < 1))
+    assert(!(1 > 2))
+    assert(!(1 < 1))
+    assert(1 <= 1)
+    assert(1 <= 2)
+    assert(!(1 <= 0))
+    assert(!(1 >= 2))
+    assert(1 >= 1)
+    assert(1 >= 0)
+}
+
+def __test_subscript() {
+    assert_eq(['a', 'b', 'c'][0], 'a')
+}
+
+def __test_exc() {
+    assert_throws(def = 5 + '5')
+}
+
+def __test_numbers_with_underscores() {
+    assert_eq(1000000000, 1000_000_000)
+    assert_eq(1000000000, 1000_000_000_)
+    assert_eq(5.555666, 5.555_666)
+    assert_eq(5.555666, 5.555_666_)
+    assert_eq(5.555666, 5_.555_666_)
+    assert_eq(0xA_B, 16 * 10 + 11)
+    assert_eq(0xA_B_, 16 * 10 + 11)
+}
+
+def __test_path_join() {
+    parent = fs.dirname(__file)
+    assert_eq(fs.join(parent, 'a', 'b'), fs.join(fs.join(parent, 'a'), 'b'))
+}
+
+def __test_min_max() {
+    assert_eq(min(1, 2, 3), 1)
+    assert_eq(min([1, 2, 3]), 1)
+    assert_eq(min(3, 2, 1), 1)
+    assert_eq(min([3, 2, 1]), 1)
+
+    assert_eq(max(1, 2, 3), 3)
+    assert_eq(max([1, 2, 3]), 3)
+    assert_eq(max(3, 2, 1), 3)
+    assert_eq(max([3, 2, 1]), 3)
+
+    assert_eq(max('a', 'b', 'c'), 'c')
+    assert_eq(min('a', 'b', 'c'), 'a')
+
+    assert_eq(max('aa', 'a', 'b', 'bb'), 'bb')
+    assert_eq(min('aa', 'a', 'b', 'bb'), 'a')
+
+    assert_throws(def = min([]))
+    assert_throws(def = max([]))
+}
+
+def __test_nil_methods() {
+    assert_eq(nil.map(123, def(x) = x + 1), 124)
+    assert_eq(nil.map(nil, def(x) = x + 1), nil)
+
+    assert_eq(nil.vmap(123, 456), 456)
+    assert_eq(nil.vmap(nil, 456), nil)
+
+    assert_eq(nil.get('a', 'b'), 'a')
+    assert_eq(nil.get(nil, 'b'), 'b')
+
+    assert_eq(nil.fget('a', def = 'b'), 'a')
+    assert_eq(nil.fget(nil, def = 'b'), 'b')
+}

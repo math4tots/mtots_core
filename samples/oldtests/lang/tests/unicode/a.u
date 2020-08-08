@@ -1,0 +1,17 @@
+
+
+def __test_symbols() {
+    assert_eq(str(:한글), '한글')
+    assert_eq(:한글, Symbol('한글'))
+}
+
+def __test_chars() {
+    assert_eq('한글'.chars(), ['한', '글'])
+    assert_eq('한글中文'.chars(), ['한', '글', '中', '文'])
+}
+
+def __test_len() {
+    assert_eq('한글中文'.len(), 4)
+    assert_eq('hello'.len(), 5)
+    assert_eq('😋'.len(), 1)
+}

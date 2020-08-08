@@ -1,0 +1,27 @@
+r###"
+test nonlocal expressions
+"###
+
+
+def __test_basic_with_nonlocal() {
+    x = 10
+
+    r###"
+    Without nonlocal, x should not change value
+    "###
+    def foo() {
+        x = 7
+    }
+    foo()
+    assert_eq(x, 10)
+
+    r###"
+    With nonlocal though, x should change value
+    "###
+    def bar() {
+        nonlocal x
+        x = 7
+    }
+    bar()
+    assert_eq(x, 7)
+}

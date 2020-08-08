@@ -1,0 +1,19 @@
+
+def __test_get_method() {
+    len = getmethod(String, 'len')
+    assert_eq(len('hello'), 'hello'.len())
+
+    assert_throws(def = getmethod(String, 'no_such_method'))
+}
+
+class SomeTrait {}
+class SomeClass(SomeTrait) {}
+
+def __test_str() {
+    assert_eq(str(Number), '<class Number>')
+    assert_eq(str(SomeTrait), '<class %s#SomeTrait>' % [__name])
+    assert_eq(str(SomeClass), '<class %s#SomeClass>' % [__name])
+
+    class AnotherClass {}
+    assert_eq(str(AnotherClass), '<class lang.tests.cls.b#__test_str#AnotherClass>')
+}

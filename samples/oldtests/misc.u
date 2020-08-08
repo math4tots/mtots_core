@@ -1,0 +1,73 @@
+"""
+Some stuff I was using to test before I actually got testing
+set up
+"""
+
+def __test_path_parent_loop() {
+    """
+    Eventually calling 'parent' should return nil
+    """
+    path = __file
+
+    while path {
+        path = path.parent()
+    }
+
+    assert_eq(path, nil)
+}
+
+def __test_misc() {
+    import a.os
+
+    print(os)
+
+    print(__name)
+    print(__file)
+    print('__file.is_dir() = ' + str(__file.is_dir()))
+    print('__file.is_file() = ' + str(__file.is_file()))
+
+    path = __file
+    while path {
+        print('path = ' + repr(path))
+        path = path.parent()
+    }
+
+    print(repr(__file))
+    print(os::name)
+    print('cwd = ' + repr(os::getcwd()))
+    print('cwd = ' + repr((os::getcwd)()))
+    print([1, 2, 3])
+    print(os::triple)
+
+    print(os::getcwd().list().map(def(p) = p.basename()))
+
+    [a, b, c] = os::triple
+    print([c, a, b])
+
+    print('[a, b] = ' + str([a, b]))
+    [a, b] = [b, a]
+    print('[a, b] = ' + str([a, b]))
+
+    def foo() = {
+        return
+        123
+    }
+    print('foo() = ' + str(foo()))
+
+    print([1, 2, 3].len())
+
+    print(repr(:some_symbol))
+    print([:a, :b, :c])
+
+    for i in range(100) {
+        print('i = ' + str(i))
+    }
+
+    print(Path)
+    print(repr(Path(".")))
+    List(os::walk("./src"))
+
+    """
+    'hi' + 3
+    """
+}

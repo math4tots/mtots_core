@@ -1,0 +1,49 @@
+# Test doc related stuff for functions
+
+
+def foo() {
+    # Some function with doc
+}
+
+def* bar(a, b) {
+    # Some generator with doc
+}
+
+def baz(a, b, c=5, *args, **kwargs) {
+    0
+    # Some function with no doc
+}
+
+def asdf(**kwargs) {}
+def qwer(*fghj) {}
+
+def f(x=2) = {
+    # Some function with doc with '='
+}
+
+def __test_doc() {
+    assert_eq(foo.doc(), 'Some function with doc\n')
+    assert_eq(bar.doc(), 'Some generator with doc\n')
+    assert_eq(baz.doc(), nil)
+    assert_eq(f.doc(), "Some function with doc with '='\n")
+}
+
+def __test_args() {
+    assert_eq(foo.params(), [[], [], nil, nil])
+    assert_eq(bar.params(), [['a', 'b'], [], nil, nil])
+    assert_eq(baz.params(), [['a', 'b'], [['c', 5]], 'args', 'kwargs'])
+    assert_eq(asdf.params(), [[], [], nil, 'kwargs'])
+    assert_eq(qwer.params(), [[], [], 'fghj', nil])
+    assert_eq(f.params(), [[], [['x', 2]], nil, nil])
+}
+
+def __test_args_native() {
+    assert_eq(assert_eq.params(), [['a', 'b'], [], nil, nil])
+    assert_eq(getmethod(String, 'len').params(), [['self'], [], nil, nil])
+    assert_eq(max.params(), [['xs'], [], 'varargs', nil])
+}
+
+def __test_doc_native() {
+    assert(max.doc() is not nil)
+    assert(min.doc() is not nil)
+}
