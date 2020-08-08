@@ -71,6 +71,15 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                     Ok(ret.into())
                 }),
+                NativeFunction::new("__slice", ["self", "start", "end"], "", |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let owner = owner.borrow();
+                    let len = owner.len();
+                    let start = args.next().unwrap().to_start_index(len)?;
+                    let end = args.next().unwrap().to_end_index(len)?;
+                    Ok(owner[start..end].to_vec().into())
+                }),
                 NativeFunction::new(
                     "all",
                     ArgSpec::builder().req("self").def("f", ()),
