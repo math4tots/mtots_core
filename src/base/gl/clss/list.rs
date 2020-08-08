@@ -38,6 +38,14 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     let i = args.next().unwrap().to_index(owner.len())?;
                     Ok(owner.remove(i))
                 }),
+                NativeFunction::new("resize", ["self", "n"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let mut owner = owner.borrow_mut();
+                    let i = usize::try_from(args.next().unwrap())?;
+                    owner.resize_with(i, || Value::Nil);
+                    Ok(Value::Nil)
+                }),
                 NativeFunction::new("__mul", ["self", "n"], "", |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;
