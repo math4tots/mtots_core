@@ -67,6 +67,27 @@ pub(super) fn new() -> NativeModule {
                         .into())
                 },
             )
+            .func(
+                "home",
+                (),
+                concat!(
+                    "Makes a best guess at the home directory\n",
+                    "On windows his will return 'UserProfile' environment variable, ",
+                    "and everywhere else it will return the 'HOME' environment ",
+                    "variable\n",
+                ),
+                |_, _, _| {
+                    let var = if env::consts::OS == "windows" {
+                        env::var("UserProfile")
+                    } else {
+                        env::var("HOME")
+                    };
+                    match var {
+                        Ok(value) => Ok(Value::from(value)),
+                        _ => Ok(Value::Nil),
+                    }
+                },
+            )
             .build()
     })
 }
