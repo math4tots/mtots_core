@@ -166,6 +166,14 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     let removed = owner.splice(start..end, replacement).collect::<Vec<_>>();
                     Ok(removed.into())
                 }),
+                NativeFunction::new("zip", ArgSpec::builder().req("self").var("others"), None, |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner_iter = args.next().unwrap().iter(globals)?;
+                    let rem = args.collect::<Vec<_>>();
+                    let zipped = owner_iter.apply_method(globals, "zip", rem, None)?;
+                    let vec = zipped.unpack(globals)?;
+                    Ok(vec.into())
+                }),
             ]),
             vec![iterable],
         ),
