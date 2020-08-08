@@ -7,11 +7,7 @@ impl Value {
                 Ok(set) => Ok(set.into_inner()),
                 Err(set) => Ok(set.borrow().clone()),
             },
-            _ => self
-                .unpack(globals)?
-                .into_iter()
-                .map(Key::try_from)
-                .collect(),
+            _ => self.unpack_into(globals),
         }
     }
     pub fn unpack_into_map(self, globals: &mut Globals) -> Result<IndexMap<Key, Value>> {
@@ -20,14 +16,7 @@ impl Value {
                 Ok(map) => Ok(map.into_inner()),
                 Err(map) => Ok(map.borrow().clone()),
             },
-            _ => self
-                .unpack(globals)?
-                .into_iter()
-                .map(|pairval| {
-                    let [key, val] = pairval.unpack2(globals)?;
-                    Ok((Key::try_from(key)?, val))
-                })
-                .collect(),
+            _ => self.unpack_into(globals),
         }
     }
     pub fn unpack(self, globals: &mut Globals) -> Result<Vec<Value>> {
