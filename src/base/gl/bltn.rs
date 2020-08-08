@@ -104,11 +104,11 @@ impl Globals {
             NativeFunction::new("getmethods", ["cls"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let cls = args.next().unwrap().into_class()?;
-                let mut keys = cls.map()
-                    .keys()
-                    .collect::<Vec<_>>();
+                let mut keys = cls.map().keys().collect::<Vec<_>>();
                 keys.sort();
-                Ok(Value::from(keys.into_iter().map(Value::from).collect::<Vec<_>>()))
+                Ok(Value::from(
+                    keys.into_iter().map(Value::from).collect::<Vec<_>>(),
+                ))
             }),
             NativeFunction::new(
                 "throw",

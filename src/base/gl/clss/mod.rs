@@ -1,7 +1,10 @@
 use super::*;
 mod iter;
+mod iterble;
 mod list;
+mod map;
 mod nil;
+mod set;
 mod strcls;
 
 #[allow(non_snake_case)]
@@ -9,6 +12,7 @@ pub struct ClassManager {
     pub Nil: Rc<Class>,
     pub Bool: Rc<Class>,
     pub Number: Rc<Class>,
+    pub Iterable: Rc<Class>,
     pub String: Rc<Class>,
     pub List: Rc<Class>,
     pub Set: Rc<Class>,
@@ -28,23 +32,11 @@ impl ClassManager {
         let Nil = nil::new();
         let Bool = Class::new("Bool".into(), HashMap::new(), HashMap::new());
         let Number = Class::new("Number".into(), HashMap::new(), HashMap::new());
+        let Iterable = iterble::new();
         let String = strcls::new();
-        let List = list::new();
-        let Set = Class::new(
-            "Set".into(),
-            HashMap::new(),
-            Class::map_from_funcs(vec![NativeFunction::new(
-                "__call",
-                ["x"],
-                None,
-                |globals, args, _| {
-                    let x = args.into_iter().next().unwrap();
-                    let set = x.unpack_into_set(globals)?;
-                    Ok(set.into())
-                },
-            )]),
-        );
-        let Map = Class::new("Map".into(), HashMap::new(), HashMap::new());
+        let List = list::new(&Iterable);
+        let Set = set::new(&Iterable);
+        let Map = map::new(&Iterable);
         let Function = Class::new(
             "Function".into(),
             Class::map_from_funcs(vec![
@@ -73,7 +65,7 @@ impl ClassManager {
             ]),
             HashMap::new(),
         );
-        let Iterator = iter::new();
+        let Iterator = iter::new(&Iterable);
         let Generator = Class::new(
             "Generator".into(),
             Class::join_class_maps(HashMap::new(), vec![&Iterator]),
@@ -90,6 +82,7 @@ impl ClassManager {
             Nil,
             Bool,
             Number,
+            Iterable,
             String,
             List,
             Set,
@@ -130,12 +123,14 @@ impl ClassManager {
             &self.Nil,
             &self.Bool,
             &self.Number,
+            &self.Iterable,
             &self.String,
             &self.List,
             &self.Set,
             &self.Map,
             &self.Function,
             &self.NativeFunction,
+            &self.Iterator,
             &self.Generator,
             &self.NativeGenerator,
             &self.Class,

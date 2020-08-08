@@ -31,8 +31,7 @@ def __test_enumerate() {
 
     # The 'start' argument for enumerate only works with
     # integers
-    assert_raises(
-        RuntimeError,
+    assert_throws(
         def = ['a', 'b', 'c'].iter().enumerate(1.1).list(),
     )
 }
