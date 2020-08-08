@@ -77,6 +77,40 @@ impl Globals {
                 owner.getattr(&name)
             }),
             NativeFunction::new(
+                "getattrs",
+                ["owner"],
+                "Returns a list of attributes on this value",
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap();
+                    Ok(Value::from(
+                        owner
+                            .getattrs()
+                            .into_iter()
+                            .map(Value::from)
+                            .collect::<Vec<_>>(),
+                    ))
+                },
+            ),
+            NativeFunction::new("getmethod", ["cls", "name"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let cls = args.next().unwrap().into_class()?;
+                let name = args.next().unwrap().into_string()?;
+                cls.map()
+                    .get(&name)
+                    .cloned()
+                    .ok_or_else(|| rterr!("Method {:?} not found for {:?}", name, cls))
+            }),
+            NativeFunction::new("getmethods", ["cls"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let cls = args.next().unwrap().into_class()?;
+                let mut keys = cls.map()
+                    .keys()
+                    .collect::<Vec<_>>();
+                keys.sort();
+                Ok(Value::from(keys.into_iter().map(Value::from).collect::<Vec<_>>()))
+            }),
+            NativeFunction::new(
                 "throw",
                 ["message"],
                 concat!(
@@ -146,15 +180,6 @@ impl Globals {
                 let x = args.next().unwrap();
                 Ok(Value::from(x.convert_to_float()?))
             }),
-            NativeFunction::new("getmethod", ["cls", "name"], None, |_globals, args, _| {
-                let mut args = args.into_iter();
-                let cls = args.next().unwrap().into_class()?;
-                let name = args.next().unwrap().into_string()?;
-                cls.map()
-                    .get(&name)
-                    .cloned()
-                    .ok_or_else(|| rterr!("Method {:?} not found for {:?}", name, cls))
-            }),
             NativeFunction::new(
                 "max",
                 ArgSpec::builder().req("xs").var("varargs"),
@@ -217,12 +242,6 @@ impl Globals {
                 let name = args.into_iter().next().unwrap();
                 let name = name.string()?;
                 Ok(globals.load(name)?.into())
-            }),
-            NativeFunction::new("__module_keys", ["module"], None, |_globals, args, _| {
-                let module = args.into_iter().next().unwrap().into_module()?;
-                let mut keys = module.map().keys().collect::<Vec<_>>();
-                keys.sort();
-                Ok(keys.into_iter().map(Value::from).collect::<Vec<_>>().into())
             }),
             NativeFunction::new("__disasm", ["func"], None, |_globals, args, _| {
                 let func = args.into_iter().next().unwrap();

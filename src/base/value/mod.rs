@@ -333,6 +333,30 @@ impl Value {
             None => Err(rterr!("Attribute {:?} not found in {:?}", attr, self)),
         }
     }
+    pub fn getattrs(&self) -> Vec<RcStr> {
+        match self {
+            Self::Class(cls) => {
+                let mut keys = cls
+                    .static_map()
+                    .keys()
+                    .map(Clone::clone)
+                    .collect::<Vec<_>>();
+                keys.sort();
+                keys
+            }
+            Self::Module(module) => {
+                let mut keys = module.map().keys().map(Clone::clone).collect::<Vec<_>>();
+                keys.sort();
+                keys
+            }
+            Self::Table(table) => {
+                let mut keys = table.map().keys().map(Clone::clone).collect::<Vec<_>>();
+                keys.sort();
+                keys
+            }
+            _ => vec![],
+        }
+    }
     pub fn setattr(&self, attr: &RcStr, value: Value) -> Result<()> {
         // We disallow setting attributes this way for both classes and modules
         //   A class's static fields are immutable

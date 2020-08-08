@@ -24,7 +24,7 @@ def run(root_dir, test_pkg=nil) {
     for module_name in _get_module_names(root_dir, test_pkg) {
         print(module_name)
         module = __import(module_name)
-        keys = __module_keys(module).filter(def(k) = k.starts_with('__test_'))
+        keys = getattrs(module).filter(def(k) = k.starts_with('__test_'))
         if keys {
             for attr in keys {
                 attr_str = str(attr)

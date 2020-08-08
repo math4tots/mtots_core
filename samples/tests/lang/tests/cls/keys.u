@@ -2,7 +2,7 @@
 
 class Foo {
     def abc(self) = 123
-    def f(self) = :f_result
+    def f(self) = 'f_result'
 
     static def ss(self) = 'ss'
     static def f(self) = 'hi'
@@ -12,6 +12,6 @@ class Foo {
 def __test_instance_methods() {
     # Since the maps used in classes are unordered,
     # the returned values are sorted by name
-    assert_eq(Foo.keys(), [:abc, :f])
-    assert_eq(Foo.static_keys(), [:f, :ss])
+    assert_eq(getmethods(Foo), ['abc', 'f'])
+    assert_eq(getattrs(Foo), ['f', 'ss'])
 }

@@ -63,7 +63,7 @@ pub(super) fn new() -> Rc<Class> {
                 let iter = args.into_iter().next().unwrap();
                 match iter {
                     Value::List(list) => Ok(Value::from(List::unwrap_or_clone(list))),
-                    _ => Ok(Value::from(iter.unpack(globals)?))
+                    _ => Ok(Value::from(iter.unpack(globals)?)),
                 }
             },
         )]),

@@ -1,47 +1,19 @@
 
 def __test_get_method() {
-    len = String.get_method(:len)
+    len = getmethod(String, 'len')
     assert_eq(len('hello'), 'hello'.len())
 
-    assert_throws(def = String.get_method(:no_such_method))
+    assert_throws(def = getmethod(String, 'no_such_method'))
 }
 
-trait SomeTrait {}
+class SomeTrait {}
 class SomeClass(SomeTrait) {}
 
 def __test_str() {
-    assert_eq(str(Object), '<trait Object>')
-    assert_eq(str(Float), '<class Float>')
-    assert_eq(str(SomeTrait), '<trait %s::SomeTrait>' % [__name])
-    assert_eq(str(SomeClass), '<class %s::SomeClass>' % [__name])
+    assert_eq(str(Number), '<class Number>')
+    assert_eq(str(SomeTrait), '<class %s#SomeTrait>' % [__name])
+    assert_eq(str(SomeClass), '<class %s#SomeClass>' % [__name])
 
-    """
-    Should the full name of AnotherClass be:
-        <__name>::AnotherClass, or
-        <__name>::__test_str::AnotherClass
-    ?
-
-    The first way (the way it is now) allows users to write little functions
-    in the module itself to customize the construction of the class with
-    some helper functions, while hiding the fact that it was built with
-    helper functions from the user.
-    Not to mention that, since this is already how it works, there's no
-    extra work needed to change functionality
-
-    On the other hand, this may lead to multiple classes with the same
-    full name. But even with the second method, we still have problems
-    with name conflicts if functions are used as e.g. class factories.
-
-    There's also an analogous version of this issue for functions
-    """
     class AnotherClass {}
-    assert_eq(str(AnotherClass), '<class lang.tests.cls.b::AnotherClass>')
-}
-
-
-def __test_is_trait() {
-    assert(Object.is_trait())
-    assert(!String.is_trait())
-    assert(SomeTrait.is_trait())
-    assert(!SomeClass.is_trait())
+    assert_eq(str(AnotherClass), '<class lang.tests.cls.b#__test_str#AnotherClass>')
 }
