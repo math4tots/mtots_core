@@ -185,6 +185,20 @@ impl Value {
             Err(self.terr("list"))
         }
     }
+    pub fn set(&self) -> Result<&Rc<Set>> {
+        if let Self::Set(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("set"))
+        }
+    }
+    pub fn into_set(self) -> Result<Rc<Set>> {
+        if let Self::Set(x) = self {
+            Ok(x)
+        } else {
+            Err(self.terr("set"))
+        }
+    }
     pub fn map(&self) -> Result<&Rc<Map>> {
         if let Self::Map(x) = self {
             Ok(x)

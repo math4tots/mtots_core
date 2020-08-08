@@ -270,7 +270,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                         string.push_str(get0!(rhs.string()));
                         string.into()
                     }),
-                    _ => operr!(),
+                    _ => get1!(lhs.apply_method(globals, "__add", vec![rhs], None)),
                 },
                 Binop::Sub => match lhs {
                     Value::Number(a) => Value::Number(a - get0!(rhs.number())),

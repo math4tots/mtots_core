@@ -98,6 +98,12 @@ impl Set {
             }
         })
     }
+    pub fn unwrap_or_clone(set: Rc<Self>) -> IndexSet<Key> {
+        match Rc::try_unwrap(set) {
+            Ok(set) => set.into_inner(),
+            Err(set) => set.borrow().clone(),
+        }
+    }
 }
 
 impl cmp::PartialOrd for Set {

@@ -20,6 +20,7 @@ use crate::Parser;
 use crate::RcStr;
 use crate::Result;
 use crate::ResumeResult;
+use crate::Set;
 use crate::Source;
 use crate::Value;
 use std::any::Any;

@@ -27,6 +27,16 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     },
                 ),
                 NativeFunction::new(
+                    "set",
+                    ["self"],
+                    "Converts this iterator into a set",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        Ok(Value::from(owner.unpack_into_set(globals)?))
+                    },
+                ),
+                NativeFunction::new(
                     "enumerate",
                     ArgSpec::builder().req("self").def("start", 0),
                     "",
