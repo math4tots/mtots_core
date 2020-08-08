@@ -262,6 +262,31 @@ impl From<Key> for Value {
     }
 }
 
+impl From<&Key> for Value {
+    fn from(key: &Key) -> Self {
+        key.clone().into()
+    }
+}
+
+impl From<(Key, Value)> for Value {
+    fn from(kv: (Key, Value)) -> Self {
+        Value::from(vec![Value::from(kv.0), kv.1])
+    }
+}
+impl From<(&Key, &Value)> for Value {
+    fn from(kv: (&Key, &Value)) -> Self {
+        Value::from(vec![Value::from(kv.0), kv.1.clone()])
+    }
+}
+impl TryFrom<Value> for (Key, Value) {
+    type Error = Error;
+    fn try_from(value: Value) -> Result<(Key, Value)> {
+        let [key, val] = value.unpack2_limited()?;
+        let key = Key::try_from(key)?;
+        Ok((key, val))
+    }
+}
+
 impl From<ConstVal> for Value {
     fn from(cv: ConstVal) -> Self {
         match cv {

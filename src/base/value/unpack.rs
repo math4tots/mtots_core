@@ -36,8 +36,73 @@ impl Value {
                 Ok(list) => Ok(list.into_inner()),
                 Err(list) => Ok(list.borrow().clone()),
             },
-            Self::Generator(gen) => gen.borrow_mut().unpack(globals),
-            Self::NativeGenerator(gen) => gen.borrow_mut().unpack(globals),
+            _ => self.unpack_into(globals),
+        }
+    }
+    pub fn unpack_into<C, T, E>(self, globals: &mut Globals) -> Result<C>
+    where
+        C: FromIterator<T>,
+        T: TryFrom<Value, Error = E>,
+        Error: From<E>,
+    {
+        match self {
+            Self::List(list) => match Rc::try_unwrap(list) {
+                Ok(list) => Ok(list
+                    .into_inner()
+                    .into_iter()
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+                Err(list) => Ok(list
+                    .borrow()
+                    .iter()
+                    .map(Clone::clone)
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+            },
+            Self::Set(set) => match Rc::try_unwrap(set) {
+                Ok(set) => Ok(set
+                    .into_inner()
+                    .into_iter()
+                    .map(Value::from)
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+                Err(set) => Ok(set
+                    .borrow()
+                    .iter()
+                    .map(Value::from)
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+            },
+            Self::Map(map) => match Rc::try_unwrap(map) {
+                Ok(map) => Ok(map
+                    .into_inner()
+                    .into_iter()
+                    .map(Value::from)
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+                Err(map) => Ok(map
+                    .borrow()
+                    .iter()
+                    .map(Value::from)
+                    .map(T::try_from)
+                    .collect::<std::result::Result<_, _>>()?),
+            },
+            Self::Generator(gen) => Ok(gen
+                .borrow_mut()
+                .iter(globals)
+                .map(|r| match r {
+                    Ok(v) => Ok(T::try_from(v)?),
+                    Err(error) => Err(error),
+                })
+                .collect::<std::result::Result<_, _>>()?),
+            Self::NativeGenerator(gen) => Ok(gen
+                .borrow_mut()
+                .iter(globals)
+                .map(|r| match r {
+                    Ok(v) => Ok(T::try_from(v)?),
+                    Err(error) => Err(error),
+                })
+                .collect::<std::result::Result<_, _>>()?),
             _ => Err(rterr!("{:?} is not unpackable", self)),
         }
     }
@@ -46,6 +111,14 @@ impl Value {
             Self::List(list) => match Rc::try_unwrap(list) {
                 Ok(list) => Ok(list.into_inner()),
                 Err(list) => Ok(list.borrow().clone()),
+            },
+            Self::Set(set) => match Rc::try_unwrap(set) {
+                Ok(set) => Ok(set.into_inner().into_iter().map(Value::from).collect()),
+                Err(set) => Ok(set.borrow().iter().map(Value::from).collect()),
+            },
+            Self::Map(map) => match Rc::try_unwrap(map) {
+                Ok(map) => Ok(map.into_inner().into_iter().map(Value::from).collect()),
+                Err(map) => Ok(map.borrow().iter().map(Value::from).collect()),
             },
             _ => Err(rterr!("{:?} is not unpackable in this context", self)),
         }

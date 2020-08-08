@@ -23,6 +23,12 @@ impl Generator {
         }
         Ok(ret)
     }
+    pub fn iter<'a>(
+        &'a mut self,
+        globals: &'a mut Globals,
+    ) -> impl Iterator<Item = Result<Value>> + 'a {
+        geniter(self, globals)
+    }
 }
 
 impl cmp::PartialEq for Generator {
@@ -93,6 +99,12 @@ impl NativeGenerator {
         }
         Ok(ret)
     }
+    pub fn iter<'a>(
+        &'a mut self,
+        globals: &'a mut Globals,
+    ) -> impl Iterator<Item = Result<Value>> + 'a {
+        geniter(self, globals)
+    }
 }
 
 impl cmp::PartialEq for NativeGenerator {
@@ -121,4 +133,38 @@ pub enum ResumeResult {
     Yield(Value),
     Return(Value),
     Err(Error),
+}
+
+trait BaseGenerator {
+    fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult;
+}
+fn geniter<'a, G: BaseGenerator>(
+    gen: &'a mut G,
+    globals: &'a mut Globals,
+) -> impl Iterator<Item = Result<Value>> + 'a {
+    struct Iter<'a, G: BaseGenerator> {
+        gen: &'a mut G,
+        gl: &'a mut Globals,
+    }
+    impl<'a, G: BaseGenerator> Iterator for Iter<'a, G> {
+        type Item = Result<Value>;
+        fn next(&mut self) -> Option<Result<Value>> {
+            match self.gen.resume(self.gl, Value::Nil) {
+                ResumeResult::Yield(value) => Some(Ok(value)),
+                ResumeResult::Return(_) => None,
+                ResumeResult::Err(error) => Some(Err(error)),
+            }
+        }
+    }
+    Iter { gen, gl: globals }
+}
+impl BaseGenerator for Generator {
+    fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {
+        self.resume(globals, arg)
+    }
+}
+impl BaseGenerator for NativeGenerator {
+    fn resume(&mut self, globals: &mut Globals, arg: Value) -> ResumeResult {
+        self.resume(globals, arg)
+    }
 }

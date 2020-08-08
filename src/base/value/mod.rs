@@ -30,6 +30,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
+use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
