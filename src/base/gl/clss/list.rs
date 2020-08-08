@@ -22,6 +22,48 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         Err(rterr!("Pop from empty list"))
                     }
                 }),
+                NativeFunction::new(
+                    "all",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    None,
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_list()?;
+                        let f = args.next().unwrap();
+                        for x in owner.borrow().iter() {
+                            let cond = if f.is_nil() {
+                                x.truthy()
+                            } else {
+                                f.apply(globals, vec![x.clone()], None)?.truthy()
+                            };
+                            if !cond {
+                                return Ok(false.into());
+                            }
+                        }
+                        Ok(true.into())
+                    },
+                ),
+                NativeFunction::new(
+                    "any",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    None,
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_list()?;
+                        let f = args.next().unwrap();
+                        for x in owner.borrow().iter() {
+                            let cond = if f.is_nil() {
+                                x.truthy()
+                            } else {
+                                f.apply(globals, vec![x.clone()], None)?.truthy()
+                            };
+                            if cond {
+                                return Ok(true.into());
+                            }
+                        }
+                        Ok(false.into())
+                    },
+                ),
                 NativeFunction::new("map", ["self", "f"], None, |globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;
