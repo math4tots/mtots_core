@@ -291,10 +291,7 @@ impl Value {
             false
         }
     }
-    pub fn convert_to_handle<T: ConvertToHandle>(
-        self,
-        globals: &mut Globals,
-    ) -> Result<Handle<T>> {
+    pub fn convert_to_handle<T: ConvertToHandle>(self, globals: &mut Globals) -> Result<Handle<T>> {
         if self.is_handle::<T>() {
             self.into_handle()
         } else {

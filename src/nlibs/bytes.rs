@@ -1,9 +1,9 @@
-use crate::Value;
-use crate::Handle;
 use crate::ConvertToHandle;
 use crate::Globals;
+use crate::Handle;
 use crate::NativeModule;
 use crate::Result;
+use crate::Value;
 use std::convert::TryFrom;
 
 const NAME: &'static str = "a.bytes";

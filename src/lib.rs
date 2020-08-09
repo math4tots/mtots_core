@@ -18,9 +18,9 @@ macro_rules! rterr {
 }
 
 mod base;
+mod cli;
 mod nlibs;
 mod util;
-mod cli;
 
 // I feel really yucky depending on an external crate in core
 // Eventually I might just replace this with a makeshift implementation
@@ -28,11 +28,11 @@ mod cli;
 pub extern crate indexmap;
 
 pub use base::*;
+pub use cli::climain;
 pub use indexmap::IndexMap;
 pub use indexmap::IndexSet;
 pub use nlibs::*;
 pub use util::*;
-pub use cli::climain;
 
 #[cfg(test)]
 mod tests {

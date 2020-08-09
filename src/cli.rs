@@ -107,6 +107,7 @@ fn repl(mut globals: Globals) {
                 globals.trace_unwind(trace_base);
             }
         }
+        globals.save_line_history().unwrap();
     }
 }
 

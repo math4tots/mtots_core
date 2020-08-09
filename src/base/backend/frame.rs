@@ -125,7 +125,10 @@ impl Frame {
             VariableType::Upval => self.upvals[var.slot()].replace(Value::Invalid),
         };
         if let Value::Invalid = value {
-            Err(rterr!("Variable {:?} used before being set (for del)", var.name()))
+            Err(rterr!(
+                "Variable {:?} used before being set (for del)",
+                var.name()
+            ))
         } else {
             Ok(value)
         }
