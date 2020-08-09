@@ -59,7 +59,6 @@ pub(super) fn new() -> NativeModule {
                     "    * windows\n",
                 ),
                 std::env::consts::FAMILY,
-            )
-            .build()
+            );
     })
 }

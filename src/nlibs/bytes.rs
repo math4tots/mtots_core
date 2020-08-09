@@ -6,7 +6,6 @@ pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |builder| {
         builder
             .doc("Utilities for dealing with raw bytes")
-            .class::<Vec<u8>, _>("Bytes", |cls| cls)
-            .build()
+            .class::<Vec<u8>, _>("Bytes", |_cls| {});
     })
 }

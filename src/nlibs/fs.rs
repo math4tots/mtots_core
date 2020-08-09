@@ -14,10 +14,10 @@ const NAME: &'static str = "a.fs";
 
 pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |builder| {
-        let builder = builder.doc("Module with tools for interacting with the file system");
+        builder.doc("Module with tools for interacting with the file system");
 
         // Path operations that touch the file system
-        let builder = builder.func(
+        builder.func(
             "canon",
             ["path"],
             concat!(
@@ -128,7 +128,7 @@ pub(super) fn new() -> NativeModule {
                 );
 
         // read/write stuff
-        let builder = builder
+        builder
             .func(
                 "read",
                 ["path"],
@@ -170,7 +170,7 @@ pub(super) fn new() -> NativeModule {
             );
 
         // files and folders (readonly)
-        let builder = builder
+        builder
             .func("isfile", ["path"], "", |_globals, args, _| {
                 let arg = args.into_iter().next().unwrap();
                 let path = Path::new(arg.string()?);
@@ -356,7 +356,7 @@ pub(super) fn new() -> NativeModule {
             );
 
         // files and folders (operations that will cause mutations)
-        let builder = builder.func(
+        builder.func(
             "rename",
             ["src", "dst"],
             concat!(
@@ -370,8 +370,6 @@ pub(super) fn new() -> NativeModule {
                 Ok(Value::Nil)
             },
         );
-
-        builder.build()
     })
 }
 

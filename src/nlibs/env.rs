@@ -87,7 +87,6 @@ pub(super) fn new() -> NativeModule {
                         _ => Ok(Value::Nil),
                     }
                 },
-            )
-            .build()
+            );
     })
 }

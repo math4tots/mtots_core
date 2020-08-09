@@ -17,18 +17,22 @@ impl NativeModule {
     pub fn new<N, F>(name: N, f: F) -> Self
     where
         N: Into<RcStr>,
-        F: FnOnce(NativeModuleBuilder) -> NativeModuleData + 'static,
+        F: FnOnce(&mut NativeModuleBuilder) + 'static,
     {
+        let name = name.into();
         Self {
-            name: name.into(),
+            name: name.clone(),
             data: Box::new(|_globals| {
-                f(NativeModuleBuilder {
+                let mut builder = NativeModuleBuilder {
+                    name,
                     doc: None,
                     deps: vec![],
                     fields: vec![],
                     docmap: HashMap::new(),
                     action: None,
-                })
+                };
+                f(&mut builder);
+                builder.build()
             }),
         }
     }
@@ -41,6 +45,7 @@ impl NativeModule {
 }
 
 pub struct NativeModuleBuilder {
+    name: RcStr,
     doc: Option<RcStr>,
     deps: Vec<RcStr>,
     fields: Vec<(
@@ -53,15 +58,15 @@ pub struct NativeModuleBuilder {
 }
 
 impl NativeModuleBuilder {
-    pub fn doc<D: Into<RcStr>>(mut self, doc: D) -> Self {
+    pub fn doc<D: Into<RcStr>>(&mut self, doc: D) -> &mut Self {
         self.doc = Some(doc.into());
         self
     }
-    pub fn dep<N: Into<RcStr>>(mut self, name: N) -> Self {
+    pub fn dep<N: Into<RcStr>>(&mut self, name: N) -> &mut Self {
         self.deps.push(name.into());
         self
     }
-    pub fn field<N, D, F>(mut self, name: N, doc: D, body: F) -> Self
+    pub fn field<N, D, F>(&mut self, name: N, doc: D, body: F) -> &mut Self
     where
         N: Into<RcStr>,
         D: Into<DocStr>,
@@ -74,7 +79,7 @@ impl NativeModuleBuilder {
         self.fields.push((name, Box::new(body)));
         self
     }
-    pub fn val<N, D, V>(self, name: N, doc: D, value: V) -> Self
+    pub fn val<N, D, V>(&mut self, name: N, doc: D, value: V) -> &mut Self
     where
         N: Into<RcStr>,
         D: Into<DocStr>,
@@ -83,7 +88,7 @@ impl NativeModuleBuilder {
         let value = value.into();
         self.field(name, doc, |_, _| Ok(value))
     }
-    pub fn func<N, A, D, B>(self, name: N, argspec: A, doc: D, body: B) -> Self
+    pub fn func<N, A, D, B>(&mut self, name: N, argspec: A, doc: D, body: B) -> &mut Self
     where
         N: Into<RcStr>,
         A: Into<ArgSpec>,
@@ -97,12 +102,12 @@ impl NativeModuleBuilder {
             Ok(NativeFunction::new(name, argspec, doc, body).into())
         })
     }
-    pub fn class<T, F>(self, name: &str, f: F) -> Self
+    pub fn class<T, F>(&mut self, name: &str, f: F) -> &mut Self
     where
         T: Any,
-        F: FnOnce(NativeClassBuilder<T>) -> NativeClassBuilder<T>,
+        F: FnOnce(&mut NativeClassBuilder<T>),
     {
-        f(NativeClassBuilder {
+        let mut builder = NativeClassBuilder {
             module_builder: self,
             typeid: TypeId::of::<T>(),
             typename: std::any::type_name::<T>(),
@@ -111,16 +116,23 @@ impl NativeModuleBuilder {
             map: HashMap::new(),
             static_map: HashMap::new(),
             phantom: PhantomData,
-        }).build()
+        };
+        f(&mut builder);
+        builder.build()
     }
-    pub fn action<F>(mut self, body: F) -> NativeModuleData
+    pub fn action<F>(&mut self, body: F)
     where
         F: FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<()> + 'static,
     {
+        if self.action.is_some() {
+            panic!(
+                "An action is already registered for this builder ({:?})",
+                self.name
+            );
+        }
         self.action = Some(Box::new(body));
-        self.build()
     }
-    pub fn build(self) -> NativeModuleData {
+    fn build(self) -> NativeModuleData {
         let fields = self.fields;
         let doc = self.doc;
         let docmap = self.docmap;
@@ -147,8 +159,8 @@ impl NativeModuleBuilder {
     }
 }
 
-pub struct NativeClassBuilder<T: Any> {
-    module_builder: NativeModuleBuilder,
+pub struct NativeClassBuilder<'a, T: Any> {
+    module_builder: &'a mut NativeModuleBuilder,
     typeid: TypeId,
     typename: &'static str,
     name: RcStr,
@@ -158,31 +170,37 @@ pub struct NativeClassBuilder<T: Any> {
     phantom: PhantomData<T>,
 }
 
-impl<T: Any> NativeClassBuilder<T> {
-    pub fn doc<D: Into<DocStr>>(mut self, doc: D) -> Self {
+impl<'a, T: Any> NativeClassBuilder<'a, T> {
+    pub fn doc<D: Into<DocStr>>(&mut self, doc: D) -> &mut Self {
         self.doc = doc.into().get();
         self
     }
     /// Declare an instance method
-    pub fn ifunc<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
+    pub fn ifunc<N, A, D, B>(&mut self, name: N, argspec: A, doc: D, body: B) -> &mut Self
     where
         N: Into<RcStr>,
         A: Into<ArgSpec>,
         D: Into<DocStr>,
-        B: Fn(Handle<T>, &mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
+        B: Fn(Handle<T>, &mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>
+            + 'static,
     {
         let name = name.into();
         let argspec = argspec.into();
         let doc = doc.into();
-        let func = NativeFunction::new(name.clone(), argspec, doc, move |globals, mut args, kwargs| {
-            let handle = args.remove(0).into_handle::<T>()?;
-            body(handle, globals, args, kwargs)
-        });
+        let func = NativeFunction::new(
+            name.clone(),
+            argspec,
+            doc,
+            move |globals, mut args, kwargs| {
+                let handle = args.remove(0).into_handle::<T>()?;
+                body(handle, globals, args, kwargs)
+            },
+        );
         self.map.insert(name, func.into());
         self
     }
     /// Declare a static method
-    pub fn sfunc<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
+    pub fn sfunc<N, A, D, B>(&mut self, name: N, argspec: A, doc: D, body: B) -> &mut Self
     where
         N: Into<RcStr>,
         A: Into<ArgSpec>,
@@ -196,7 +214,7 @@ impl<T: Any> NativeClassBuilder<T> {
         self.static_map.insert(name, func.into());
         self
     }
-    pub fn build(self) -> NativeModuleBuilder {
+    fn build(self) -> &'a mut NativeModuleBuilder {
         let mb = self.module_builder;
         let typeid = self.typeid;
         let typename = self.typename;

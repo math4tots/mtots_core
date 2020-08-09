@@ -6,6 +6,7 @@ mod env;
 mod fs;
 mod math;
 mod os;
+mod path;
 
 impl Globals {
     pub fn add_builtin_native_libraries(&mut self) {
@@ -14,5 +15,6 @@ impl Globals {
         self.add(fs::new()).unwrap();
         self.add(math::new()).unwrap();
         self.add(os::new()).unwrap();
+        self.add(path::new()).unwrap();
     }
 }

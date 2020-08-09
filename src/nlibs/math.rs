@@ -47,8 +47,7 @@ pub(super) fn new() -> NativeModule {
                 "Computes the natural logarithm",
                 wrap1(f64::ln),
             )
-            .func("log2", ["x"], "Computes log base 2", wrap1(f64::log2))
-            .build()
+            .func("log2", ["x"], "Computes log base 2", wrap1(f64::log2));
     })
 }
 
