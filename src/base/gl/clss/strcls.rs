@@ -299,6 +299,12 @@ pub(super) fn new() -> Rc<Class> {
                     }
                 },
             ),
+            NativeFunction::new("chars", ["self"], "", |_globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap().into_string()?;
+                let chars: Vec<_> = owner.chars().map(Value::from).collect();
+                Ok(chars.into())
+            }),
         ]),
         HashMap::new(),
     )

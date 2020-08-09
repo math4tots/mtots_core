@@ -103,7 +103,15 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
     let opc = if let Some(opc) = opc {
         opc
     } else {
-        assert_eq!(frame.len(), 1);
+        assert_eq!(
+            frame.len(),
+            1,
+            "Bad stack size: expected = 1, actual = {}, pc = {}, opslen = {}, codename = {}",
+            frame.len(),
+            pc,
+            code.ops().len(),
+            code.name(),
+        );
         return StepResult::Return(frame.pop());
     };
 

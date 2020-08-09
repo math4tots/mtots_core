@@ -473,6 +473,13 @@ impl Builder {
                 };
                 let mut func_builder =
                     Builder::new(type_, name, docstr.clone(), param_vars, varspec);
+                if *is_generator {
+                    // The first resume on a generator will push a value
+                    // on the stack before the generator has had a chance to start.
+                    // We ignore this value by always popping at the beginning
+                    // of every generator
+                    func_builder.add(Opcode::Pop, mark.clone());
+                }
                 func_builder.expr(body, true)?;
                 let func_code = func_builder.build();
 
