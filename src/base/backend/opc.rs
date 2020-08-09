@@ -27,6 +27,7 @@ pub(crate) enum Opcode {
     TeeAttr(RcStr),
 
     New(Box<Vec<RcStr>>),
+    Del(Box<Variable>),
     Binop(Binop),
     Unop(Unop),
     GetItem,
@@ -255,6 +256,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let cls = get0!(frame.pop().into_class());
             let table = Table::new(cls, map);
             frame.push(table.into());
+        }
+        Opcode::Del(var) => {
+            let value = get0!(frame.delvar(var));
+            frame.push(value);
         }
         Opcode::Binop(op) => {
             let rhs = frame.pop();

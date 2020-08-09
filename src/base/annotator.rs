@@ -165,6 +165,11 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
                 get(expr, out)?;
             }
         }
+        ExprDesc::Del(name) => {
+            if !out.write.contains_key(name) {
+                out.write.insert(name.clone(), mark);
+            }
+        }
         ExprDesc::Yield(expr) => {
             get(expr, out)?;
         }

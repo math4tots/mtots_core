@@ -119,6 +119,18 @@ impl Frame {
         }
     }
     #[inline(always)]
+    pub(super) fn delvar(&mut self, var: &Variable) -> Result<Value> {
+        let value = match var.type_() {
+            VariableType::Local => std::mem::replace(&mut self.locals[var.slot()], Value::Invalid),
+            VariableType::Upval => self.upvals[var.slot()].replace(Value::Invalid),
+        };
+        if let Value::Invalid = value {
+            Err(rterr!("Variable {:?} used before being set (for del)", var.name()))
+        } else {
+            Ok(value)
+        }
+    }
+    #[inline(always)]
     pub(super) fn setargs(&mut self, params: &Vec<Variable>, args: Vec<Value>) {
         assert_eq!(params.len(), args.len());
         for (var, arg) in params.iter().zip(args) {

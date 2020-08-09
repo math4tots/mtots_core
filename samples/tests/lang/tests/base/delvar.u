@@ -1,0 +1,26 @@
+
+
+def __test_del() {
+    x = 10
+    assert_eq(x, 10)
+    assert_eq(del x, 10)
+
+    # x is now uninitialized, so it should throw
+    # 'used before being initialized' error
+    assert_throws(def = x)
+
+    # Deleting an already deleted variable has the
+    # same effect (since otherwise, what would
+    # del return?)
+    assert_throws(def = del x)
+
+    # it should be possible to reinitialize a deleted
+    # variable
+    x = 'hi'
+    assert_eq(x, 'hi')
+
+    # just testing when the result of 'del' is not used
+    del x
+
+    assert_throws(def = del x)
+}

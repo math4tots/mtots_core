@@ -378,6 +378,13 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::Del(name) => {
+                let variable = self.varspec.get(name).unwrap();
+                self.add(Opcode::Del(variable.into()), mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Yield(valexpr) => {
                 match self.type_ {
                     Type::Module | Type::Function => {
