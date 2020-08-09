@@ -384,7 +384,7 @@ impl TryFrom<Value> for Error {
         if let Value::String(message) = value {
             Ok(Error::rt(message, vec![]))
         } else {
-            let [type_, message] = value.unpack2_limited()?;
+            let [type_, message] = value.easy_unpack2()?;
             let type_ = type_.into_string()?;
             let message = message.into_string()?;
             Ok(Error::new(type_, message, vec![]))
@@ -415,7 +415,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b] = value.unpack2_limited()?;
+        let [a, b] = value.easy_unpack2()?;
         let a = A::try_from(a)?;
         let b = B::try_from(b)?;
         Ok((a, b))
@@ -433,7 +433,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b, c] = value.unpack3_limited()?;
+        let [a, b, c] = value.easy_unpack3()?;
         let a = A::try_from(a)?;
         let b = B::try_from(b)?;
         let c = C::try_from(c)?;
@@ -454,7 +454,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b, c, d] = value.unpack4_limited()?;
+        let [a, b, c, d] = value.easy_unpack4()?;
         let a = A::try_from(a)?;
         let b = B::try_from(b)?;
         let c = C::try_from(c)?;
@@ -470,7 +470,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b] = value.unpack2_limited()?;
+        let [a, b] = value.easy_unpack2()?;
         let a = T::try_from(a)?;
         let b = T::try_from(b)?;
         Ok([a, b])
@@ -484,7 +484,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b, c] = value.unpack3_limited()?;
+        let [a, b, c] = value.easy_unpack3()?;
         let a = T::try_from(a)?;
         let b = T::try_from(b)?;
         let c = T::try_from(c)?;
@@ -499,7 +499,7 @@ where
 {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
-        let [a, b, c, d] = value.unpack4_limited()?;
+        let [a, b, c, d] = value.easy_unpack4()?;
         let a = T::try_from(a)?;
         let b = T::try_from(b)?;
         let c = T::try_from(c)?;

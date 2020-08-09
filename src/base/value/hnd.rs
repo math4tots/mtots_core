@@ -43,7 +43,7 @@ impl cmp::PartialOrd for HandleData {
 
 impl fmt::Debug for HandleData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<{} table>", self.cls.name())
+        write!(f, "<{}/{} native value>", self.cls.name(), self.typename())
     }
 }
 

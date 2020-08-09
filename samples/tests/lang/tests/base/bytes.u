@@ -1,4 +1,9 @@
 # TOOD: uncomment this test
+from a.bytes import Bytes
+
+def __test_a() {
+    assert_eq(Bytes([1, 2, 3]), "")
+}
 
 # def __test_patterns() {
 #     assert_eq(
@@ -27,8 +32,8 @@
 # }
 
 # def __test_le_be() {
-#     LE = Bytes::le
-#     BE = Bytes::be
+#     LE = Bytes.le
+#     BE = Bytes.be
 
 #     assert_eq(
 #         LE(1, 14),
@@ -81,11 +86,11 @@
 # }
 
 # def __test_iter() {
-#     list = @[]
+#     list = []
 #     for i in Bytes([11, 22, 33]) {
 #         list.push(i)
 #     }
-#     assert_eq(list, @[11, 22, 33])
+#     assert_eq(list, [11, 22, 33])
 
 #     assert_eq(
 #         [44, 55, 66].to(Bytes),
@@ -115,7 +120,7 @@
 #     def le(n) = range(n).map(def(i) = (i + 1) * 2 ** (8 * i)).fold(0, def(a, b) = a + b)
 #     def be(n) = range(n).map(def(i) = (n - i) * 2 ** (8 * i)).fold(0, def(a, b) = a + b)
 
-#     # endiannes omitted (implies :little)
+#     # endiannes omitted (implies 'little')
 #     # print(range(8).map(def(i) = (i + 1) * 8 ** i).list())
 #     assert_eq(bytes.int(8, 0), le(8))
 #     assert_eq(bytes.int(4, 0), le(4))
@@ -123,17 +128,17 @@
 #     assert_eq(bytes.int(1, 0), le(1))
 #     assert_eq(bytes.int(4, 0), le(4))
 
-#     assert_eq(bytes.int(8, 0, endian=:little), le(8))
-#     assert_eq(bytes.int(4, 0, endian=:little), le(4))
-#     assert_eq(bytes.int(2, 0, endian=:little), le(2))
-#     assert_eq(bytes.int(1, 0, endian=:little), le(1))
-#     assert_eq(bytes.int(4, 0, endian=:little), le(4))
+#     assert_eq(bytes.int(8, 0, endian='little'), le(8))
+#     assert_eq(bytes.int(4, 0, endian='little'), le(4))
+#     assert_eq(bytes.int(2, 0, endian='little'), le(2))
+#     assert_eq(bytes.int(1, 0, endian='little'), le(1))
+#     assert_eq(bytes.int(4, 0, endian='little'), le(4))
 
-#     assert_eq(bytes.int(8, 0, endian=:big), be(8))
-#     assert_eq(bytes.int(4, 0, endian=:big), be(4))
-#     assert_eq(bytes.int(2, 0, endian=:big), be(2))
-#     assert_eq(bytes.int(1, 0, endian=:big), be(1))
-#     assert_eq(bytes.int(4, 0, endian=:big), be(4))
+#     assert_eq(bytes.int(8, 0, endian='big'), be(8))
+#     assert_eq(bytes.int(4, 0, endian='big'), be(4))
+#     assert_eq(bytes.int(2, 0, endian='big'), be(2))
+#     assert_eq(bytes.int(1, 0, endian='big'), be(1))
+#     assert_eq(bytes.int(4, 0, endian='big'), be(4))
 
 #     # uint of 8-bytes won't fit in Int
 #     assert_throws(def = bytes.uint(8, 0))
@@ -142,15 +147,15 @@
 #     assert_eq(bytes.uint(1, 0), le(1))
 #     assert_eq(bytes.uint(4, 0), le(4))
 
-#     assert_eq(bytes.uint(4, 0, endian=:little), le(4))
-#     assert_eq(bytes.uint(2, 0, endian=:little), le(2))
-#     assert_eq(bytes.uint(1, 0, endian=:little), le(1))
-#     assert_eq(bytes.uint(4, 0, endian=:little), le(4))
+#     assert_eq(bytes.uint(4, 0, endian='little'), le(4))
+#     assert_eq(bytes.uint(2, 0, endian='little'), le(2))
+#     assert_eq(bytes.uint(1, 0, endian='little'), le(1))
+#     assert_eq(bytes.uint(4, 0, endian='little'), le(4))
 
-#     assert_eq(bytes.uint(4, 0, endian=:big), be(4))
-#     assert_eq(bytes.uint(2, 0, endian=:big), be(2))
-#     assert_eq(bytes.uint(1, 0, endian=:big), be(1))
-#     assert_eq(bytes.uint(4, 0, endian=:big), be(4))
+#     assert_eq(bytes.uint(4, 0, endian='big'), be(4))
+#     assert_eq(bytes.uint(2, 0, endian='big'), be(2))
+#     assert_eq(bytes.uint(1, 0, endian='big'), be(1))
+#     assert_eq(bytes.uint(4, 0, endian='big'), be(4))
 
 #     # From non-zero offset
 #     bytes = Bytes([53, 1, 2, 3, 4, 5, 6, 7, 8])

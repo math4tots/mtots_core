@@ -1,5 +1,14 @@
 use super::*;
 
+/// Methods for dealing with unpacking values in other values
+///
+/// the easy_* variants are those where a Globals context is not used,
+/// but can only unpack List, Set and Map values.
+///
+/// Some of these methods are kind of redundant with many of the TryFrom
+/// forms. Some of these redundant unpack methods may be removed in
+/// the future.
+///
 impl Value {
     pub fn unpack_into_set(self, globals: &mut Globals) -> Result<IndexSet<Key>> {
         match self {
@@ -95,7 +104,7 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable", self)),
         }
     }
-    pub fn unpack_limited(self) -> Result<Vec<Value>> {
+    pub fn easy_unpack(self) -> Result<Vec<Value>> {
         match self {
             Self::List(list) => match Rc::try_unwrap(list) {
                 Ok(list) => Ok(list.into_inner()),
@@ -112,8 +121,8 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable in this context", self)),
         }
     }
-    pub fn unpack2_limited(self) -> Result<[Value; 2]> {
-        let vec = self.unpack_limited()?;
+    pub fn easy_unpack2(self) -> Result<[Value; 2]> {
+        let vec = self.easy_unpack()?;
         if vec.len() != 2 {
             Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
         } else {
@@ -121,8 +130,8 @@ impl Value {
             Ok([iter.next().unwrap(), iter.next().unwrap()])
         }
     }
-    pub fn unpack3_limited(self) -> Result<[Value; 3]> {
-        let vec = self.unpack_limited()?;
+    pub fn easy_unpack3(self) -> Result<[Value; 3]> {
+        let vec = self.easy_unpack()?;
         if vec.len() != 3 {
             Err(rterr!("Expected {} elements but got {}", 3, vec.len()))
         } else {
@@ -134,8 +143,8 @@ impl Value {
             ])
         }
     }
-    pub fn unpack4_limited(self) -> Result<[Value; 4]> {
-        let vec = self.unpack_limited()?;
+    pub fn easy_unpack4(self) -> Result<[Value; 4]> {
+        let vec = self.easy_unpack()?;
         if vec.len() != 4 {
             Err(rterr!("Expected {} elements but got {}", 4, vec.len()))
         } else {
@@ -189,25 +198,44 @@ impl Value {
             ])
         }
     }
-    pub fn unpack2_f32(self, globals: &mut Globals) -> Result<[f32; 2]> {
-        let [x1, x2] = self.unpack2(globals)?;
-        let x1 = x1.f32()?;
-        let x2 = x2.f32()?;
-        Ok([x1, x2])
+}
+
+impl Value {
+    pub fn easy_iter_unpack<F, R>(&self, f: F) -> Result<R>
+    where
+        F: FnOnce(EasyIterUnpack) -> Result<R>,
+    {
+        match self {
+            Self::List(list) => f(EasyIterUnpack::List(list.borrow(), 0)),
+            Self::Set(set) => f(EasyIterUnpack::Set(set.borrow(), 0)),
+            Self::Map(map) => f(EasyIterUnpack::Map(map.borrow(), 0)),
+            _ => Err(rterr!("{:?} is not unpackable in this context", self)),
+        }
     }
-    pub fn unpack3_f32(self, globals: &mut Globals) -> Result<[f32; 3]> {
-        let [x1, x2, x3] = self.unpack3(globals)?;
-        let x1 = x1.f32()?;
-        let x2 = x2.f32()?;
-        let x3 = x3.f32()?;
-        Ok([x1, x2, x3])
-    }
-    pub fn unpack4_f32(self, globals: &mut Globals) -> Result<[f32; 4]> {
-        let [x1, x2, x3, x4] = self.unpack4(globals)?;
-        let x1 = x1.f32()?;
-        let x2 = x2.f32()?;
-        let x3 = x3.f32()?;
-        let x4 = x4.f32()?;
-        Ok([x1, x2, x3, x4])
+}
+
+pub enum EasyIterUnpack<'a> {
+    List(Ref<'a, Vec<Value>>, usize),
+    Set(Ref<'a, IndexSet<Key>>, usize),
+    Map(Ref<'a, IndexMap<Key, Value>>, usize),
+}
+impl<'a> Iterator for EasyIterUnpack<'a> {
+    type Item = Value;
+
+    fn next(&mut self) -> Option<Value> {
+        match self {
+            Self::List(r, i) => {
+                *i += 1;
+                r.get(*i - 1).map(Clone::clone)
+            }
+            Self::Set(r, i) => {
+                *i += 1;
+                r.get_index(*i - 1).map(Value::from)
+            }
+            Self::Map(r, i) => {
+                *i += 1;
+                r.get_index(*i - 1).map(Value::from)
+            }
+        }
     }
 }

@@ -291,7 +291,7 @@ impl Value {
             false
         }
     }
-    pub fn convert_to_handle<T: ConvertIntoHandle>(
+    pub fn convert_to_handle<T: ConvertToHandle>(
         self,
         globals: &mut Globals,
     ) -> Result<Handle<T>> {
