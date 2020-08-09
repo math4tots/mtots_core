@@ -70,12 +70,17 @@ pub struct Globals {
 
     // command line arguments; need to be explicitly set to be nonempty
     argv: Option<Vec<RcStr>>,
+
+    #[cfg(feature = "line")]
+    line: rustyline::Editor<()>,
 }
 
 impl Globals {
     pub fn new() -> Self {
         let class_manager = ClassManager::new();
         let builtins = Self::bootstrap_new_builtins(&class_manager);
+        #[cfg(feature = "line")]
+        let line = rustyline::Editor::<()>::new();
         let mut globals = Self {
             trace: vec![],
             lexer: Lexer::new(),
@@ -89,6 +94,8 @@ impl Globals {
             repl_scope: None,
             handle_class_map: HashMap::new(),
             argv: None,
+            #[cfg(feature = "line")]
+            line,
         };
         globals.add_builtin_native_libraries();
         globals
@@ -168,5 +175,28 @@ impl Globals {
     }
     pub fn set_argv(&mut self, argv: Vec<RcStr>) {
         self.argv = Some(argv);
+    }
+
+    /// Read a line of input
+    /// Analogous to Python's 'input' function
+    /// Uses rustyline if the line feature is enabled
+    #[cfg(feature = "line")]
+    pub fn readline(&mut self, prompt: &str) -> Result<Option<String>> {
+        match self.line.readline(prompt) {
+            Ok(line) => Ok(Some(line)),
+            Err(rustyline::error::ReadlineError::Eof) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    /// Read a line of input
+    /// Analogous to Python's 'input' function
+    /// Uses rustyline if the line feature is enabled
+    #[cfg(not(feature = "line"))]
+    pub fn readline(&mut self, prompt: &str) -> Result<Option<String>> {
+        print!("{}", prompt);
+        let mut buf = String::new();
+        let len = std::io::stdin().read_line(buf)?;
+        Ok(if len == 0 { None } else { Some(buf) })
     }
 }

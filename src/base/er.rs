@@ -176,6 +176,13 @@ impl From<std::convert::Infallible> for Error {
     }
 }
 
+#[cfg(feature = "line")]
+impl From<rustyline::error::ReadlineError> for Error {
+    fn from(e: rustyline::error::ReadlineError) -> Self {
+        Self::rt(format!("{:?}", e).into(), vec![])
+    }
+}
+
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error({}, {})", self.0.type_, self.0.message)
