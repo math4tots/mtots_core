@@ -1,11 +1,3 @@
-macro_rules! rterr {
-    ( $($args:expr),+ $(,)?) => {
-        crate::Error::rt(
-            format!( $($args),+ ).into(),
-            vec![])
-    };
-}
-
 mod annotator;
 mod ast;
 mod backend;

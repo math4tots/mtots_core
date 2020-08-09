@@ -1,16 +1,26 @@
 use super::*;
 
 /// Describes a parse time constant value
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum ConstVal {
     Invalid,
     Nil,
     Bool(bool),
     Number(f64),
     String(RcStr),
+    List(Vec<ConstVal>),
 }
 
 impl fmt::Display for ConstVal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::String(s) => write!(f, "{}", s),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
+impl fmt::Debug for ConstVal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Invalid => write!(f, "<invalid>"),
@@ -18,6 +28,18 @@ impl fmt::Display for ConstVal {
             Self::Bool(b) => write!(f, "{}", if *b { "true" } else { "false" }),
             Self::Number(n) => write!(f, "{}", n),
             Self::String(s) => write!(f, "{:?}", s),
+            Self::List(xs) => {
+                write!(f, "[")?;
+                let mut first = true;
+                for x in xs {
+                    if !first {
+                        write!(f, ", ")?;
+                    }
+                    first = false;
+                    write!(f, "{:?}", x)?;
+                }
+                write!(f, "]")
+            }
         }
     }
 }
@@ -127,5 +149,11 @@ impl From<RcStr> for ConstVal {
 impl From<&RcStr> for ConstVal {
     fn from(s: &RcStr) -> Self {
         Self::String(s.clone())
+    }
+}
+
+impl From<[ConstVal; 0]> for ConstVal {
+    fn from(_: [ConstVal; 0]) -> Self {
+        Self::List(vec![])
     }
 }

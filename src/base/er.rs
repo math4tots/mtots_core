@@ -164,6 +164,12 @@ impl From<std::char::CharTryFromError> for Error {
     }
 }
 
+impl From<std::str::Utf8Error> for Error {
+    fn from(e: std::str::Utf8Error) -> Self {
+        Self::rt(format!("{:?}", e).into(), vec![])
+    }
+}
+
 impl From<std::convert::Infallible> for Error {
     fn from(_: std::convert::Infallible) -> Self {
         panic!("An Infallible Error has Ocurred")

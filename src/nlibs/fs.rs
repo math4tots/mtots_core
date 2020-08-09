@@ -356,20 +356,62 @@ pub(super) fn new() -> NativeModule {
             );
 
         // files and folders (operations that will cause mutations)
-        builder.func(
-            "rename",
-            ["src", "dst"],
-            concat!(
-                "Renames a given file to another file\n",
-                "Calls Rust's std::fs::rename\n",
-            ),
-            |_globals, args, _| {
-                let src = Path::new(args[0].string()?);
-                let dst = Path::new(args[1].string()?);
-                fs::rename(src, dst)?;
-                Ok(Value::Nil)
-            },
-        );
+        builder
+            .func(
+                "rename",
+                ["src", "dst"],
+                concat!(
+                    "Renames a given file to another file\n",
+                    "Calls Rust's std::fs::rename\n",
+                ),
+                |_globals, args, _| {
+                    let src = Path::new(args[0].string()?);
+                    let dst = Path::new(args[1].string()?);
+                    fs::rename(src, dst)?;
+                    Ok(Value::Nil)
+                },
+            )
+            .func(
+                "rmfile",
+                ["path"],
+                concat!(
+                    "Removes a file at the given path\n",
+                    "Calls Rust's std::fs::remove_file\n",
+                ),
+                |_globals, args, _| {
+                    let path = Path::new(args[0].string()?);
+                    fs::remove_file(path)?;
+                    Ok(Value::Nil)
+                },
+            )
+            .func(
+                "rmdir",
+                ["path"],
+                concat!(
+                    "Removes a file at the given path\n",
+                    "Calls Rust's std::fs::remove_dir\n",
+                ),
+                |_globals, args, _| {
+                    let path = Path::new(args[0].string()?);
+                    fs::remove_dir(path)?;
+                    Ok(Value::Nil)
+                },
+            )
+            .func(
+                "mkdir",
+                ArgSpec::builder().req("path").def("parents", false),
+                "",
+                |_globals, args, _| {
+                    let path = Path::new(args[0].string()?);
+                    let parents = args[1].truthy();
+                    if parents {
+                        fs::create_dir_all(path)?;
+                    } else {
+                        fs::create_dir(path)?;
+                    }
+                    Ok(Value::Nil)
+                },
+            );
     })
 }
 

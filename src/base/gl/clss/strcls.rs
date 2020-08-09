@@ -258,6 +258,16 @@ pub(super) fn new() -> Rc<Class> {
                 Ok(owner.ends_with(suffix.str()).into())
             }),
             NativeFunction::new(
+                "trim",
+                ["self"],
+                "Returns self with surrounding whitespace removed",
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_string()?;
+                    Ok(owner.trim().into())
+                },
+            ),
+            NativeFunction::new(
                 "rstrip",
                 ["self", "suffix"],
                 "Returns self with suffix removed, if it ends with the given suffix",

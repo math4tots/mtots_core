@@ -204,6 +204,19 @@ impl Globals {
                             // If we error from inside the handler, we let the
                             // trace accumulate.
                             let value = Value::from(error);
+                            // We also put in an extra trace element
+                            // so that we get an indication if an error occurred inside
+                            // the error handler
+                            globals.trace_push(Mark::new(
+                                Source::new(
+                                    "[pcall]".into(),
+                                    None,
+                                    "<while handling error...>".into(),
+                                )
+                                .into(),
+                                0,
+                                0,
+                            ));
                             let result = on_error.apply(globals, vec![value], None)?;
                             globals.trace_unwind(trace_len);
                             Ok(result)

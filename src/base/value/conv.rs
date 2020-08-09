@@ -278,14 +278,6 @@ impl From<(&Key, &Value)> for Value {
         Value::from(vec![Value::from(kv.0), kv.1.clone()])
     }
 }
-impl TryFrom<Value> for (Key, Value) {
-    type Error = Error;
-    fn try_from(value: Value) -> Result<(Key, Value)> {
-        let [key, val] = value.unpack2_limited()?;
-        let key = Key::try_from(key)?;
-        Ok((key, val))
-    }
-}
 
 impl From<ConstVal> for Value {
     fn from(cv: ConstVal) -> Self {
@@ -295,6 +287,7 @@ impl From<ConstVal> for Value {
             ConstVal::Bool(x) => Value::Bool(x),
             ConstVal::Number(x) => Value::Number(x),
             ConstVal::String(x) => Value::String(x),
+            ConstVal::List(x) => Value::from(x.into_iter().map(Value::from).collect::<Vec<_>>()),
         }
     }
 }
@@ -396,5 +389,139 @@ impl TryFrom<Value> for Error {
             let message = message.into_string()?;
             Ok(Error::new(type_, message, vec![]))
         }
+    }
+}
+
+impl TryFrom<Value> for RcStr {
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        value.into_string()
+    }
+}
+
+impl TryFrom<&Value> for RcStr {
+    type Error = Error;
+    fn try_from(value: &Value) -> Result<Self> {
+        value.string().map(Clone::clone)
+    }
+}
+
+impl<A, B, EA, EB> TryFrom<Value> for (A, B)
+where
+    A: TryFrom<Value, Error = EA>,
+    B: TryFrom<Value, Error = EB>,
+    Error: From<EA>,
+    Error: From<EB>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b] = value.unpack2_limited()?;
+        let a = A::try_from(a)?;
+        let b = B::try_from(b)?;
+        Ok((a, b))
+    }
+}
+
+impl<A, B, C, EA, EB, EC> TryFrom<Value> for (A, B, C)
+where
+    A: TryFrom<Value, Error = EA>,
+    B: TryFrom<Value, Error = EB>,
+    C: TryFrom<Value, Error = EC>,
+    Error: From<EA>,
+    Error: From<EB>,
+    Error: From<EC>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b, c] = value.unpack3_limited()?;
+        let a = A::try_from(a)?;
+        let b = B::try_from(b)?;
+        let c = C::try_from(c)?;
+        Ok((a, b, c))
+    }
+}
+
+impl<A, B, C, D, EA, EB, EC, ED> TryFrom<Value> for (A, B, C, D)
+where
+    A: TryFrom<Value, Error = EA>,
+    B: TryFrom<Value, Error = EB>,
+    C: TryFrom<Value, Error = EC>,
+    D: TryFrom<Value, Error = ED>,
+    Error: From<EA>,
+    Error: From<EB>,
+    Error: From<EC>,
+    Error: From<ED>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b, c, d] = value.unpack4_limited()?;
+        let a = A::try_from(a)?;
+        let b = B::try_from(b)?;
+        let c = C::try_from(c)?;
+        let d = D::try_from(d)?;
+        Ok((a, b, c, d))
+    }
+}
+
+impl<T, E> TryFrom<Value> for [T; 2]
+where
+    T: TryFrom<Value, Error = E>,
+    Error: From<E>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b] = value.unpack2_limited()?;
+        let a = T::try_from(a)?;
+        let b = T::try_from(b)?;
+        Ok([a, b])
+    }
+}
+
+impl<T, E> TryFrom<Value> for [T; 3]
+where
+    T: TryFrom<Value, Error = E>,
+    Error: From<E>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b, c] = value.unpack3_limited()?;
+        let a = T::try_from(a)?;
+        let b = T::try_from(b)?;
+        let c = T::try_from(c)?;
+        Ok([a, b, c])
+    }
+}
+
+impl<T, E> TryFrom<Value> for [T; 4]
+where
+    T: TryFrom<Value, Error = E>,
+    Error: From<E>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let [a, b, c, d] = value.unpack4_limited()?;
+        let a = T::try_from(a)?;
+        let b = T::try_from(b)?;
+        let c = T::try_from(c)?;
+        let d = T::try_from(d)?;
+        Ok([a, b, c, d])
+    }
+}
+
+impl<T, E> TryFrom<Value> for Vec<T>
+where
+    T: TryFrom<Value, Error = E>,
+    Error: From<E>,
+{
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        let list = value.into_list()?;
+        let ret = Ok(list
+            .borrow()
+            .iter()
+            .map(Clone::clone)
+            .map(T::try_from)
+            .collect::<std::result::Result<Vec<T>, E>>()?);
+        ret
     }
 }

@@ -9,6 +9,14 @@ macro_rules! gentry {
     };
 }
 
+macro_rules! rterr {
+    ( $($args:expr),+ $(,)?) => {
+        crate::Error::rt(
+            format!( $($args),+ ).into(),
+            vec![])
+    };
+}
+
 mod base;
 mod nlibs;
 mod util;

@@ -112,13 +112,8 @@ impl Value {
             _ => Err(rterr!("{:?} is not unpackable in this context", self)),
         }
     }
-    pub fn unpack_keyval(self, globals: &mut Globals) -> Result<(Key, Value)> {
-        let [key, val] = self.unpack2(globals)?;
-        let key = Key::try_from(key)?;
-        Ok((key, val))
-    }
-    pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
-        let vec = self.unpack(globals)?;
+    pub fn unpack2_limited(self) -> Result<[Value; 2]> {
+        let vec = self.unpack_limited()?;
         if vec.len() != 2 {
             Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
         } else {
@@ -126,8 +121,40 @@ impl Value {
             Ok([iter.next().unwrap(), iter.next().unwrap()])
         }
     }
-    pub fn unpack2_limited(self) -> Result<[Value; 2]> {
+    pub fn unpack3_limited(self) -> Result<[Value; 3]> {
         let vec = self.unpack_limited()?;
+        if vec.len() != 3 {
+            Err(rterr!("Expected {} elements but got {}", 3, vec.len()))
+        } else {
+            let mut iter = vec.into_iter();
+            Ok([
+                iter.next().unwrap(),
+                iter.next().unwrap(),
+                iter.next().unwrap(),
+            ])
+        }
+    }
+    pub fn unpack4_limited(self) -> Result<[Value; 4]> {
+        let vec = self.unpack_limited()?;
+        if vec.len() != 4 {
+            Err(rterr!("Expected {} elements but got {}", 4, vec.len()))
+        } else {
+            let mut iter = vec.into_iter();
+            Ok([
+                iter.next().unwrap(),
+                iter.next().unwrap(),
+                iter.next().unwrap(),
+                iter.next().unwrap(),
+            ])
+        }
+    }
+    pub fn unpack_keyval(self, globals: &mut Globals) -> Result<(Key, Value)> {
+        let [key, val] = self.unpack2(globals)?;
+        let key = Key::try_from(key)?;
+        Ok((key, val))
+    }
+    pub fn unpack2(self, globals: &mut Globals) -> Result<[Value; 2]> {
+        let vec = self.unpack(globals)?;
         if vec.len() != 2 {
             Err(rterr!("Expected {} elements but got {}", 2, vec.len()))
         } else {

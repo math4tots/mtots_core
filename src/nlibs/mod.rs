@@ -7,6 +7,7 @@ mod fs;
 mod math;
 mod os;
 mod path;
+mod procc;
 
 impl Globals {
     pub fn add_builtin_native_libraries(&mut self) {
@@ -16,5 +17,6 @@ impl Globals {
         self.add(math::new()).unwrap();
         self.add(os::new()).unwrap();
         self.add(path::new()).unwrap();
+        self.add(procc::new()).unwrap();
     }
 }
