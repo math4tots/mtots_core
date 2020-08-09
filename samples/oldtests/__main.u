@@ -1,6 +1,0 @@
-# cls && time cargo run -- samples/tests
-import a.test
-import a.fs
-
-test.run(fs.dirname(__file), 'lang')
-

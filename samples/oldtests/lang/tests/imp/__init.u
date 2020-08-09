@@ -1,9 +1,0 @@
-import .foo
-import ..blah
-import ...nested
-
-def __test_relative_imports() {
-    assert_eq(foo::asdf, 'asdf asdf')
-    assert_eq(blah::blah, 'more blah blah')
-    assert_eq(nested::x, 9595)
-}
