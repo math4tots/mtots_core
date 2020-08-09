@@ -268,9 +268,12 @@ impl From<&Key> for Value {
     }
 }
 
-impl From<(Key, Value)> for Value {
-    fn from(kv: (Key, Value)) -> Self {
-        Value::from(vec![Value::from(kv.0), kv.1])
+impl<A, B> From<(A, B)> for Value
+where
+    Value: From<A> + From<B>,
+{
+    fn from(kv: (A, B)) -> Self {
+        Value::from(vec![Value::from(kv.0), Value::from(kv.1)])
     }
 }
 impl From<(&Key, &Value)> for Value {
