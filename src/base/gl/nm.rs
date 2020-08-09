@@ -133,6 +133,18 @@ impl NativeModuleBuilder {
         self.action = Some(Box::new(body));
     }
     fn build(self) -> NativeModuleData {
+        {
+            let mut set = HashSet::new();
+            for (field, _) in &self.fields {
+                if set.contains(&field) {
+                    panic!(
+                        "Duplicate definition of field {:?} in native module {:?}",
+                        field, self.name,
+                    );
+                }
+                set.insert(field);
+            }
+        }
         let fields = self.fields;
         let doc = self.doc;
         let docmap = self.docmap;

@@ -29,6 +29,7 @@ use std::cell::RefCell;
 use std::cmp;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use std::path::PathBuf;
