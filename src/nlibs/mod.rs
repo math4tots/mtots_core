@@ -6,7 +6,6 @@ mod env;
 mod fs;
 mod math;
 mod os;
-mod path;
 mod procc;
 mod time;
 
@@ -17,7 +16,6 @@ impl Globals {
         self.add(fs::new()).unwrap();
         self.add(math::new()).unwrap();
         self.add(os::new()).unwrap();
-        self.add(path::new()).unwrap();
         self.add(procc::new()).unwrap();
         self.add(time::new()).unwrap();
     }
