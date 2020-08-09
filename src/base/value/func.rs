@@ -28,6 +28,9 @@ impl ArgSpec {
             key: None,
         }
     }
+    pub(crate) fn add_self_parameter(&mut self) {
+        self.req.insert(0, "self".into());
+    }
 
     pub fn nparams(&self) -> usize {
         self.req.len()

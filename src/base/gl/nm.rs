@@ -185,7 +185,8 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
             + 'static,
     {
         let name = name.into();
-        let argspec = argspec.into();
+        let mut argspec = argspec.into();
+        argspec.add_self_parameter();
         let doc = doc.into();
         let func = NativeFunction::new(
             name.clone(),

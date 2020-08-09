@@ -1,6 +1,7 @@
 mod cls;
 mod coll;
 mod conv;
+mod convhnd;
 mod cv;
 mod format;
 mod func;
@@ -37,6 +38,7 @@ use std::rc::Rc;
 pub use cls::*;
 pub use coll::*;
 pub use conv::*;
+pub use convhnd::*;
 pub use cv::*;
 pub use func::*;
 pub use gen::*;
@@ -287,6 +289,16 @@ impl Value {
             data.is::<T>()
         } else {
             false
+        }
+    }
+    pub fn convert_to_handle<T: ConvertIntoHandle>(
+        self,
+        globals: &mut Globals,
+    ) -> Result<Handle<T>> {
+        if self.is_handle::<T>() {
+            self.into_handle()
+        } else {
+            T::convert(globals, self)
         }
     }
     pub fn unwrap_handle<T: Any>(self) -> Result<T> {
