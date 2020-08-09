@@ -113,6 +113,9 @@ impl Error {
             .into(),
         )
     }
+    pub fn from_std<E: std::error::Error>(error: E) -> Self {
+        Self::rt(format!("{:?}", error).into(), vec![])
+    }
     pub fn rt(message: RcStr, trace: Vec<Mark>) -> Self {
         if message.is_empty() {
             panic!("Empty runtime error message");

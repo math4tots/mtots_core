@@ -8,7 +8,21 @@ macro_rules! gentry {
         }
     };
 }
+/// Outside of mtots_core, you can't just impl From<..> for mtots_core::Error
+/// This macro is for conveniently converting an error of any type that
+/// already implements std::error::Error, into mtots_core::Error
+#[macro_export]
+macro_rules! mtry {
+    ($e:expr) => {
+        match $e {
+            Ok(t) => t,
+            Err(error) => return crate::Err(crate::Error::from_std(error)),
+        }
+    };
+}
 
+/// Utility for constructing runtime errors
+#[macro_export]
 macro_rules! rterr {
     ( $($args:expr),+ $(,)?) => {
         crate::Error::rt(
