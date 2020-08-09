@@ -275,7 +275,7 @@ impl Value {
             Err(self.terr("module"))
         }
     }
-    pub fn handle<T: Any>(self) -> Result<Handle<T>> {
+    pub fn into_handle<T: Any>(self) -> Result<Handle<T>> {
         if let Self::Handle(data) = self {
             HandleData::downcast(data)
         } else {
@@ -290,10 +290,10 @@ impl Value {
         }
     }
     pub fn unwrap_handle<T: Any>(self) -> Result<T> {
-        self.handle::<T>()?.unwrap()
+        self.into_handle::<T>()?.unwrap()
     }
     pub fn unwrap_or_clone_handle<T: Any + Clone>(self) -> Result<T> {
-        Ok(self.handle::<T>()?.unwrap_or_clone())
+        Ok(self.into_handle::<T>()?.unwrap_or_clone())
     }
     pub fn convert_to_int(self) -> Result<i64> {
         match self {

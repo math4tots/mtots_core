@@ -53,13 +53,6 @@ pub struct NativeModuleBuilder {
 }
 
 impl NativeModuleBuilder {
-    /// For grouping chained calls
-    pub fn group<F>(self, _name: &'static str, f: F) -> Self
-    where
-        F: FnOnce(Self) -> Self,
-    {
-        f(self)
-    }
     pub fn doc<D: Into<RcStr>>(mut self, doc: D) -> Self {
         self.doc = Some(doc.into());
         self
@@ -104,11 +97,12 @@ impl NativeModuleBuilder {
             Ok(NativeFunction::new(name, argspec, doc, body).into())
         })
     }
-    pub fn class<T>(self, name: &str) -> NativeClassBuilder
+    pub fn class<T, F>(self, name: &str, f: F) -> Self
     where
         T: Any,
+        F: FnOnce(NativeClassBuilder<T>) -> NativeClassBuilder<T>,
     {
-        NativeClassBuilder {
+        f(NativeClassBuilder {
             module_builder: self,
             typeid: TypeId::of::<T>(),
             typename: std::any::type_name::<T>(),
@@ -116,7 +110,8 @@ impl NativeModuleBuilder {
             doc: None,
             map: HashMap::new(),
             static_map: HashMap::new(),
-        }
+            phantom: PhantomData,
+        }).build()
     }
     pub fn action<F>(mut self, body: F) -> NativeModuleData
     where
@@ -152,7 +147,7 @@ impl NativeModuleBuilder {
     }
 }
 
-pub struct NativeClassBuilder {
+pub struct NativeClassBuilder<T: Any> {
     module_builder: NativeModuleBuilder,
     typeid: TypeId,
     typename: &'static str,
@@ -160,11 +155,45 @@ pub struct NativeClassBuilder {
     doc: Option<RcStr>,
     map: HashMap<RcStr, Value>,
     static_map: HashMap<RcStr, Value>,
+    phantom: PhantomData<T>,
 }
 
-impl NativeClassBuilder {
+impl<T: Any> NativeClassBuilder<T> {
     pub fn doc<D: Into<DocStr>>(mut self, doc: D) -> Self {
         self.doc = doc.into().get();
+        self
+    }
+    /// Declare an instance method
+    pub fn ifunc<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
+    where
+        N: Into<RcStr>,
+        A: Into<ArgSpec>,
+        D: Into<DocStr>,
+        B: Fn(Handle<T>, &mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
+    {
+        let name = name.into();
+        let argspec = argspec.into();
+        let doc = doc.into();
+        let func = NativeFunction::new(name.clone(), argspec, doc, move |globals, mut args, kwargs| {
+            let handle = args.remove(0).into_handle::<T>()?;
+            body(handle, globals, args, kwargs)
+        });
+        self.map.insert(name, func.into());
+        self
+    }
+    /// Declare a static method
+    pub fn sfunc<N, A, D, B>(mut self, name: N, argspec: A, doc: D, body: B) -> Self
+    where
+        N: Into<RcStr>,
+        A: Into<ArgSpec>,
+        D: Into<DocStr>,
+        B: Fn(&mut Globals, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
+    {
+        let name = name.into();
+        let argspec = argspec.into();
+        let doc = doc.into();
+        let func = NativeFunction::new(name.clone(), argspec, doc, body);
+        self.static_map.insert(name, func.into());
         self
     }
     pub fn build(self) -> NativeModuleBuilder {
