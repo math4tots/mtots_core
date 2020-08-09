@@ -4,7 +4,7 @@ macro_rules! gentry {
     ($e:expr) => {
         match $e {
             Ok(t) => t,
-            Err(error) => return crate::ResumeResult::Err(crate::Error::from(error)),
+            Err(error) => return $crate::ResumeResult::Err($crate::Error::from(error)),
         }
     };
 }
@@ -16,7 +16,7 @@ macro_rules! mtry {
     ($e:expr) => {
         match $e {
             Ok(t) => t,
-            Err(error) => return crate::Err(crate::Error::from_std(error)),
+            Err(error) => return Err($crate::Error::from_std(error)),
         }
     };
 }
@@ -25,7 +25,7 @@ macro_rules! mtry {
 #[macro_export]
 macro_rules! rterr {
     ( $($args:expr),+ $(,)?) => {
-        crate::Error::rt(
+        $crate::Error::rt(
             format!( $($args),+ ).into(),
             vec![])
     };
