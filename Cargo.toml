@@ -14,5 +14,5 @@ indexmap = "1.5"
 rustyline = { version = "6.2", optional = true }
 
 [features]
-default = ["line"]
+default = []
 line = ["rustyline"]
