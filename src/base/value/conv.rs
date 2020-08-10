@@ -395,6 +395,20 @@ impl TryFrom<Value> for Error {
     }
 }
 
+impl TryFrom<Value> for String {
+    type Error = Error;
+    fn try_from(value: Value) -> Result<Self> {
+        value.into_string().map(RcStr::unwrap_or_clone)
+    }
+}
+
+impl<'a> TryFrom<&'a Value> for &'a str {
+    type Error = Error;
+    fn try_from(value: &'a Value) -> Result<Self> {
+        value.string().map(RcStr::str)
+    }
+}
+
 impl TryFrom<Value> for RcStr {
     type Error = Error;
     fn try_from(value: Value) -> Result<Self> {
