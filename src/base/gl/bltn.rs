@@ -16,6 +16,9 @@ impl Globals {
             NativeFunction::new("str", ["x"], None, |_globals, args, _| {
                 Ok(args.into_iter().next().unwrap().convert_to_rcstr().into())
             }),
+            NativeFunction::new("repr", ["x"], None, |_globals, args, _| {
+                Ok(format!("{:?}", args.into_iter().next().unwrap()).into())
+            }),
             NativeFunction::new("chr", ["x"], None, |_globals, args, _| {
                 let i = u32::try_from(args.into_iter().next().unwrap())?;
                 let c = char::try_from(i)?;

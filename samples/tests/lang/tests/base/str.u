@@ -152,3 +152,8 @@ def __test_mul() {
     assert_eq('asdf' * 2, 'asdfasdf')
     assert_eq('' * 20, '')
 }
+
+def __test_repr() {
+    assert_eq(str('hi'), 'hi')
+    assert_eq(repr('hi'), '"hi"')
+}
