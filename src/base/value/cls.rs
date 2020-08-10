@@ -107,6 +107,7 @@ impl fmt::Debug for Class {
 #[derive(Default)]
 pub struct Behavior {
     str: Option<Rc<dyn Fn(Value) -> RcStr>>,
+    repr: Option<Rc<dyn Fn(Value) -> RcStr>>,
 }
 
 impl Behavior {
@@ -118,6 +119,9 @@ impl Behavior {
     }
     pub fn str(&self) -> &Option<Rc<dyn Fn(Value) -> RcStr>> {
         &self.str
+    }
+    pub fn repr(&self) -> &Option<Rc<dyn Fn(Value) -> RcStr>> {
+        &self.repr
     }
 }
 
@@ -136,6 +140,17 @@ impl<T: Any> HandleBehaviorBuilder<T> {
         F: Fn(&T) -> RcStr + 'static,
     {
         self.behavior.str = Some(Rc::new(move |value| {
+            let handle = value.into_handle::<T>().unwrap();
+            let string = f(&handle.borrow());
+            string
+        }));
+        self
+    }
+    pub fn repr<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T) -> RcStr + 'static,
+    {
+        self.behavior.repr = Some(Rc::new(move |value| {
             let handle = value.into_handle::<T>().unwrap();
             let string = f(&handle.borrow());
             string

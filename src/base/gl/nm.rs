@@ -235,6 +235,14 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.behavior.str(f);
         self
     }
+    /// Customize the default behavior when 'repr' function is called
+    pub fn repr<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T) -> RcStr + 'static,
+    {
+        self.behavior.repr(f);
+        self
+    }
     fn build(self) -> &'a mut NativeModuleBuilder {
         let mb = self.module_builder;
         let typeid = self.typeid;
