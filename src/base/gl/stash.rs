@@ -47,4 +47,7 @@ impl Stash {
             ))
         }
     }
+    pub fn remove<T: Any>(&mut self) {
+        self.map.remove(&TypeId::of::<T>()).unwrap();
+    }
 }
