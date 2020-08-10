@@ -27,7 +27,9 @@ use crate::Source;
 use crate::Value;
 use std::any::Any;
 use std::any::TypeId;
+use std::cell::Ref;
 use std::cell::RefCell;
+use std::cell::RefMut;
 use std::cmp;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -43,10 +45,12 @@ mod hnd;
 mod load;
 mod nm;
 mod parse;
+mod stash;
 mod trampoline;
 pub use clss::*;
 pub use ge::*;
 pub use nm::*;
+pub use stash::*;
 
 /// The global state for mtots
 pub struct Globals {
@@ -70,6 +74,11 @@ pub struct Globals {
 
     // interfacing with native types (i.e. Handles)
     handle_class_map: HashMap<TypeId, Rc<Class>>,
+
+    // For storing arbitrary global data for various applications
+    // You can use an application local type to store application
+    // local information
+    stash: Stash,
 
     // For application that needs to hijack the main thread (e.g. GUIs),
     // the Globals object might need to be moved.
@@ -104,6 +113,7 @@ impl Globals {
             builtins,
             repl_scope: None,
             handle_class_map: HashMap::new(),
+            stash: Default::default(),
             trampoline: None,
             argv: None,
             #[cfg(feature = "line")]
