@@ -4,7 +4,7 @@ use crate::Result;
 use crate::Value;
 use std::path::Path;
 
-pub fn climain() {
+pub fn climain(mut globals: Globals) {
     let mut source_roots = Vec::new();
     let mut script_args = Vec::new();
     let mut mode = Mode::Normal;
@@ -49,7 +49,6 @@ pub fn climain() {
         };
     }
 
-    let mut globals = Globals::new();
     globals.set_argv(script_args);
     for source_root in source_roots {
         globals.add(source_root).unwrap();
