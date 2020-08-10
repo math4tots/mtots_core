@@ -43,6 +43,7 @@ pub extern crate indexmap;
 
 pub use base::*;
 pub use cli::climain;
+pub use cli::ordie;
 pub use indexmap::IndexMap;
 pub use indexmap::IndexSet;
 pub use nlibs::*;

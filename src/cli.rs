@@ -207,7 +207,7 @@ fn run_path(mut globals: Globals, pathstr: String) {
     }
 }
 
-fn ordie<T>(globals: &mut Globals, r: Result<T>) -> T {
+pub fn ordie<T>(globals: &mut Globals, r: Result<T>) -> T {
     match r {
         Ok(t) => t,
         Err(error) => {
