@@ -72,6 +72,11 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::String(x) => write!(f, "{}", x),
+            Value::Handle(handle) if handle.cls().behavior().str().is_some() => {
+                let handler = handle.cls().behavior().str().as_ref().unwrap();
+                let string = handler(self.clone());
+                write!(f, "{}", string)
+            }
             _ => write!(f, "{:?}", self),
         }
     }

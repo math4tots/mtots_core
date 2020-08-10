@@ -4,6 +4,7 @@ pub struct Class {
     name: RcStr,
     map: HashMap<RcStr, Value>,
     static_map: HashMap<RcStr, Value>,
+    behavior: Option<Behavior>,
 }
 
 impl Class {
@@ -12,10 +13,19 @@ impl Class {
         map: HashMap<RcStr, Value>,
         static_map: HashMap<RcStr, Value>,
     ) -> Rc<Self> {
+        Self::new_with_behavior(name, map, static_map, None)
+    }
+    pub fn new_with_behavior(
+        name: RcStr,
+        map: HashMap<RcStr, Value>,
+        static_map: HashMap<RcStr, Value>,
+        behavior: Option<Behavior>,
+    ) -> Rc<Self> {
         Rc::new(Self {
             name,
             map,
             static_map,
+            behavior,
         })
     }
     pub fn name(&self) -> &RcStr {
@@ -29,6 +39,15 @@ impl Class {
     }
     pub fn get_call(&self) -> Option<Value> {
         self.static_map.get("__call").cloned()
+    }
+    pub fn behavior(&self) -> &Behavior {
+        match &self.behavior {
+            Some(b) => b,
+            _ => panic!(
+                "Behavior requested on class with no configured behavior ({:?})",
+                self.name
+            ),
+        }
     }
 
     /// Convenience method for creating a map or static_map
@@ -75,5 +94,52 @@ impl cmp::PartialOrd for Class {
 impl fmt::Debug for Class {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<class {}>", self.name)
+    }
+}
+
+/// Special configurable behavior for Table or Handle values
+/// These behaviors are special and not set with methods because
+/// they need to be run in contexts where
+///     1. Globals is not available, and/or
+///     2. they are not failable, and so failure would
+///         mean panic, making debugging purely from script-land
+///         fairly unpleasant
+#[derive(Default)]
+pub struct Behavior {
+    str: Option<Rc<dyn Fn(Value) -> RcStr>>,
+}
+
+impl Behavior {
+    pub fn builder_for_handle<T: Any>() -> HandleBehaviorBuilder<T> {
+        HandleBehaviorBuilder::<T> {
+            behavior: Default::default(),
+            phantom: PhantomData,
+        }
+    }
+    pub fn str(&self) -> &Option<Rc<dyn Fn(Value) -> RcStr>> {
+        &self.str
+    }
+}
+
+#[derive(Default)]
+pub struct HandleBehaviorBuilder<T: Any> {
+    behavior: Behavior,
+    phantom: PhantomData<fn(T) -> T>,
+}
+
+impl<T: Any> HandleBehaviorBuilder<T> {
+    pub fn build(self) -> Behavior {
+        self.behavior
+    }
+    pub fn str<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T) -> RcStr + 'static,
+    {
+        self.behavior.str = Some(Rc::new(move |value| {
+            let handle = value.into_handle::<T>().unwrap();
+            let string = f(&handle.borrow());
+            string
+        }));
+        self
     }
 }

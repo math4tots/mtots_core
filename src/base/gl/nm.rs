@@ -115,7 +115,7 @@ impl NativeModuleBuilder {
             doc: None,
             map: HashMap::new(),
             static_map: HashMap::new(),
-            phantom: PhantomData,
+            behavior: Behavior::builder_for_handle(),
         };
         f(&mut builder);
         builder.build()
@@ -179,7 +179,7 @@ pub struct NativeClassBuilder<'a, T: Any> {
     doc: Option<RcStr>,
     map: HashMap<RcStr, Value>,
     static_map: HashMap<RcStr, Value>,
-    phantom: PhantomData<T>,
+    behavior: HandleBehaviorBuilder<T>,
 }
 
 impl<'a, T: Any> NativeClassBuilder<'a, T> {
@@ -227,6 +227,14 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.static_map.insert(name, func.into());
         self
     }
+    /// Customize the default behavior when 'str' function is called
+    pub fn str<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T) -> RcStr + 'static,
+    {
+        self.behavior.str(f);
+        self
+    }
     fn build(self) -> &'a mut NativeModuleBuilder {
         let mb = self.module_builder;
         let typeid = self.typeid;
@@ -234,8 +242,9 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         let name = self.name;
         let map = self.map;
         let static_map = self.static_map;
+        let behavior = self.behavior;
         mb.field(name.clone(), self.doc, move |globals, _| {
-            let cls = Class::new(name, map, static_map);
+            let cls = Class::new_with_behavior(name, map, static_map, Some(behavior.build()));
             globals.set_handle_class_by_id(typeid, typename, cls.clone())?;
             Ok(cls.into())
         })

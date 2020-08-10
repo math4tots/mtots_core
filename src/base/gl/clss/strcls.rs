@@ -286,24 +286,30 @@ pub(super) fn new() -> Rc<Class> {
                     }
                 },
             ),
-            NativeFunction::new("chars", ArgSpec::builder().req("self").def("start", 0), "", |_globals, args, _| {
-                let mut args = args.into_iter();
-                let owner = args.next().unwrap().into_string()?;
-                let mut i = usize::try_from(args.next().unwrap())?;
-                let len = owner.len();
-                Ok(NativeGenerator::new("String.chars", move |_globals, _| {
-                    while i < len && !owner.is_char_boundary(i) {
-                        i += 1;
-                    }
-                    if i < len {
-                        let ch = owner[i..].chars().next().unwrap();
-                        i += 1;
-                        ResumeResult::Yield(ch.into())
-                    } else {
-                        ResumeResult::Return(Value::Nil)
-                    }
-                }).into())
-            }),
+            NativeFunction::new(
+                "chars",
+                ArgSpec::builder().req("self").def("start", 0),
+                "",
+                |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_string()?;
+                    let mut i = usize::try_from(args.next().unwrap())?;
+                    let len = owner.len();
+                    Ok(NativeGenerator::new("String.chars", move |_globals, _| {
+                        while i < len && !owner.is_char_boundary(i) {
+                            i += 1;
+                        }
+                        if i < len {
+                            let ch = owner[i..].chars().next().unwrap();
+                            i += 1;
+                            ResumeResult::Yield(ch.into())
+                        } else {
+                            ResumeResult::Return(Value::Nil)
+                        }
+                    })
+                    .into())
+                },
+            ),
         ]),
         HashMap::new(),
     )

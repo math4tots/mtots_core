@@ -321,6 +321,10 @@ impl Value {
     pub fn convert_to_rcstr(self) -> RcStr {
         match self {
             Self::String(r) => r,
+            Self::Handle(handle) if handle.cls().behavior().str().is_some() => {
+                let handler = handle.cls().behavior().str().as_ref().unwrap().clone();
+                handler(Self::Handle(handle))
+            }
             _ => format!("{}", self).into(),
         }
     }
