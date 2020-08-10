@@ -23,11 +23,12 @@ impl Globals {
             }),
             NativeFunction::new("ord", ["c"], None, |_globals, args, _| {
                 let s = args.into_iter().next().unwrap().into_string()?;
-                if s.charlen() != 1 {
+                let nchars = s.chars().count();
+                if nchars != 1 {
                     Err(rterr!(
                         "ord requires a string of length 1, but got {:?} (len = {})",
                         s,
-                        s.charlen()
+                        nchars,
                     ))
                 } else {
                     let c = s.chars().next().unwrap();

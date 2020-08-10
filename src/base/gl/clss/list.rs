@@ -5,6 +5,12 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
         "List".into(),
         Class::join_class_maps(
             Class::map_from_funcs(vec![
+                NativeFunction::new("len", ["self"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let x = owner.borrow().len();
+                    Ok(x.into())
+                }),
                 NativeFunction::new("push", ["self", "x"], None, |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;

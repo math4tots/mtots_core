@@ -8,16 +8,13 @@ pub(super) fn new() -> Rc<Class> {
                 "len",
                 ["self"],
                 concat!(
-                    "Returns the number of unicode codepoints\n\n",
-                    "Note this is similar to the length of a string in Python ",
-                    "and different from length of a string in other languages ",
-                    "like Rust where the length of a string is the number ",
-                    "of bytes"
+                    "Returns the number of bytes in the UTF-8 representation of ",
+                    "this string\n\n",
                 ),
                 |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_string()?;
-                    Ok(Value::from(owner.charlen()))
+                    Ok(Value::from(owner.len()))
                 },
             ),
             NativeFunction::new(
@@ -77,17 +74,12 @@ pub(super) fn new() -> Rc<Class> {
                 |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_string()?;
-                    let len = owner.charlen();
+                    let len = owner.len();
                     let pattern = args.next().unwrap().into_string()?;
                     let start = args.next().unwrap().to_start_index(len)?;
                     let end = args.next().unwrap().to_end_index(len)?;
-                    let owner = if start == 0 && end == 0 {
-                        owner
-                    } else {
-                        owner.charslice(start, end)
-                    };
-                    Ok(owner
-                        .char_find(pattern.str())
+                    Ok(owner[start..end]
+                        .find(pattern.str())
                         .map(|i| start + i)
                         .map(Value::from)
                         .unwrap_or(Value::Nil))
@@ -104,17 +96,12 @@ pub(super) fn new() -> Rc<Class> {
                 |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_string()?;
-                    let len = owner.charlen();
+                    let len = owner.len();
                     let pattern = args.next().unwrap().into_string()?;
                     let start = args.next().unwrap().to_start_index(len)?;
                     let end = args.next().unwrap().to_end_index(len)?;
-                    let owner = if start == 0 && end == 0 {
-                        owner
-                    } else {
-                        owner.charslice(start, end)
-                    };
-                    Ok(owner
-                        .char_rfind(pattern.str())
+                    Ok(owner[start..end]
+                        .rfind(pattern.str())
                         .map(|i| start + i)
                         .map(Value::from)
                         .unwrap_or(Value::Nil))
@@ -221,10 +208,10 @@ pub(super) fn new() -> Rc<Class> {
                 |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_string()?;
-                    let len = owner.charlen();
+                    let len = owner.len();
                     let start = args.next().unwrap().to_start_index(len)?;
                     let end = args.next().unwrap().to_end_index(len)?;
-                    Ok(Value::from(owner.charslice(start, end)))
+                    Ok(Value::from(&owner[start..end]))
                 },
             ),
             NativeFunction::new(
@@ -234,10 +221,10 @@ pub(super) fn new() -> Rc<Class> {
                 |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_string()?;
-                    let len = owner.charlen();
+                    let len = owner.len();
                     let start = args.next().unwrap().to_start_index(len)?;
                     let end = args.next().unwrap().to_end_index(len)?;
-                    Ok(Value::from(owner.charslice(start, end)))
+                    Ok(Value::from(&owner[start..end]))
                 },
             ),
             NativeFunction::new(
@@ -299,11 +286,23 @@ pub(super) fn new() -> Rc<Class> {
                     }
                 },
             ),
-            NativeFunction::new("chars", ["self"], "", |_globals, args, _| {
+            NativeFunction::new("chars", ArgSpec::builder().req("self").def("start", 0), "", |_globals, args, _| {
                 let mut args = args.into_iter();
                 let owner = args.next().unwrap().into_string()?;
-                let chars: Vec<_> = owner.chars().map(Value::from).collect();
-                Ok(chars.into())
+                let mut i = usize::try_from(args.next().unwrap())?;
+                let len = owner.len();
+                Ok(NativeGenerator::new("String.chars", move |_globals, _| {
+                    while i < len && !owner.is_char_boundary(i) {
+                        i += 1;
+                    }
+                    if i < len {
+                        let ch = owner[i..].chars().next().unwrap();
+                        i += 1;
+                        ResumeResult::Yield(ch.into())
+                    } else {
+                        ResumeResult::Return(Value::Nil)
+                    }
+                }).into())
             }),
         ]),
         HashMap::new(),
