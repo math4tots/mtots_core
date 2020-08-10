@@ -370,6 +370,29 @@ try_from_for_int!(u32);
 try_from_for_int!(u16);
 try_from_for_int!(u8);
 
+
+macro_rules! try_from_for_float {
+    ($t:ty) => {
+        impl TryFrom<&Value> for $t {
+            type Error = Error;
+
+            fn try_from(v: &Value) -> Result<Self> {
+                Ok(v.number()? as $t)
+            }
+        }
+        impl TryFrom<Value> for $t {
+            type Error = Error;
+
+            fn try_from(v: Value) -> Result<Self> {
+                <$t>::try_from(&v)
+            }
+        }
+    };
+}
+
+try_from_for_float!(f32);
+try_from_for_float!(f64);
+
 impl From<Error> for Value {
     fn from(error: Error) -> Self {
         // For now, we just convert error objects to a pair
