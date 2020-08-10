@@ -189,6 +189,7 @@ fn run_module(mut globals: Globals, module: &RcStr) {
     globals.set_main(module.clone());
     let r = globals.load(module).map(|_| ());
     ordie(&mut globals, r);
+    globals.handle_trampoline();
 }
 
 fn run_path(mut globals: Globals, pathstr: String) {
@@ -199,8 +200,10 @@ fn run_path(mut globals: Globals, pathstr: String) {
         run_module(globals, &"__main".into());
     } else {
         let data = std::fs::read_to_string(path).unwrap();
+        globals.set_main("__main".into());
         let r = globals.exec_str("__main", Some(&pathstr), &data);
         ordie(&mut globals, r);
+        globals.handle_trampoline();
     }
 }
 

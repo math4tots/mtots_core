@@ -43,6 +43,7 @@ mod hnd;
 mod load;
 mod nm;
 mod parse;
+mod trampoline;
 pub use clss::*;
 pub use ge::*;
 pub use nm::*;
@@ -69,6 +70,12 @@ pub struct Globals {
 
     // interfacing with native types (i.e. Handles)
     handle_class_map: HashMap<TypeId, Rc<Class>>,
+
+    // For application that needs to hijack the main thread (e.g. GUIs),
+    // the Globals object might need to be moved.
+    // The trampoline allows an application to request this from its host
+    // environment.
+    trampoline: Option<Box<dyn FnOnce(Globals)>>,
 
     // command line arguments; need to be explicitly set to be nonempty
     argv: Option<Vec<RcStr>>,
@@ -97,6 +104,7 @@ impl Globals {
             builtins,
             repl_scope: None,
             handle_class_map: HashMap::new(),
+            trampoline: None,
             argv: None,
             #[cfg(feature = "line")]
             line,
