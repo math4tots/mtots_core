@@ -4,6 +4,7 @@ mod iterble;
 mod list;
 mod map;
 mod nil;
+mod num;
 mod set;
 mod strcls;
 
@@ -31,7 +32,7 @@ impl ClassManager {
     pub(super) fn new() -> Self {
         let Nil = nil::new();
         let Bool = Class::new("Bool".into(), HashMap::new(), HashMap::new());
-        let Number = Class::new("Number".into(), HashMap::new(), HashMap::new());
+        let Number = num::new();
         let Iterable = iterble::new();
         let String = strcls::new();
         let List = list::new(&Iterable);
