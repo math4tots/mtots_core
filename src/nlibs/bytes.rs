@@ -1,6 +1,5 @@
-use crate::ConvertToHandle;
+use crate::ConvertValue;
 use crate::Globals;
-use crate::Handle;
 use crate::NativeModule;
 use crate::Result;
 use crate::Value;
@@ -15,17 +14,18 @@ pub(super) fn new() -> NativeModule {
             cls.sfunc("__call", ["data"], "", |globals, args, _| {
                 let mut args = args.into_iter();
                 let data = args.next().unwrap();
-                Ok(data.convert_to_handle::<Vec<u8>>(globals)?.into())
+                let data = data.convert::<Vec<u8>>(globals)?;
+                globals.new_handle(data).map(Value::from)
             });
         });
     })
 }
 
-impl ConvertToHandle for Vec<u8> {
-    fn convert(globals: &mut Globals, value: Value) -> Result<Handle<Vec<u8>>> {
+impl ConvertValue for Vec<u8> {
+    fn convert(globals: &mut Globals, value: &Value) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
-        add_bytes(globals, &mut bytes, &value)?;
-        Ok(globals.new_handle(bytes)?)
+        add_bytes(globals, &mut bytes, value)?;
+        Ok(bytes)
     }
 }
 

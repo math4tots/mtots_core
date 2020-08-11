@@ -16,6 +16,16 @@ impl HandleData {
     pub fn is<T: Any>(&self) -> bool {
         self.data.borrow().is::<T>()
     }
+    /// Tries to borrow self as a reference to the given type T
+    /// Will panic if the handle does not actually contain data of this type
+    pub(crate) fn borrow<T: Any>(&self) -> Ref<T> {
+        Ref::map(self.data.borrow(), |r| r.downcast_ref().unwrap())
+    }
+    /// Tries to borrow self as a reference to the given type T
+    /// Will panic if the handle does not actually contain data of this type
+    pub(crate) fn borrow_mut<T: Any>(&self) -> RefMut<T> {
+        RefMut::map(self.data.borrow_mut(), |r| r.downcast_mut().unwrap())
+    }
     pub fn downcast<T: Any>(data: Rc<HandleData>) -> Result<Handle<T>> {
         if data.is::<T>() {
             Ok(Handle(data, PhantomData))
@@ -61,10 +71,10 @@ impl<T: Any> Handle<T> {
         )
     }
     pub fn borrow(&self) -> Ref<T> {
-        Ref::map(self.0.data.borrow(), |r| r.downcast_ref().unwrap())
+        self.0.borrow()
     }
     pub fn borrow_mut(&self) -> RefMut<T> {
-        RefMut::map(self.0.data.borrow_mut(), |r| r.downcast_mut().unwrap())
+        self.0.borrow_mut()
     }
     /// Tries to take ownership of the underlying T value.
     /// Returns Ok(T) on success,
