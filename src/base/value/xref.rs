@@ -1,9 +1,11 @@
 use crate::Globals;
 use crate::XRef;
+use crate::XRefMut;
 use crate::Result;
 use crate::Value;
 use std::any::Any;
 use std::cell::Ref;
+use std::cell::RefMut;
 
 impl Value {
     /// For converting to a native value into a value of the desired type.
@@ -24,6 +26,13 @@ impl Value {
             Ok(XRef::Owned(T::convert(globals, self)?))
         }
     }
+    pub fn to_xref_mut<T: Any + ConvertValue>(&self, globals: &mut Globals) -> Result<XRefMut<T>> {
+        if self.is_handle::<T>() {
+            Ok(XRefMut::Ref(self.borrow_mut_handle_or_panic()))
+        } else {
+            Ok(XRefMut::Owned(T::convert(globals, self)?))
+        }
+    }
     pub(crate) fn borrow_handle_or_panic<T: Any>(&self) -> Ref<T> {
         if let Self::Handle(data) = self {
             data.borrow()
@@ -31,9 +40,16 @@ impl Value {
             panic!("borrow_handle_or_panic: type mismatch")
         }
     }
+    pub(crate) fn borrow_mut_handle_or_panic<T: Any>(&self) -> RefMut<T> {
+        if let Self::Handle(data) = self {
+            data.borrow_mut()
+        } else {
+            panic!("borrow_mut_handle_or_panic: type mismatch")
+        }
+    }
 }
 
-/// Trait to indicate that a value may be converted into the given value.
+/// Trait to indicate that a value may be converted into a value of the given type.
 pub trait ConvertValue: Sized {
     fn convert(globals: &mut Globals, value: &Value) -> Result<Self>;
 }
