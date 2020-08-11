@@ -1,8 +1,8 @@
 use crate::Globals;
-use crate::XRef;
-use crate::XRefMut;
 use crate::Result;
 use crate::Value;
+use crate::XRef;
+use crate::XRefMut;
 use std::any::Any;
 use std::cell::Ref;
 use std::cell::RefMut;

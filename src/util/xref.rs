@@ -1,7 +1,7 @@
+use std::borrow::Borrow;
 use std::cell::Ref;
 use std::fmt;
 use std::ops::Deref;
-use std::borrow::Borrow;
 
 /// Kind of like Cow, but might also be a Ref (from a RefCell)
 /// Also, does not use ToOwned.
@@ -82,8 +82,7 @@ impl<'a, T: Clone> Clone for XRef<'a, T> {
     }
 }
 
-impl<'a, T: fmt::Debug> fmt::Debug for XRef<'a, T>
-{
+impl<'a, T: fmt::Debug> fmt::Debug for XRef<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Borrowed(r) => fmt::Debug::fmt(r, f),
@@ -93,8 +92,7 @@ impl<'a, T: fmt::Debug> fmt::Debug for XRef<'a, T>
     }
 }
 
-impl<'a, T: fmt::Display> fmt::Display for XRef<'a, T>
-{
+impl<'a, T: fmt::Display> fmt::Display for XRef<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Borrowed(r) => fmt::Display::fmt(r, f),
@@ -104,8 +102,7 @@ impl<'a, T: fmt::Display> fmt::Display for XRef<'a, T>
     }
 }
 
-impl<'a, T: Default> Default for XRef<'a, T>
-{
+impl<'a, T: Default> Default for XRef<'a, T> {
     fn default() -> Self {
         Self::Owned(Default::default())
     }

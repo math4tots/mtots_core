@@ -1,5 +1,4 @@
 mod cls;
-mod xref;
 mod coll;
 mod conv;
 mod cv;
@@ -13,6 +12,7 @@ mod num;
 mod strs;
 mod table;
 mod unpack;
+mod xref;
 use crate::Code;
 use crate::Error;
 use crate::Frame;
@@ -36,7 +36,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 pub use cls::*;
-pub use xref::*;
 pub use coll::*;
 pub use conv::*;
 pub use cv::*;
@@ -46,6 +45,7 @@ pub use hnd::*;
 pub use key::*;
 pub use m::*;
 pub use table::*;
+pub use xref::*;
 
 #[derive(Clone, PartialEq)]
 pub enum Value {

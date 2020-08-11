@@ -370,7 +370,6 @@ try_from_for_int!(u32);
 try_from_for_int!(u16);
 try_from_for_int!(u8);
 
-
 macro_rules! try_from_for_float {
     ($t:ty) => {
         impl TryFrom<&Value> for $t {

@@ -1,7 +1,7 @@
+use std::borrow::Borrow;
 use std::cell::RefMut;
 use std::fmt;
 use std::ops::Deref;
-use std::borrow::Borrow;
 
 /// Kind of like Cow, but might also be a RefMut (from a RefCell)
 /// Also, does not use ToOwned.
@@ -58,8 +58,7 @@ impl<'a, T> Borrow<T> for XRefMut<'a, T> {
     }
 }
 
-impl<'a, T: fmt::Debug> fmt::Debug for XRefMut<'a, T>
-{
+impl<'a, T: fmt::Debug> fmt::Debug for XRefMut<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Borrowed(r) => fmt::Debug::fmt(r, f),
@@ -69,8 +68,7 @@ impl<'a, T: fmt::Debug> fmt::Debug for XRefMut<'a, T>
     }
 }
 
-impl<'a, T: fmt::Display> fmt::Display for XRefMut<'a, T>
-{
+impl<'a, T: fmt::Display> fmt::Display for XRefMut<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Borrowed(r) => fmt::Display::fmt(r, f),
@@ -80,8 +78,7 @@ impl<'a, T: fmt::Display> fmt::Display for XRefMut<'a, T>
     }
 }
 
-impl<'a, T: Default> Default for XRefMut<'a, T>
-{
+impl<'a, T: Default> Default for XRefMut<'a, T> {
     fn default() -> Self {
         Self::Owned(Default::default())
     }
