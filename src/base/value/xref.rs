@@ -50,6 +50,15 @@ impl Value {
 }
 
 /// Trait to indicate that a value may be converted into a value of the given type.
-pub trait ConvertValue: Sized {
-    fn convert(globals: &mut Globals, value: &Value) -> Result<Self>;
+pub trait ConvertValue: Sized + 'static {
+    fn convert(globals: &mut Globals, _value: &Value) -> Result<Self> {
+        // Default implementation will just always fail.
+        // This is useful in cases where, we don't have a automatic conversion
+        // method, and we really just want Value::convert to just check whether
+        // it is a Handle
+        Err(match globals.get_handle_class::<Self>() {
+            Some(cls) => rterr!("Expected {} value", cls.name()),
+            None => rterr!("Expected {:?} native handle", std::any::type_name::<Self>()),
+        })
+    }
 }

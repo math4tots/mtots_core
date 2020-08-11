@@ -33,4 +33,7 @@ impl Globals {
             }
         }
     }
+    pub(crate) fn get_handle_class<T: Any>(&self) -> Option<&Rc<Class>> {
+        self.handle_class_map.get(&TypeId::of::<T>())
+    }
 }
