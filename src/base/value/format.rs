@@ -14,9 +14,9 @@ impl fmt::Debug for Value {
                         '\\' => write!(f, "\\\\")?,
                         '\"' => write!(f, "\\\"")?,
                         '\'' => write!(f, "\\\'")?,
-                        '\n' => write!(f, "\\\n")?,
-                        '\r' => write!(f, "\\\r")?,
-                        '\t' => write!(f, "\\\t")?,
+                        '\n' => write!(f, "\\n")?,
+                        '\r' => write!(f, "\\r")?,
+                        '\t' => write!(f, "\\t")?,
                         _ => write!(f, "{}", c)?,
                     }
                 }
