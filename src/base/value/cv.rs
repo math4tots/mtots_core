@@ -157,3 +157,30 @@ impl From<[ConstVal; 0]> for ConstVal {
         Self::List(vec![])
     }
 }
+
+macro_rules! define_from_for_len {
+    ($n:tt) => {
+        impl<T> From<[T; $n]> for ConstVal
+        where
+            T: Clone,
+            ConstVal: From<T>,
+        {
+            fn from(arr: [T; $n]) -> Self {
+                let mut vec = Vec::new();
+                for t in &arr {
+                    vec.push(t.clone().into());
+                }
+                Self::List(vec)
+            }
+        }
+    };
+}
+
+define_from_for_len!(1);
+define_from_for_len!(2);
+define_from_for_len!(3);
+define_from_for_len!(4);
+define_from_for_len!(5);
+define_from_for_len!(6);
+define_from_for_len!(7);
+define_from_for_len!(8);
