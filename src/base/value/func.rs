@@ -205,6 +205,12 @@ impl From<()> for ArgSpec {
     }
 }
 
+impl From<[&str; 0]> for ArgSpec {
+    fn from(_: [&str; 0]) -> Self {
+        Self::empty()
+    }
+}
+
 impl From<&[&str]> for ArgSpec {
     fn from(reqs: &[&str]) -> Self {
         Self {

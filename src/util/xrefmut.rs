@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::cell::RefMut;
 use std::fmt;
 use std::ops::Deref;
+use std::ops::DerefMut;
 
 /// Kind of like Cow, but might also be a RefMut (from a RefCell)
 /// Also, does not use ToOwned.
@@ -87,10 +88,12 @@ impl<'a, T: Default> Default for XRefMut<'a, T> {
 impl<'a, T> Deref for XRefMut<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        match self {
-            Self::Borrowed(r) => r,
-            Self::Ref(r) => r,
-            Self::Owned(t) => t.borrow(),
-        }
+        self.to_ref()
+    }
+}
+
+impl<'a, T> DerefMut for XRefMut<'a, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.to_mut()
     }
 }

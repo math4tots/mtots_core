@@ -15,6 +15,9 @@ pub struct Stash {
 }
 
 impl Stash {
+    pub fn has<T: Any>(&self) -> bool {
+        self.map.contains_key(&TypeId::of::<T>())
+    }
     pub fn set<T: Any>(&mut self, t: T) -> Result<()> {
         match self.map.entry(TypeId::of::<T>()) {
             Entry::Vacant(entry) => {
