@@ -2,12 +2,15 @@
 
 use crate::Globals;
 mod bytes;
+mod encoding;
 mod env;
 mod fs;
 mod math;
 mod os;
 mod procc;
 mod time;
+
+pub use encoding::Encoding;
 
 impl Globals {
     pub fn add_builtin_native_libraries(&mut self) {
