@@ -50,7 +50,22 @@ impl Stash {
             ))
         }
     }
+    pub fn remove_rc<T: Any>(&mut self) -> Rc<RefCell<T>> {
+        *self
+            .map
+            .remove(&TypeId::of::<T>())
+            .unwrap()
+            .downcast::<Rc<RefCell<T>>>()
+            .unwrap()
+    }
     pub fn remove<T: Any>(&mut self) -> T {
-        *self.map.remove(&TypeId::of::<T>()).unwrap().downcast::<T>().unwrap()
+        let rc = self.remove_rc();
+        match Rc::try_unwrap(rc) {
+            Ok(t) => t.into_inner(),
+            Err(_) => panic!(
+                "There are still outstanding references to {:?}",
+                std::any::type_name::<T>()
+            ),
+        }
     }
 }
