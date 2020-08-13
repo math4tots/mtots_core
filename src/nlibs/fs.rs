@@ -16,7 +16,7 @@ const NAME: &'static str = "a.fs";
 pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |m| {
         m.doc("Module with tools for interacting with the file system");
-        m.dep("a.bytes");
+        m.dep("a.bytes", None, &[]);
 
         // Path operations that touch the file system
         m.func(

@@ -44,10 +44,21 @@ impl NativeModule {
     }
 }
 
+struct Dep {
+    // name of the module dependency
+    name: RcStr,
+
+    // for re-exporting the dependency module itself
+    alias: Option<RcStr>,
+
+    // members of this module that are being reexported
+    reexports: Vec<(RcStr, RcStr)>,
+}
+
 pub struct NativeModuleBuilder {
     name: RcStr,
     doc: Option<RcStr>,
-    deps: Vec<RcStr>,
+    deps: Vec<Dep>,
     fields: Vec<(
         RcStr,
         Box<dyn FnOnce(&mut Globals, &HashMap<RcStr, Rc<RefCell<Value>>>) -> Result<Value>>,
@@ -62,8 +73,33 @@ impl NativeModuleBuilder {
         self.doc = Some(doc.into());
         self
     }
-    pub fn dep<N: Into<RcStr>>(&mut self, name: N) -> &mut Self {
-        self.deps.push(name.into());
+    pub fn dep<N: Into<RcStr>>(
+        &mut self,
+        name: N,
+        alias: Option<&str>,
+        reexports: &[(&str, &str)],
+    ) -> &mut Self {
+        let alias = alias.map(RcStr::from);
+        let reexports = reexports
+            .iter()
+            .map(|(field, alias)| (field.into(), alias.into()))
+            .collect::<Vec<(RcStr, RcStr)>>();
+
+        if let Some(alias) = &alias {
+            self.fields
+                .push((alias.clone(), Box::new(|_, _| Ok(Value::Invalid))));
+        }
+
+        for (_, alias) in &reexports {
+            self.fields
+                .push((alias.clone(), Box::new(|_, _| Ok(Value::Invalid))));
+        }
+
+        self.deps.push(Dep {
+            name: name.into(),
+            alias,
+            reexports,
+        });
         self
     }
     pub fn field<N, D, F>(&mut self, name: N, doc: D, body: F) -> &mut Self
@@ -154,7 +190,14 @@ impl NativeModuleBuilder {
             fields: fields.iter().map(|(name, _)| name.clone()).collect(),
             init: Box::new(move |globals, map| -> Result<()> {
                 for dep in deps {
-                    globals.load(&dep)?;
+                    let depmodule = Value::from(globals.load(&dep.name)?);
+                    if let Some(alias) = &dep.alias {
+                        *map.get(alias).unwrap().borrow_mut() = depmodule.clone();
+                    }
+                    for (field, alias) in &dep.reexports {
+                        let field = depmodule.getattr(field)?;
+                        *map.get(alias).unwrap().borrow_mut() = field;
+                    }
                 }
                 for (name, f) in fields {
                     let value = f(globals, map)?;
