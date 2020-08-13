@@ -12,7 +12,7 @@ mod num;
 mod strs;
 mod table;
 mod unpack;
-mod xref;
+mod xrefm;
 use crate::Code;
 use crate::Error;
 use crate::Frame;
@@ -45,7 +45,7 @@ pub use hnd::*;
 pub use key::*;
 pub use m::*;
 pub use table::*;
-pub use xref::*;
+pub use xrefm::*;
 
 #[derive(Clone, PartialEq)]
 pub enum Value {

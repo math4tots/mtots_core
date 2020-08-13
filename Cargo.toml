@@ -11,6 +11,7 @@ description = "Core implementation of the mtots scripting language"
 
 [dependencies]
 indexmap = "1.5"
+xref = "0.1"
 rustyline = { version = "6.2", optional = true }
 
 [features]

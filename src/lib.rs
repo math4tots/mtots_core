@@ -49,6 +49,9 @@ pub use indexmap::IndexSet;
 pub use nlibs::*;
 pub use util::*;
 
+pub use xref::XRef;
+pub use xref::XRefMut;
+
 #[cfg(test)]
 mod tests {
     use super::*;
