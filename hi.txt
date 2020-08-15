@@ -1,2 +1,0 @@
-hello data
-this is some data in hi.txt
