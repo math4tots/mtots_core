@@ -51,7 +51,7 @@ pub fn climain(mut globals: Globals) {
 
     globals.set_argv(script_args);
     for source_root in source_roots {
-        globals.add(source_root).unwrap();
+        globals.add_source_root(source_root);
     }
 
     match command {
@@ -194,8 +194,7 @@ fn run_module(mut globals: Globals, module: &RcStr) {
 fn run_path(mut globals: Globals, pathstr: String) {
     let path = Path::new(&pathstr);
     if path.is_dir() {
-        let r = globals.add(pathstr);
-        ordie(&mut globals, r);
+        globals.add_source_root(pathstr);
         run_module(globals, &"__main".into());
     } else {
         let data = std::fs::read_to_string(path).unwrap();

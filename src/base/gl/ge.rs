@@ -3,18 +3,27 @@ use super::*;
 pub enum GlobalElement {
     NativeModule(NativeModule),
     SourceRoot(RcStr),
+    Source(Rc<Source>),
 }
 
 impl Globals {
-    pub fn add<E: Into<GlobalElement>>(&mut self, e: E) -> Result<()> {
-        match e.into() {
-            GlobalElement::NativeModule(nm) => {
-                self.native_modules.insert(nm.name().clone(), nm);
-            }
-            GlobalElement::SourceRoot(root) => {
-                self.source_roots.push(root);
-            }
+    pub fn add_native_module(&mut self, nm: NativeModule) -> Result<()> {
+        if self.native_modules.contains_key(nm.name()) {
+            panic!("Duplicate native module for {:?}", nm.name());
         }
+        self.native_modules.insert(nm.name().clone(), nm);
+        Ok(())
+    }
+
+    pub fn add_source_root<S: Into<RcStr>>(&mut self, root: S) {
+        self.source_roots.push(root.into());
+    }
+
+    pub fn add_custom_source(&mut self, source: Rc<Source>) -> Result<()> {
+        if self.custom_sources.contains_key(source.name()) {
+            panic!("Duplicate custom source for {:?}", source.name());
+        }
+        self.custom_sources.insert(source.name().clone(), source);
         Ok(())
     }
 }
@@ -52,5 +61,23 @@ impl From<&String> for GlobalElement {
 impl From<String> for GlobalElement {
     fn from(sr: String) -> Self {
         Self::SourceRoot(sr.into())
+    }
+}
+
+impl From<Source> for GlobalElement {
+    fn from(s: Source) -> Self {
+        Self::Source(s.into())
+    }
+}
+
+impl From<Rc<Source>> for GlobalElement {
+    fn from(s: Rc<Source>) -> Self {
+        Self::Source(s)
+    }
+}
+
+impl From<&Rc<Source>> for GlobalElement {
+    fn from(s: &Rc<Source>) -> Self {
+        Self::Source(s.clone())
     }
 }

@@ -66,6 +66,7 @@ pub struct Globals {
     native_modules: HashMap<RcStr, NativeModule>,
     source_roots: Vec<RcStr>,
     main_module: Option<RcStr>,
+    custom_sources: HashMap<RcStr, Rc<Source>>,
 
     // builtins
     class_manager: ClassManager,
@@ -109,6 +110,7 @@ impl Globals {
             native_modules: HashMap::new(),
             source_roots: vec![],
             main_module: None,
+            custom_sources: HashMap::new(),
             class_manager,
             builtins,
             repl_scope: None,
