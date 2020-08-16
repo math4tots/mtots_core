@@ -430,6 +430,10 @@ impl Value {
                 Some(method) => method.apply(globals, args, kwargs),
                 None => Err(rterr!("{:?} not found in {:?}", method_name, module)),
             },
+            Self::Handle(handle) if handle.cls().behavior().method_call().is_some() => {
+                let method_call = handle.cls().behavior().method_call().as_ref().unwrap();
+                method_call(self.clone(), args, kwargs)
+            }
             _ => {
                 let cls = self.get_class(globals).clone();
                 match cls.map().get(method_name) {
