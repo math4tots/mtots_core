@@ -195,7 +195,7 @@ impl NativeModuleBuilder {
                         *map.get(alias).unwrap().borrow_mut() = depmodule.clone();
                     }
                     for (field, alias) in &dep.reexports {
-                        let field = depmodule.getattr(field)?;
+                        let field = depmodule.getattr(globals, field)?;
                         *map.get(alias).unwrap().borrow_mut() = field;
                     }
                 }
@@ -286,7 +286,13 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.behavior.repr(f);
         self
     }
-    /// Customize the default behavior when 'method_call' function is called
+    pub fn getattr<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&mut Globals, Handle<T>, &str) -> Result<Option<Value>> + 'static,
+    {
+        self.behavior.getattr(f);
+        self
+    }
     pub fn method_call<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn(

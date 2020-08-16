@@ -131,11 +131,11 @@ impl Globals {
                     Ok(Value::Nil)
                 }
             }),
-            NativeFunction::new("getattr", ["owner", "name"], None, |_globals, args, _| {
+            NativeFunction::new("getattr", ["owner", "name"], None, |globals, args, _| {
                 let mut args = args.into_iter();
                 let owner = args.next().unwrap();
                 let name = args.next().unwrap().into_string()?;
-                owner.getattr(&name)
+                owner.getattr(globals, &name)
             }),
             NativeFunction::new(
                 "getattrs",

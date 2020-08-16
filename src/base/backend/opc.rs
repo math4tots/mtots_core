@@ -233,7 +233,8 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         }
         Opcode::GetAttr(attr) => {
             let owner = frame.pop();
-            let value = get0!(owner.getattr(attr));
+            let r = owner.getattr(globals, attr);
+            let value = get0!(r);
             frame.push(value);
         }
         Opcode::SetAttr(attr) => {

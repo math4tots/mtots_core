@@ -340,16 +340,20 @@ impl Value {
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {
         globals.class_manager().get_class(self)
     }
-    pub fn getattr_opt(&self, attr: &RcStr) -> Option<Value> {
+    fn getattr_opt(&self, globals: &mut Globals, attr: &RcStr) -> Result<Option<Value>> {
         match self {
-            Self::Table(table) => table.map().get(attr).map(|cell| cell.borrow().clone()),
-            Self::Class(cls) => cls.static_map().get(attr).cloned(),
-            Self::Module(module) => module.get(attr),
-            _ => None,
+            Self::Table(table) => Ok(table.map().get(attr).map(|cell| cell.borrow().clone())),
+            Self::Class(cls) => Ok(cls.static_map().get(attr).cloned()),
+            Self::Module(module) => Ok(module.get(attr)),
+            Self::Handle(handle) if handle.cls().behavior().getattr().is_some() => {
+                let getattr = handle.cls().behavior().getattr().as_ref().unwrap();
+                Ok(getattr(globals, self.clone(), attr.str())?)
+            }
+            _ => Ok(None),
         }
     }
-    pub fn getattr(&self, attr: &RcStr) -> Result<Value> {
-        match self.getattr_opt(attr) {
+    pub fn getattr(&self, globals: &mut Globals, attr: &RcStr) -> Result<Value> {
+        match self.getattr_opt(globals, attr)? {
             Some(value) => Ok(value),
             None => Err(rterr!("Attribute {:?} not found in {:?}", attr, self)),
         }
