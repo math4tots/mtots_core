@@ -30,7 +30,6 @@ use std::any::TypeId;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
-use std::cmp;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -149,6 +148,9 @@ impl Globals {
         }
         self.module_map.insert(name, module);
         Ok(())
+    }
+    pub fn remove_module(&mut self, name: &RcStr) -> Option<Rc<Module>> {
+        self.module_map.remove(name)
     }
     pub fn class_manager(&self) -> &ClassManager {
         &self.class_manager

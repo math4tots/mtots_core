@@ -8,6 +8,7 @@ mod fs;
 mod math;
 mod os;
 mod procc;
+mod sys;
 mod time;
 
 pub use encoding::Encoding;
@@ -20,6 +21,7 @@ impl Globals {
         self.add_native_module(math::new()).unwrap();
         self.add_native_module(os::new()).unwrap();
         self.add_native_module(procc::new()).unwrap();
+        self.add_native_module(sys::new()).unwrap();
         self.add_native_module(time::new()).unwrap();
     }
 }

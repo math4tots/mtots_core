@@ -23,6 +23,10 @@ impl Globals {
         if self.custom_sources.contains_key(source.name()) {
             panic!("Duplicate custom source for {:?}", source.name());
         }
+        self.set_custom_source(source)
+    }
+
+    pub fn set_custom_source(&mut self, source: Rc<Source>) -> Result<()> {
         self.custom_sources.insert(source.name().clone(), source);
         Ok(())
     }

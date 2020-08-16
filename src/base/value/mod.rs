@@ -340,7 +340,7 @@ impl Value {
     pub fn get_class<'a>(&'a self, globals: &'a Globals) -> &'a Rc<Class> {
         globals.class_manager().get_class(self)
     }
-    fn getattr_opt(&self, globals: &mut Globals, attr: &RcStr) -> Result<Option<Value>> {
+    pub(crate) fn getattr_opt(&self, globals: &mut Globals, attr: &RcStr) -> Result<Option<Value>> {
         match self {
             Self::Table(table) => Ok(table.map().get(attr).map(|cell| cell.borrow().clone())),
             Self::Class(cls) => Ok(cls.static_map().get(attr).cloned()),

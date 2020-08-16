@@ -43,6 +43,11 @@ impl Globals {
                 vec.reverse();
                 Ok(vec.into())
             }),
+            NativeFunction::new("abs", ["x"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let x = args.next().unwrap().number()?;
+                Ok(x.abs().into())
+            }),
             NativeFunction::new("sorted", ["iterable"], None, |globals, args, _| {
                 let mut vec = args.into_iter().next().unwrap().unpack(globals)?;
                 List::sort(&mut vec)?;
@@ -95,11 +100,6 @@ impl Globals {
                     }
                 },
             ),
-            NativeFunction::new("sorted", ["x"], None, |globals, args, _| {
-                let mut list = args.into_iter().next().unwrap().unpack(globals)?;
-                list.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(cmp::Ordering::Equal));
-                Ok(list.into())
-            }),
             NativeFunction::new("assert_eq", ["a", "b"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let a = args.next().unwrap();
@@ -130,6 +130,12 @@ impl Globals {
                 } else {
                     Ok(Value::Nil)
                 }
+            }),
+            NativeFunction::new("hasattr", ["owner", "name"], None, |globals, args, _| {
+                let mut args = args.into_iter();
+                let owner = args.next().unwrap();
+                let name = args.next().unwrap().into_string()?;
+                Ok(owner.getattr_opt(globals, &name)?.is_some().into())
             }),
             NativeFunction::new("getattr", ["owner", "name"], None, |globals, args, _| {
                 let mut args = args.into_iter();
