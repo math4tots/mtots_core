@@ -382,7 +382,7 @@ impl Value {
             _ => vec![],
         }
     }
-    pub fn setattr(&self, attr: &RcStr, value: Value) -> Result<()> {
+    pub fn setattr(&self, globals: &mut Globals, attr: &RcStr, value: Value) -> Result<()> {
         // We disallow setting attributes this way for both classes and modules
         //   A class's static fields are immutable
         //   A module's fields are mutable, but it should only be possible to
@@ -390,6 +390,10 @@ impl Value {
         //     trying to modify a field with setattr should be disallowed
         match self {
             Self::Table(table) => table.set(attr, value)?,
+            Self::Handle(handle) if handle.cls().behavior().setattr().is_some() => {
+                let setattr = handle.cls().behavior().setattr().as_ref().unwrap();
+                setattr(globals, self.clone(), attr.str(), value)?;
+            }
             _ => return Err(rterr!("Attribute {:?} not found in {:?}", attr, self)),
         }
         #[allow(unreachable_code)]

@@ -240,12 +240,14 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         Opcode::SetAttr(attr) => {
             let owner = frame.pop();
             let value = frame.pop();
-            get0!(owner.setattr(attr, value));
+            let r = owner.setattr(globals, attr, value);
+            get0!(r);
         }
         Opcode::TeeAttr(attr) => {
             let owner = frame.pop();
             let value = frame.peek().clone();
-            get0!(owner.setattr(attr, value));
+            let r = owner.setattr(globals, attr, value);
+            get0!(r);
         }
         Opcode::New(argnames) => {
             let argvals = frame.popn_iter(argnames.len()).map(RefCell::new);

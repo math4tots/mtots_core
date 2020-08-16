@@ -293,6 +293,13 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.behavior.getattr(f);
         self
     }
+    pub fn setattr<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&mut Globals, Handle<T>, &str, Value) -> Result<()> + 'static,
+    {
+        self.behavior.setattr(f);
+        self
+    }
     pub fn method_call<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn(

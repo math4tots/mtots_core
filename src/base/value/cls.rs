@@ -109,6 +109,7 @@ pub struct Behavior {
     str: Option<Rc<dyn Fn(Value) -> RcStr>>,
     repr: Option<Rc<dyn Fn(Value) -> RcStr>>,
     getattr: Option<Rc<dyn Fn(&mut Globals, Value, &str) -> Result<Option<Value>>>>,
+    setattr: Option<Rc<dyn Fn(&mut Globals, Value, &str, Value) -> Result<()>>>,
     method_call: Option<
         Rc<
             dyn Fn(
@@ -137,6 +138,9 @@ impl Behavior {
     }
     pub fn getattr(&self) -> &Option<Rc<dyn Fn(&mut Globals, Value, &str) -> Result<Option<Value>>>> {
         &self.getattr
+    }
+    pub fn setattr(&self) -> &Option<Rc<dyn Fn(&mut Globals, Value, &str, Value) -> Result<()>>> {
+        &self.setattr
     }
     pub fn method_call(
         &self,
@@ -194,6 +198,16 @@ impl<T: Any> HandleBehaviorBuilder<T> {
         self.behavior.getattr = Some(Rc::new(move |globals, value, attrname| {
             let handle = value.into_handle::<T>().unwrap();
             f(globals, handle, attrname)
+        }));
+        self
+    }
+    pub fn setattr<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&mut Globals, Handle<T>, &str, Value) -> Result<()> + 'static
+    {
+        self.behavior.setattr = Some(Rc::new(move |globals, value, attrname, attrval| {
+            let handle = value.into_handle::<T>().unwrap();
+            f(globals, handle, attrname, attrval)
         }));
         self
     }
