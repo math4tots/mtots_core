@@ -286,6 +286,15 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.behavior.repr(f);
         self
     }
+    /// Customize the default behavior when 'method_call' function is called
+    pub fn method_call<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&mut Globals, Handle<T>, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>
+            + 'static,
+    {
+        self.behavior.method_call(f);
+        self
+    }
     fn build(self) -> &'a mut NativeModuleBuilder {
         let mb = self.module_builder;
         let typeid = self.typeid;

@@ -432,7 +432,7 @@ impl Value {
             },
             Self::Handle(handle) if handle.cls().behavior().method_call().is_some() => {
                 let method_call = handle.cls().behavior().method_call().as_ref().unwrap();
-                method_call(self.clone(), args, kwargs)
+                method_call(globals, self.clone(), args, kwargs)
             }
             _ => {
                 let cls = self.get_class(globals).clone();

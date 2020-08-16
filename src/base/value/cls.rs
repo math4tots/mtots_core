@@ -108,8 +108,9 @@ impl fmt::Debug for Class {
 pub struct Behavior {
     str: Option<Rc<dyn Fn(Value) -> RcStr>>,
     repr: Option<Rc<dyn Fn(Value) -> RcStr>>,
-    method_call:
-        Option<Rc<dyn Fn(Value, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>>,
+    method_call: Option<
+        Rc<dyn Fn(&mut Globals, Value, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>,
+    >,
 }
 
 impl Behavior {
@@ -127,8 +128,9 @@ impl Behavior {
     }
     pub fn method_call(
         &self,
-    ) -> &Option<Rc<dyn Fn(Value, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>>
-    {
+    ) -> &Option<
+        Rc<dyn Fn(&mut Globals, Value, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>>,
+    > {
         &self.method_call
     }
 }
@@ -167,11 +169,12 @@ impl<T: Any> HandleBehaviorBuilder<T> {
     }
     pub fn method_call<F>(&mut self, f: F) -> &mut Self
     where
-        F: Fn(Handle<T>, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value> + 'static,
+        F: Fn(&mut Globals, Handle<T>, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>
+            + 'static,
     {
-        self.behavior.method_call = Some(Rc::new(move |owner, args, kwargs| {
+        self.behavior.method_call = Some(Rc::new(move |globals, owner, args, kwargs| {
             let handle = owner.into_handle::<T>().unwrap();
-            f(handle, args, kwargs)
+            f(globals, handle, args, kwargs)
         }));
         self
     }

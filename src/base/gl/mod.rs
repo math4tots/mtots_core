@@ -219,12 +219,14 @@ impl Globals {
         }
     }
     pub fn set_print<F>(&mut self, f: F)
-    where F: Fn(&str) + 'static,
+    where
+        F: Fn(&str) + 'static,
     {
         self.print = Some(Box::new(f));
     }
     pub fn set_eprint<F>(&mut self, f: F)
-    where F: Fn(&str) + 'static,
+    where
+        F: Fn(&str) + 'static,
     {
         self.eprint = Some(Box::new(f));
     }
