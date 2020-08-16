@@ -94,6 +94,10 @@ pub struct Globals {
     // rustyline.
     #[cfg(feature = "line")]
     line: rustyline::Editor<()>,
+
+    // print handlers
+    print: Option<Box<dyn Fn(&str)>>,
+    eprint: Option<Box<dyn Fn(&str)>>,
 }
 
 impl Globals {
@@ -120,6 +124,8 @@ impl Globals {
             argv: None,
             #[cfg(feature = "line")]
             line,
+            print: None,
+            eprint: None,
         };
         globals.add_builtin_native_libraries();
         globals
@@ -199,5 +205,27 @@ impl Globals {
     }
     pub fn set_argv(&mut self, argv: Vec<RcStr>) {
         self.argv = Some(argv);
+    }
+    pub fn print(&self, text: &str) {
+        match &self.print {
+            Some(print) => print(text),
+            None => print!("{}", text),
+        }
+    }
+    pub fn eprint(&self, text: &str) {
+        match &self.eprint {
+            Some(eprint) => eprint(text),
+            None => eprint!("{}", text),
+        }
+    }
+    pub fn set_print<F>(&mut self, f: F)
+    where F: Fn(&str) + 'static,
+    {
+        self.print = Some(Box::new(f));
+    }
+    pub fn set_eprint<F>(&mut self, f: F)
+    where F: Fn(&str) + 'static,
+    {
+        self.eprint = Some(Box::new(f));
     }
 }

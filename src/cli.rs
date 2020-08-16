@@ -102,7 +102,7 @@ fn repl(mut globals: Globals) {
             }
             Err(error) => {
                 let error = error.prepended(globals.trace().clone());
-                eprint!("{}", error.format());
+                globals.eprint(&format!("{}", error.format()));
                 globals.trace_unwind(trace_base);
             }
         }
@@ -209,7 +209,7 @@ pub fn ordie<T>(globals: &mut Globals, r: Result<T>) -> T {
         Ok(t) => t,
         Err(error) => {
             let error = error.prepended(globals.trace().clone());
-            eprint!("{}", error.format());
+            globals.eprint(&format!("{}", error.format()));
             std::process::exit(1);
         }
     }

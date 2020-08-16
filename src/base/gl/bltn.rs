@@ -8,9 +8,9 @@ impl Globals {
         }
 
         let funcs = vec![
-            NativeFunction::new("print", ["x"], None, |_globals, args, _| {
+            NativeFunction::new("print", ["x"], None, |globals, args, _| {
                 let x = args.into_iter().next().unwrap();
-                println!("{}", x);
+                globals.print(&format!("{}\n", x));
                 Ok(Value::Nil)
             }),
             NativeFunction::new("str", ["x"], None, |_globals, args, _| {
