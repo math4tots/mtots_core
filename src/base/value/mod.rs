@@ -418,7 +418,7 @@ impl Value {
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value>
     where
-        M: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + ?Sized,
+        M: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + ?Sized + AsRef<str>,
         RcStr: std::borrow::Borrow<M>,
     {
         match self {
@@ -432,7 +432,7 @@ impl Value {
             },
             Self::Handle(handle) if handle.cls().behavior().method_call().is_some() => {
                 let method_call = handle.cls().behavior().method_call().as_ref().unwrap();
-                method_call(globals, self.clone(), args, kwargs)
+                method_call(globals, self.clone(), method_name.as_ref(), args, kwargs)
             }
             _ => {
                 let cls = self.get_class(globals).clone();

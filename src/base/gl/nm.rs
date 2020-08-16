@@ -289,7 +289,13 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
     /// Customize the default behavior when 'method_call' function is called
     pub fn method_call<F>(&mut self, f: F) -> &mut Self
     where
-        F: Fn(&mut Globals, Handle<T>, Vec<Value>, Option<HashMap<RcStr, Value>>) -> Result<Value>
+        F: Fn(
+                &mut Globals,
+                Handle<T>,
+                &str,
+                Vec<Value>,
+                Option<HashMap<RcStr, Value>>,
+            ) -> Result<Value>
             + 'static,
     {
         self.behavior.method_call(f);
