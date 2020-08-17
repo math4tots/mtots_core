@@ -1356,15 +1356,18 @@ fn assign_name(name: RcStr, expr: Expr) -> Expr {
 }
 
 fn to_constval(expr: Expr) -> Result<ConstVal> {
-    match expr.desc() {
+    let (mark, desc) = expr.unpack();
+    match desc {
         ExprDesc::Nil => Ok(ConstVal::Nil),
-        ExprDesc::Bool(b) => Ok(ConstVal::Bool(*b)),
-        ExprDesc::Number(x) => Ok(ConstVal::Number(*x)),
+        ExprDesc::Bool(b) => Ok(ConstVal::Bool(b)),
+        ExprDesc::Number(x) => Ok(ConstVal::Number(x)),
         ExprDesc::String(x) => Ok(ConstVal::String(x.clone())),
-        _ => Err(Error::rt(
-            "Expected constant expression".into(),
-            vec![expr.mark().clone()],
+        ExprDesc::List(list) => Ok(ConstVal::List(
+            list.into_iter()
+                .map(to_constval)
+                .collect::<Result<Vec<_>>>()?,
         )),
+        _ => Err(Error::rt("Expected constant expression".into(), vec![mark])),
     }
 }
 

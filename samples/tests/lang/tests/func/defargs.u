@@ -1,0 +1,11 @@
+
+def __test_list_default_arg() {
+    # Functions can have lists as default arguments
+    # as long as all its members are also constant
+    # expressions.
+
+    def foo(list=[1, 2, 3]) = list
+
+    assert_eq(foo(['a', 'b', 'c']), ['a', 'b', 'c'])
+    assert_eq(foo(), [1, 2, 3])
+}
