@@ -1,0 +1,23 @@
+
+
+class Foo {
+    new() = new(_x = 'initial _x value')
+
+    def __get_x(self) = 'custom x getter'
+
+    def __set_x(self, x) {
+        self._x = x
+    }
+
+    def msg(self) = self._x
+}
+
+def __test_custom_attrs() {
+    foo = Foo()
+
+    assert_eq(foo.x, 'custom x getter')
+    assert_eq(foo.msg(), 'initial _x value')
+    foo.x = 24
+    assert_eq(foo.x, 'custom x getter')
+    assert_eq(foo.msg(), 24)
+}

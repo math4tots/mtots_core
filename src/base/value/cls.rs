@@ -1,9 +1,14 @@
 use super::*;
 
+const GETTER_PREFIX: &'static str = "__get_";
+const SETTER_PREFIX: &'static str = "__set_";
+
 pub struct Class {
     name: RcStr,
     map: HashMap<RcStr, Value>,
     static_map: HashMap<RcStr, Value>,
+    getter_map: HashMap<RcStr, Value>,
+    setter_map: HashMap<RcStr, Value>,
     behavior: Option<Behavior>,
 }
 
@@ -21,10 +26,22 @@ impl Class {
         static_map: HashMap<RcStr, Value>,
         behavior: Option<Behavior>,
     ) -> Rc<Self> {
+        let mut getter_map = HashMap::new();
+        let mut setter_map = HashMap::new();
+        for (key, val) in &map {
+            if let Some(key) = key.str().strip_prefix(GETTER_PREFIX) {
+                getter_map.insert(key.into(), val.clone());
+            }
+            if let Some(key) = key.str().strip_prefix(SETTER_PREFIX) {
+                setter_map.insert(key.into(), val.clone());
+            }
+        }
         Rc::new(Self {
             name,
             map,
             static_map,
+            getter_map,
+            setter_map,
             behavior,
         })
     }
@@ -39,6 +56,12 @@ impl Class {
     }
     pub fn get_call(&self) -> Option<Value> {
         self.static_map.get("__call").cloned()
+    }
+    pub fn get_getter(&self, name: &RcStr) -> Option<Value> {
+        self.getter_map.get(name).cloned()
+    }
+    pub fn get_setter(&self, name: &RcStr) -> Option<Value> {
+        self.setter_map.get(name).cloned()
     }
     pub fn behavior(&self) -> &Behavior {
         match &self.behavior {

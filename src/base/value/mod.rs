@@ -342,7 +342,13 @@ impl Value {
     }
     pub(crate) fn getattr_opt(&self, globals: &mut Globals, attr: &RcStr) -> Result<Option<Value>> {
         match self {
-            Self::Table(table) => Ok(table.map().get(attr).map(|cell| cell.borrow().clone())),
+            Self::Table(table) => match table.map().get(attr).map(|cell| cell.borrow().clone()) {
+                Some(attr) => Ok(Some(attr)),
+                None => match table.cls().get_getter(attr) {
+                    Some(getter) => Ok(Some(getter.apply(globals, vec![self.clone()], None)?)),
+                    None => Ok(None),
+                },
+            },
             Self::Class(cls) => Ok(cls.static_map().get(attr).cloned()),
             Self::Module(module) => Ok(module.get(attr)),
             Self::Handle(handle) if handle.cls().behavior().getattr().is_some() => {
@@ -389,7 +395,13 @@ impl Value {
         //     edit a module's field from within the module itself. So
         //     trying to modify a field with setattr should be disallowed
         match self {
-            Self::Table(table) => table.set(attr, value)?,
+            Self::Table(table) => if let Err(value) = table.set_opt(attr, value) {
+                if let Some(setter) = table.cls().get_setter(attr) {
+                    setter.apply(globals, vec![self.clone(), value], None)?;
+                } else {
+                    return Err(rterr!("Attribute {:?} not found in {:?}", attr, self));
+                }
+            },
             Self::Handle(handle) if handle.cls().behavior().setattr().is_some() => {
                 let setattr = handle.cls().behavior().setattr().as_ref().unwrap();
                 setattr(globals, self.clone(), attr.str(), value)?;

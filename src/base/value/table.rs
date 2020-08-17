@@ -31,12 +31,19 @@ impl Table {
         &self.map
     }
     pub fn set(&self, key: &RcStr, value: Value) -> Result<()> {
+        if self.set_opt(key, value).is_ok() {
+            Ok(())
+        } else {
+            Err(rterr!("Attribute {:?} not found in {:?}", key, self))
+        }
+    }
+    pub fn set_opt(&self, key: &RcStr, value: Value) -> std::result::Result<(), Value> {
         match self.map.get(key) {
             Some(cell) => {
                 cell.replace(value);
                 Ok(())
             }
-            None => Err(rterr!("Attribute {:?} not found in {:?}", key, self)),
+            None => Err(value),
         }
     }
 }
