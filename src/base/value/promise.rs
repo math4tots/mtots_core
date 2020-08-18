@@ -1,3 +1,4 @@
+use crate::ordie;
 use crate::Globals;
 use crate::Result;
 use crate::Value;
@@ -62,6 +63,14 @@ impl Promise {
             Self::Pending(vec) => vec.push(Box::new(f)),
             Self::Resolved(result) => f(globals, result.clone()),
         }
+    }
+
+    /// Ensures that if this promise errors out, that it will
+    /// panic and dump an error message for the user to see
+    pub fn ordie(&mut self, globals: &mut Globals) {
+        self.register(globals, |globals, result| {
+            ordie(globals, result);
+        });
     }
 
     pub fn map<F>(&mut self, globals: &mut Globals, f: F) -> Rc<RefCell<Self>>
