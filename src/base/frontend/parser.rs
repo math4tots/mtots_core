@@ -190,6 +190,12 @@ impl<'a> ParserState<'a> {
         }
     }
 
+    fn skip_comment_strings(&mut self) {
+        while let Token::LineString(_) = self.peek() {
+            self.gettok();
+        }
+    }
+
     fn at_string(&self) -> bool {
         if let Token::NormalString(_) | Token::RawString(_) | Token::LineString(_) = self.peek() {
             true
@@ -439,6 +445,7 @@ impl<'a> ParserState<'a> {
         let mut variadic = None;
         let mut keywords: Option<RcStr> = None;
         let mut last_kind = ParameterKind::Required;
+        self.skip_comment_strings();
         while !self.consume(TokenKind::Punctuator(Punctuator::RParen)) {
             let mark = self.mark();
             let kind = match self.gettok() {
@@ -488,6 +495,7 @@ impl<'a> ParserState<'a> {
                 self.expect(TokenKind::Punctuator(Punctuator::RParen))?;
                 break;
             }
+            self.skip_comment_strings();
         }
         Ok(ArgSpec::new(req, opt, variadic, keywords, Some(mark)))
     }
@@ -510,6 +518,7 @@ impl<'a> ParserState<'a> {
         let mut key = Vec::new();
         let mut variadic = None;
         let mut kwtable = None;
+        self.skip_comment_strings();
         while !self.consume(TokenKind::Punctuator(Punctuator::RParen)) {
             let mark = self.mark();
             if self.consume(TokenKind::Punctuator(Punctuator::Star)) {
@@ -565,6 +574,7 @@ impl<'a> ParserState<'a> {
                 self.expect(TokenKind::Punctuator(Punctuator::RParen))?;
                 break;
             }
+            self.skip_comment_strings();
         }
         Ok(Args::new(
             pos,

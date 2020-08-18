@@ -13,9 +13,24 @@ class ClassWithMiscComments {
     }
 
     # Some other comments
-    def bar() = 'hi im baz'
+    def bar(
+        # Comments can also be present inside parameters
+    ) = 'hi im baz'
+
+    static def baz(
+        # Some comment about parameter a
+        a,
+        # Some comment about parameter b
+        b,
+    ) = a + b
 }
 
-
-
-
+def __test_call_with_comments() {
+    r = ClassWithMiscComments.baz(
+        # Something about the first parameter
+        123,
+        # Something about the second parameter
+        234,
+    )
+    assert_eq(r, 123 + 234)
+}
