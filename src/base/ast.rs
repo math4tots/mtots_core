@@ -212,6 +212,13 @@ impl Expr {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FunctionKind {
+    Normal,
+    Generator,
+    Async,
+}
+
 #[derive(Debug)]
 pub enum ExprDesc {
     Nil,
@@ -246,6 +253,7 @@ pub enum ExprDesc {
     New(Option<RcStr>, Vec<(RcStr, Expr)>),
     Del(RcStr),
     Yield(Box<Expr>),
+    Await(Box<Expr>),
     Return(Option<Box<Expr>>),
 
     Import(RcStr),
@@ -257,7 +265,7 @@ pub enum ExprDesc {
     AssignDoc(Box<Expr>, RcStr, RcStr),
 
     Function {
-        is_generator: bool,
+        kind: FunctionKind,
         name: Option<RcStr>,
         params: ArgSpec,
         docstr: Option<RcStr>,

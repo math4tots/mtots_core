@@ -1,3 +1,4 @@
+use crate::FunctionKind;
 use crate::Globals;
 use crate::RcStr;
 use crate::Result;
@@ -139,7 +140,11 @@ fn doc_module(mut globals: Globals, module: &RcStr) {
         };
         match value {
             Value::Function(func) => {
-                let type_ = if func.is_generator() { "def*" } else { "def" };
+                let type_ = match func.kind() {
+                    FunctionKind::Normal => "def",
+                    FunctionKind::Generator => "def*",
+                    FunctionKind::Async => "async def",
+                };
                 println!("{} {}{}\n", type_, field_name, func.argspec());
             }
             Value::NativeFunction(func) => {

@@ -39,6 +39,7 @@ pub(crate) enum Opcode {
 
     Import(RcStr),
     Yield,
+    Await,
     Return,
     Jump(usize),
     JumpIfFalse(usize),
@@ -87,7 +88,7 @@ pub(crate) struct NewFunctionDesc {
     /// for this new function
     pub freevar_binding_slots: Vec<usize>,
 
-    pub is_generator: bool,
+    pub kind: FunctionKind,
 }
 
 #[derive(Debug)]
@@ -385,6 +386,11 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let value = frame.pop();
             return StepResult::Yield(value);
         }
+        Opcode::Await => {
+            let value = frame.pop();
+            let promise = get0!(value.into_promise());
+            return StepResult::Await(promise);
+        }
         Opcode::Return => {
             let value = frame.pop();
             return StepResult::Return(value);
@@ -467,12 +473,7 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 .iter()
                 .map(|slot| frame.getcell(*slot))
                 .collect();
-            let func = Function::new(
-                desc.argspec.clone(),
-                desc.code.clone(),
-                bindings,
-                desc.is_generator,
-            );
+            let func = Function::new(desc.argspec.clone(), desc.code.clone(), bindings, desc.kind);
             frame.push(func.into());
         }
         Opcode::NewClass(desc) => {
@@ -509,6 +510,7 @@ pub(super) enum StepResult {
     Ok,
     Return(Value),
     Yield(Value),
+    Await(Rc<RefCell<Promise>>),
     Err(Error),
 }
 

@@ -375,7 +375,7 @@ pub struct Function {
     argspec: Rc<ArgSpec>,
     code: Rc<Code>,
     bindings: Vec<Rc<RefCell<Value>>>,
-    is_generator: bool,
+    kind: FunctionKind,
 }
 
 impl cmp::PartialEq for Function {
@@ -401,14 +401,14 @@ impl Function {
         argspec: Rc<ArgSpec>,
         code: Rc<Code>,
         bindings: Vec<Rc<RefCell<Value>>>,
-        is_generator: bool,
+        kind: FunctionKind,
     ) -> Self {
         assert_eq!(argspec.nparams(), code.params().len());
         Self {
             argspec,
             code,
             bindings,
-            is_generator,
+            kind,
         }
     }
     pub fn name(&self) -> &RcStr {
@@ -420,8 +420,8 @@ impl Function {
     pub fn argspec(&self) -> &ArgSpec {
         &self.argspec
     }
-    pub fn is_generator(&self) -> bool {
-        self.is_generator
+    pub fn kind(&self) -> FunctionKind {
+        self.kind
     }
     pub fn code(&self) -> &Rc<Code> {
         &self.code
@@ -433,12 +433,18 @@ impl Function {
         kwargs: Option<HashMap<RcStr, Value>>,
     ) -> Result<Value> {
         let args = self.argspec.apply_and_append_kwmap(args, kwargs)?;
-        if self.is_generator {
-            let frame = self.code.new_frame_with_args(self.bindings.clone(), args);
-            Ok(Generator::new(self.code.clone(), frame).into())
-        } else {
-            self.code
-                .apply_for_function(globals, self.bindings.clone(), args)
+        match self.kind {
+            FunctionKind::Normal => {
+                self.code
+                    .apply_for_function(globals, self.bindings.clone(), args)
+            }
+            FunctionKind::Generator => {
+                let frame = self.code.new_frame_with_args(self.bindings.clone(), args);
+                Ok(Generator::new(self.code.clone(), frame).into())
+            }
+            FunctionKind::Async => {
+                panic!("TODO: Apply Async function");
+            }
         }
     }
 }

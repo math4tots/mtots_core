@@ -174,6 +174,7 @@ impl Code {
                 StepResult::Ok => {}
                 StepResult::Yield(_) => return Err(rterr!("Yield from unyieldable context")),
                 StepResult::Return(value) => return Ok(value),
+                StepResult::Await(_) => return Err(rterr!("Await outside async function")),
                 StepResult::Err(error) => return Err(error),
             }
         }
@@ -191,6 +192,9 @@ impl Code {
                 StepResult::Ok => {}
                 StepResult::Yield(value) => return ResumeResult::Yield(value),
                 StepResult::Return(value) => return ResumeResult::Return(value),
+                StepResult::Await(_) => {
+                    return ResumeResult::Err(rterr!("Await outside async function"))
+                }
                 StepResult::Err(error) => return ResumeResult::Err(error),
             }
         }

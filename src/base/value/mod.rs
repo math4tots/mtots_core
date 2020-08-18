@@ -17,6 +17,7 @@ mod xrefm;
 use crate::Code;
 use crate::Error;
 use crate::Frame;
+use crate::FunctionKind;
 use crate::Globals;
 use crate::IndexMap;
 use crate::IndexSet;
@@ -253,6 +254,20 @@ impl Value {
             Ok(func)
         } else {
             Err(self.terr("native_function"))
+        }
+    }
+    pub fn promise(&self) -> Result<&Rc<RefCell<Promise>>> {
+        if let Self::Promise(promise) = self {
+            Ok(promise)
+        } else {
+            Err(self.terr("promise"))
+        }
+    }
+    pub fn into_promise(self) -> Result<Rc<RefCell<Promise>>> {
+        if let Self::Promise(promise) = self {
+            Ok(promise)
+        } else {
+            Err(self.terr("promise"))
         }
     }
     pub fn class(&self) -> Result<&Rc<Class>> {

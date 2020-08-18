@@ -173,6 +173,9 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
         ExprDesc::Yield(expr) => {
             get(expr, out)?;
         }
+        ExprDesc::Await(expr) => {
+            get(expr, out)?;
+        }
         ExprDesc::Return(expr) => {
             if let Some(expr) = expr {
                 get(expr, out)?;
@@ -183,7 +186,7 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             get(expr, out)?;
         }
         ExprDesc::Function {
-            is_generator: _,
+            kind: _,
             name: _,
             params,
             docstr: _,

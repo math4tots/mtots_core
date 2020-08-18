@@ -28,6 +28,7 @@ enum Type {
     Module,
     Function,
     Generator,
+    Async,
 }
 
 struct Builder {
@@ -387,7 +388,7 @@ impl Builder {
             }
             ExprDesc::Yield(valexpr) => {
                 match self.type_ {
-                    Type::Module | Type::Function => {
+                    Type::Module | Type::Function | Type::Async => {
                         return Err(Error::rt(
                             format!("Yield is not allowed here").into(),
                             vec![mark],
@@ -401,6 +402,22 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::Await(valexpr) => {
+                match self.type_ {
+                    Type::Module | Type::Function | Type::Generator => {
+                        return Err(Error::rt(
+                            format!("Await is not allowed here").into(),
+                            vec![mark],
+                        ));
+                    }
+                    Type::Async => {}
+                }
+                self.expr(valexpr, true)?;
+                self.add(Opcode::Await, mark.clone());
+                if !used {
+                    self.add(Opcode::Pop, mark);
+                }
+            }
             ExprDesc::Return(valexpr) => {
                 match self.type_ {
                     Type::Module => {
@@ -409,7 +426,7 @@ impl Builder {
                             vec![mark],
                         ));
                     }
-                    Type::Function | Type::Generator => {}
+                    Type::Function | Type::Generator | Type::Async => {}
                 }
                 if let Some(valexpr) = valexpr {
                     self.expr(valexpr, true)?;
@@ -454,7 +471,7 @@ impl Builder {
                 self.expr(expr, used)?;
             }
             ExprDesc::Function {
-                is_generator,
+                kind,
                 name,
                 params,
                 docstr,
@@ -473,19 +490,22 @@ impl Builder {
                     vars
                 };
 
-                let type_ = if *is_generator {
-                    Type::Generator
-                } else {
-                    Type::Function
+                let type_ = match *kind {
+                    FunctionKind::Normal => Type::Function,
+                    FunctionKind::Generator => Type::Generator,
+                    FunctionKind::Async => Type::Async,
                 };
                 let mut func_builder =
                     Builder::new(type_, name, docstr.clone(), param_vars, varspec);
-                if *is_generator {
-                    // The first resume on a generator will push a value
-                    // on the stack before the generator has had a chance to start.
-                    // We ignore this value by always popping at the beginning
-                    // of every generator
-                    func_builder.add(Opcode::Pop, mark.clone());
+                match *kind {
+                    FunctionKind::Generator => {
+                        // The first resume on a generator will push a value
+                        // on the stack before the generator has had a chance to start.
+                        // We ignore this value by always popping at the beginning
+                        // of every generator
+                        func_builder.add(Opcode::Pop, mark.clone());
+                    }
+                    _ => {}
                 }
                 func_builder.expr(body, true)?;
                 let func_code = func_builder.build();
@@ -501,7 +521,7 @@ impl Builder {
                     code: func_code.into(),
                     argspec: params.clone().into(),
                     freevar_binding_slots,
-                    is_generator: *is_generator,
+                    kind: *kind,
                 };
                 self.add(Opcode::NewFunction(desc.into()), mark.clone());
 

@@ -191,6 +191,8 @@ define_punctuators! {
     // keywords
     And "and",
     As "as",
+    Async "async",
+    Await "await",
     Break "break",
     Case "case",
     Class "class",

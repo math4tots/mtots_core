@@ -7,6 +7,7 @@ use crate::ConstVal;
 use crate::Error;
 use crate::Expr;
 use crate::ExprDesc;
+use crate::FunctionKind;
 use crate::LogicalBinop;
 use crate::Mark;
 use crate::ModuleDisplay;
@@ -768,8 +769,9 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             };
             Ok(Expr::new(mark, ExprDesc::Return(expr)))
         }),
-        (&["def"], |state: &mut ParserState| {
+        (&["async", "def"], |state: &mut ParserState| {
             let mark = state.mark();
+            let is_async = state.consume(TokenKind::Punctuator(Punctuator::Async));
             state.gettok();
 
             // 'def break' is special syntax to indicate a breakpoint
@@ -778,7 +780,13 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             }
 
             // otherwise we're dealing with a function definition
-            let is_generator = state.consume(TokenKind::Punctuator(Punctuator::Star));
+            let kind = if is_async {
+                FunctionKind::Async
+            } else if state.consume(TokenKind::Punctuator(Punctuator::Star)) {
+                FunctionKind::Generator
+            } else {
+                FunctionKind::Normal
+            };
             let name = if state.peek().kind() == TokenKind::Name {
                 Some(state.expect_name()?.into())
             } else {
@@ -801,7 +809,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             Ok(Expr::new(
                 mark,
                 ExprDesc::Function {
-                    is_generator,
+                    kind,
                     name,
                     params,
                     docstr,
@@ -852,7 +860,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                             let member = Expr::new(
                                 mark,
                                 ExprDesc::Function {
-                                    is_generator: false,
+                                    kind: FunctionKind::Normal,
                                     name: Some("__call".into()),
                                     params,
                                     docstr,
