@@ -1,4 +1,5 @@
 use crate::ArgSpec;
+use crate::AsyncResult;
 use crate::Binop;
 use crate::Class;
 use crate::Error;

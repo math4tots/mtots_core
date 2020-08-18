@@ -200,6 +200,30 @@ impl Code {
         }
     }
 
+    pub(crate) fn start_async(&self, globals: &mut Globals, frame: &mut Frame) -> AsyncResult {
+        loop {
+            match step(globals, self, frame) {
+                StepResult::Ok => {}
+                StepResult::Yield(_) => {
+                    return AsyncResult::Err(rterr!("Yield outside async function"))
+                }
+                StepResult::Return(value) => return AsyncResult::Return(value),
+                StepResult::Await(promise) => return AsyncResult::Await(promise),
+                StepResult::Err(error) => return AsyncResult::Err(error),
+            }
+        }
+    }
+
+    pub(crate) fn resume_async(
+        &self,
+        globals: &mut Globals,
+        frame: &mut Frame,
+        arg: Value,
+    ) -> AsyncResult {
+        frame.push(arg);
+        self.start_async(globals, frame)
+    }
+
     pub fn disasm(&self) -> Result<String> {
         let mut ret = String::new();
         let out = &mut ret;

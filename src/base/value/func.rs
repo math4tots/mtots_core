@@ -442,9 +442,44 @@ impl Function {
                 let frame = self.code.new_frame_with_args(self.bindings.clone(), args);
                 Ok(Generator::new(self.code.clone(), frame).into())
             }
-            FunctionKind::Async => {
-                panic!("TODO: Apply Async function");
-            }
+            FunctionKind::Async => Ok(Promise::new(globals, |globals, resolve| {
+                let mut frame = self.code.new_frame_with_args(self.bindings.clone(), args);
+                match self.code.start_async(globals, &mut frame) {
+                    AsyncResult::Return(value) => resolve(globals, Ok(value)),
+                    AsyncResult::Await(promise) => {
+                        continue_async(self.code.clone(), frame, promise, globals, resolve);
+                    }
+                    AsyncResult::Err(error) => resolve(globals, Err(error)),
+                }
+            })
+            .into()),
         }
     }
+}
+
+pub enum AsyncResult {
+    Return(Value),
+    Await(Rc<RefCell<Promise>>),
+    Err(Error),
+}
+
+fn continue_async(
+    code: Rc<Code>,
+    mut frame: Frame,
+    promise: Rc<RefCell<Promise>>,
+    globals: &mut Globals,
+    resolve: Box<dyn FnOnce(&mut Globals, Result<Value>)>,
+) {
+    promise
+        .borrow_mut()
+        .register(globals, move |globals, result| match result {
+            Ok(arg) => match code.resume_async(globals, &mut frame, arg) {
+                AsyncResult::Return(value) => resolve(globals, Ok(value)),
+                AsyncResult::Await(promise) => {
+                    continue_async(code, frame, promise, globals, resolve);
+                }
+                AsyncResult::Err(error) => resolve(globals, Err(error)),
+            },
+            Err(error) => resolve(globals, Err(error)),
+        });
 }
