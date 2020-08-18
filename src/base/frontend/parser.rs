@@ -181,6 +181,15 @@ impl<'a> ParserState<'a> {
         }
     }
 
+    fn skip_delim_and_comment_strings(&mut self) {
+        while let Token::Newline(_)
+        | Token::Punctuator(Punctuator::Semicolon)
+        | Token::LineString(_) = self.peek()
+        {
+            self.gettok();
+        }
+    }
+
     fn at_string(&self) -> bool {
         if let Token::NormalString(_) | Token::RawString(_) | Token::LineString(_) = self.peek() {
             true
@@ -851,7 +860,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
 
                     docstring = state.consume_docstring();
 
-                    state.skip_delim();
+                    state.skip_delim_and_comment_strings();
 
                     while !state.consume(TokenKind::Punctuator(Punctuator::RBrace)) {
                         if state.consume(TokenKind::Punctuator(Punctuator::New)) {
@@ -896,6 +905,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                             out.push((name, member));
                         }
                         state.expect_delim()?;
+                        state.skip_delim_and_comment_strings();
                     }
                 }
                 (docstring, methods, static_methods)

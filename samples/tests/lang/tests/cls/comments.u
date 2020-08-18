@@ -1,0 +1,21 @@
+
+
+class ClassWithMiscComments {
+    # Main class doc
+
+    # Some comments
+    # NOTE: these are meant to be freeform comments
+    # To really document the method itself, the comments
+    # should be inside the method definition
+    def foo() = {
+        # Doc for foo
+        10
+    }
+
+    # Some other comments
+    def bar() = 'hi im baz'
+}
+
+
+
+
