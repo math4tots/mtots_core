@@ -9,6 +9,7 @@ mod hnd;
 mod key;
 mod m;
 mod num;
+mod promise;
 mod strs;
 mod table;
 mod unpack;
@@ -44,6 +45,7 @@ pub use gen::*;
 pub use hnd::*;
 pub use key::*;
 pub use m::*;
+pub use promise::*;
 pub use table::*;
 pub use xrefm::*;
 
@@ -62,6 +64,7 @@ pub enum Value {
     NativeFunction(Rc<NativeFunction>),
     Generator(Rc<RefCell<Generator>>),
     NativeGenerator(Rc<RefCell<NativeGenerator>>),
+    Promise(Rc<RefCell<Promise>>),
     Class(Rc<Class>),
     Module(Rc<Module>),
     Handle(Rc<HandleData>),
@@ -83,6 +86,7 @@ impl Value {
             | Self::NativeFunction(_)
             | Self::Generator(_)
             | Self::NativeGenerator(_)
+            | Self::Promise(_)
             | Self::Class(_)
             | Self::Module(_)
             | Self::Handle(_) => true,
@@ -103,6 +107,7 @@ impl Value {
             Self::NativeFunction(_) => "NativeFunction".into(),
             Self::Generator(_) => "Generator".into(),
             Self::NativeGenerator(_) => "NativeGenerator".into(),
+            Self::Promise(_) => "Promise".into(),
             Self::Class(m) => format!("{:?}", m).into(),
             Self::Module(m) => format!("{:?}", m).into(),
             Self::Handle(m) => format!("<{} handle>", m.typename()).into(),
@@ -126,6 +131,7 @@ impl Value {
             (Self::NativeFunction(a), Self::NativeFunction(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
             (Self::Generator(a), Self::Generator(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
             (Self::NativeGenerator(a), Self::NativeGenerator(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
+            (Self::Promise(a), Self::Promise(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
             (Self::Class(a), Self::Class(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
             (Self::Module(a), Self::Module(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
             (Self::Handle(a), Self::Handle(b)) => Rc::as_ptr(a) == Rc::as_ptr(b),
@@ -395,13 +401,15 @@ impl Value {
         //     edit a module's field from within the module itself. So
         //     trying to modify a field with setattr should be disallowed
         match self {
-            Self::Table(table) => if let Err(value) = table.set_opt(attr, value) {
-                if let Some(setter) = table.cls().get_setter(attr) {
-                    setter.apply(globals, vec![self.clone(), value], None)?;
-                } else {
-                    return Err(rterr!("Attribute {:?} not found in {:?}", attr, self));
+            Self::Table(table) => {
+                if let Err(value) = table.set_opt(attr, value) {
+                    if let Some(setter) = table.cls().get_setter(attr) {
+                        setter.apply(globals, vec![self.clone(), value], None)?;
+                    } else {
+                        return Err(rterr!("Attribute {:?} not found in {:?}", attr, self));
+                    }
                 }
-            },
+            }
             Self::Handle(handle) if handle.cls().behavior().setattr().is_some() => {
                 let setattr = handle.cls().behavior().setattr().as_ref().unwrap();
                 setattr(globals, self.clone(), attr.str(), value)?;

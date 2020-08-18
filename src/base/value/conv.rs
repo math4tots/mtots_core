@@ -191,6 +191,18 @@ impl From<NativeGenerator> for Value {
     }
 }
 
+impl From<Rc<RefCell<Promise>>> for Value {
+    fn from(promise: Rc<RefCell<Promise>>) -> Self {
+        Self::Promise(promise)
+    }
+}
+
+impl From<&Rc<RefCell<Promise>>> for Value {
+    fn from(promise: &Rc<RefCell<Promise>>) -> Self {
+        Self::Promise(promise.clone())
+    }
+}
+
 impl From<Rc<Class>> for Value {
     fn from(cls: Rc<Class>) -> Self {
         Self::Class(cls)

@@ -100,6 +100,7 @@ pub struct ErrorData {
     trace: Vec<Mark>,
 }
 
+#[derive(Clone)]
 pub struct Error(Rc<ErrorData>);
 
 impl Error {

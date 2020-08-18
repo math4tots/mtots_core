@@ -5,6 +5,7 @@ mod list;
 mod map;
 mod nil;
 mod num;
+mod promise;
 mod set;
 mod strcls;
 
@@ -23,6 +24,7 @@ pub struct ClassManager {
     pub Iterator: Rc<Class>,
     pub Generator: Rc<Class>,
     pub NativeGenerator: Rc<Class>,
+    pub Promise: Rc<Class>,
     pub Class: Rc<Class>,
     pub Module: Rc<Class>,
 }
@@ -77,6 +79,7 @@ impl ClassManager {
             Class::join_class_maps(HashMap::new(), vec![&Iterator]),
             HashMap::new(),
         );
+        let Promise = promise::new();
         let Class = Class::new("Class".into(), HashMap::new(), HashMap::new());
         let Module = Class::new("Module".into(), HashMap::new(), HashMap::new());
         Self {
@@ -93,6 +96,7 @@ impl ClassManager {
             Iterator,
             Generator,
             NativeGenerator,
+            Promise,
             Class,
             Module,
         }
@@ -113,6 +117,7 @@ impl ClassManager {
             Value::NativeFunction(..) => &self.NativeFunction,
             Value::Generator(..) => &self.Generator,
             Value::NativeGenerator(..) => &self.NativeGenerator,
+            Value::Promise(..) => &self.Promise,
             Value::Class(..) => &self.Class,
             Value::Module(..) => &self.Module,
             Value::Handle(handle) => handle.cls(),
@@ -134,6 +139,7 @@ impl ClassManager {
             &self.Iterator,
             &self.Generator,
             &self.NativeGenerator,
+            &self.Promise,
             &self.Class,
             &self.Module,
         ]

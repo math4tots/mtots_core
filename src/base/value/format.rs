@@ -62,6 +62,7 @@ impl fmt::Debug for Value {
             Value::Generator(gen) => write!(f, "{:?}", gen.borrow()),
             Value::NativeGenerator(gen) => write!(f, "{:?}", gen.borrow()),
             Value::Module(module) => write!(f, "{:?}", module),
+            Value::Promise(promise) => write!(f, "{:?}", promise),
             Value::Class(cls) => write!(f, "{:?}", cls),
             Value::Handle(handle) if handle.cls().behavior().repr().is_some() => {
                 let handler = handle.cls().behavior().repr().as_ref().unwrap();
