@@ -131,6 +131,24 @@ impl Globals {
                     Ok(Value::Nil)
                 }
             }),
+            NativeFunction::new(
+                "ordie",
+                ["value"],
+                concat!(
+                    "If the value is a promise, ensure that ",
+                    "if the promise does not succeed, the program crashes loudly.\n",
+                    "For any other kind of value, this is a no-op",
+                ),
+                |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let arg = args.next().unwrap();
+                    match arg {
+                        Value::Promise(promise) => promise.borrow_mut().ordie(globals),
+                        _ => {}
+                    }
+                    Ok(Value::Nil)
+                },
+            ),
             NativeFunction::new("hasattr", ["owner", "name"], None, |globals, args, _| {
                 let mut args = args.into_iter();
                 let owner = args.next().unwrap();
