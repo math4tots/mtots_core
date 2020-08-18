@@ -423,6 +423,7 @@ impl<'a> ParserState<'a> {
     }
 
     fn params(&mut self) -> Result<ArgSpec> {
+        let mark = self.mark();
         self.expect(TokenKind::Punctuator(Punctuator::LParen))?;
         let mut req = Vec::new(); // required params
         let mut opt = Vec::new(); // optional params
@@ -479,7 +480,7 @@ impl<'a> ParserState<'a> {
                 break;
             }
         }
-        Ok(ArgSpec::new(req, opt, variadic, keywords))
+        Ok(ArgSpec::new(req, opt, variadic, keywords, Some(mark)))
     }
 
     /// The 4 different kinds of arguments have to come in a specific order:

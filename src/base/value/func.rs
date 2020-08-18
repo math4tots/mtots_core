@@ -6,6 +6,14 @@ pub struct ArgSpec {
     def: Vec<(RcStr, ConstVal)>, // default parameters
     var: Option<RcStr>,          // variadic parameter
     key: Option<RcStr>,          // keymap parameter
+
+    /// Location in source where this argspec is defined
+    /// Optional, since not all argspecs (e.g. for native functions)
+    /// have a corresponding location in source.
+    /// But when available, also incredibly useful (e.g. a callback is
+    /// called from a native code and if there is an argument error,
+    /// you won't get any indication in the stacktrace wrt the callsite)
+    mark: Option<Mark>,
 }
 
 impl ArgSpec {
@@ -14,19 +22,21 @@ impl ArgSpec {
         def: Vec<(RcStr, ConstVal)>,
         var: Option<RcStr>,
         key: Option<RcStr>,
+        mark: Option<Mark>,
     ) -> Self {
-        Self { req, def, var, key }
+        Self {
+            req,
+            def,
+            var,
+            key,
+            mark,
+        }
     }
     pub fn builder() -> ArgSpecBuilder {
         ArgSpecBuilder::default()
     }
     pub fn empty() -> Self {
-        Self {
-            req: vec![],
-            def: vec![],
-            var: None,
-            key: None,
-        }
+        ArgSpecBuilder::default().build()
     }
     pub(crate) fn add_self_parameter(&mut self) {
         self.req.insert(0, "self".into());
@@ -54,6 +64,21 @@ impl ArgSpec {
     }
 
     pub fn apply(
+        &self,
+        flatten_varargs: bool,
+        args: Vec<Value>,
+        kwargs: Option<HashMap<RcStr, Value>>,
+    ) -> Result<(Vec<Value>, Option<HashMap<RcStr, Value>>)> {
+        match self.apply_helper(flatten_varargs, args, kwargs) {
+            Err(error) if self.mark.is_some() => {
+                let error = error.prepended(vec![self.mark.clone().unwrap()]);
+                Err(error)
+            }
+            r => r,
+        }
+    }
+
+    fn apply_helper(
         &self,
         flatten_varargs: bool,
         mut args: Vec<Value>,
@@ -218,6 +243,7 @@ impl From<&[&str]> for ArgSpec {
             def: vec![],
             var: None,
             key: None,
+            mark: None,
         }
     }
 }
@@ -253,6 +279,7 @@ pub struct ArgSpecBuilder {
     def: Vec<(RcStr, ConstVal)>,
     var: Option<RcStr>,
     key: Option<RcStr>,
+    mark: Option<Mark>,
 }
 
 impl ArgSpecBuilder {
@@ -262,6 +289,7 @@ impl ArgSpecBuilder {
             def: self.def,
             var: self.var,
             key: self.key,
+            mark: self.mark,
         }
     }
     pub fn req<S: Into<RcStr>>(mut self, name: S) -> Self {
@@ -278,6 +306,10 @@ impl ArgSpecBuilder {
     }
     pub fn key<S: Into<RcStr>>(mut self, keyname: S) -> Self {
         self.key = Some(keyname.into());
+        self
+    }
+    pub fn mark(mut self, mark: Mark) -> Self {
+        self.mark = Some(mark);
         self
     }
 }

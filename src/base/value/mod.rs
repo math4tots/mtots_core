@@ -21,6 +21,7 @@ use crate::FunctionKind;
 use crate::Globals;
 use crate::IndexMap;
 use crate::IndexSet;
+use crate::Mark;
 use crate::RcStr;
 use crate::Result;
 use std::any::Any;
