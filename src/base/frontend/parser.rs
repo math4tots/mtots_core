@@ -759,6 +759,12 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             let expr = state.expr(0)?;
             Ok(Expr::new(mark, ExprDesc::Yield(expr.into())))
         }),
+        (&["await"], |state: &mut ParserState| {
+            let mark = state.mark();
+            state.gettok();
+            let expr = state.expr(0)?;
+            Ok(Expr::new(mark, ExprDesc::Await(expr.into())))
+        }),
         (&["return"], |state: &mut ParserState| {
             let mark = state.mark();
             state.gettok();
