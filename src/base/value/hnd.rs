@@ -57,6 +57,7 @@ impl fmt::Debug for HandleData {
     }
 }
 
+#[derive(Clone)]
 pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
 
 impl<T: Any> Handle<T> {
