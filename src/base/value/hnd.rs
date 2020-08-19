@@ -57,7 +57,6 @@ impl fmt::Debug for HandleData {
     }
 }
 
-#[derive(Clone)]
 pub struct WeakHandle<T: Any>(Weak<HandleData>, PhantomData<T>);
 
 impl<T: Any> WeakHandle<T> {
@@ -66,7 +65,12 @@ impl<T: Any> WeakHandle<T> {
     }
 }
 
-#[derive(Clone)]
+impl<T: Any> Clone for WeakHandle<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), PhantomData)
+    }
+}
+
 pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
 
 impl<T: Any> Handle<T> {
@@ -107,6 +111,12 @@ impl<T: Any> Handle<T> {
     }
     pub fn downgrade(&self) -> WeakHandle<T> {
         WeakHandle(Rc::downgrade(&self.0), self.1)
+    }
+}
+
+impl<T: Any> Clone for Handle<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), PhantomData)
     }
 }
 
