@@ -37,6 +37,7 @@ use std::fmt;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
+use std::rc::Weak;
 
 pub use cls::*;
 pub use coll::*;

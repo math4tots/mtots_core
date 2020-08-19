@@ -58,6 +58,15 @@ impl fmt::Debug for HandleData {
 }
 
 #[derive(Clone)]
+pub struct WeakHandle<T: Any>(Weak<HandleData>, PhantomData<T>);
+
+impl<T: Any> WeakHandle<T> {
+    pub fn upgrade(&self) -> Option<Handle<T>> {
+        self.0.upgrade().map(|rc| Handle(rc, PhantomData))
+    }
+}
+
+#[derive(Clone)]
 pub struct Handle<T: Any>(Rc<HandleData>, PhantomData<T>);
 
 impl<T: Any> Handle<T> {
@@ -95,6 +104,9 @@ impl<T: Any> Handle<T> {
                 handle.0.typename()
             )),
         }
+    }
+    pub fn downgrade(&self) -> WeakHandle<T> {
+        WeakHandle(Rc::downgrade(&self.0), self.1)
     }
 }
 
