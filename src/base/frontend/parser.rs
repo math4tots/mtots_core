@@ -779,12 +779,6 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             let expr = state.expr(0)?;
             Ok(Expr::new(mark, ExprDesc::Yield(expr.into())))
         }),
-        (&["await"], |state: &mut ParserState| {
-            let mark = state.mark();
-            state.gettok();
-            let expr = state.expr(0)?;
-            Ok(Expr::new(mark, ExprDesc::Await(expr.into())))
-        }),
         (&["return"], |state: &mut ParserState| {
             let mark = state.mark();
             state.gettok();
@@ -1147,8 +1141,12 @@ fn geninfix() -> (
             (&["."], |state, lhs, _prec| {
                 let mark = state.mark();
                 state.gettok();
-                let name = state.expect_name()?;
-                Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
+                if state.consume(TokenKind::Punctuator(Punctuator::Await)) {
+                    Ok(Expr::new(mark, ExprDesc::Await(lhs.into())))
+                } else {
+                    let name = state.expect_name()?;
+                    Ok(Expr::new(mark, ExprDesc::Attr(lhs.into(), name.into())))
+                }
             }),
             // (&["::"], |state, lhs, _prec| {
             //     // TODO: Consider making behavior for this different
