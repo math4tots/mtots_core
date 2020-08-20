@@ -151,4 +151,8 @@ impl Frame {
     pub(super) fn jump(&mut self, pc: usize) {
         self.pc = pc;
     }
+    #[inline(always)]
+    pub(crate) fn pc(&self) -> usize {
+        self.pc
+    }
 }

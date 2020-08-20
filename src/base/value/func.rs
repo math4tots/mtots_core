@@ -502,16 +502,35 @@ fn continue_async(
     globals: &mut Globals,
     resolve: Box<dyn FnOnce(&mut Globals, Result<Value>)>,
 ) {
+    let mark = code.marks()[frame.pc() - 1].clone();
     promise
         .borrow_mut()
         .register(globals, move |globals, result| match result {
-            Ok(arg) => match code.resume_async(globals, &mut frame, arg) {
-                AsyncResult::Return(value) => resolve(globals, Ok(value)),
-                AsyncResult::Await(promise) => {
-                    continue_async(code, frame, promise, globals, resolve);
+            Ok(arg) => {
+                globals.trace_push(mark.clone());
+                match code.resume_async(globals, &mut frame, arg) {
+                    AsyncResult::Return(value) => {
+                        globals.trace_pop();
+                        resolve(globals, Ok(value))
+                    }
+                    AsyncResult::Await(promise) => {
+                        globals.trace_pop();
+                        continue_async(code, frame, promise, globals, resolve);
+                    }
+                    AsyncResult::Err(error) => resolve(globals, Err(error)),
                 }
-                AsyncResult::Err(error) => resolve(globals, Err(error)),
-            },
-            Err(error) => resolve(globals, Err(error)),
+            }
+            Err(error) => {
+                // Unfortunately, this will mix up the order of the
+                // stacktraces (i.e. all the non-awaits will appear before the
+                // awaits regardless of whether they actually occurred after
+                // or before an await)
+                //
+                // At least this way though, we will at least have all the
+                // stack traces, and within each group (i.e. all the
+                // non-await traces, and all the await traces) should be
+                // in roughly the correct order
+                resolve(globals, Err(error.prepended(vec![mark])))
+            }
         });
 }
