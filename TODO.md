@@ -8,3 +8,7 @@ Longer term
     Furthermore, this could mean I can have parse-time constant enums
     and switch statements that can restrict each case to constant expressions
     Not the most pressing issue at the moment however
+
+
+* Fix stack traces with async/await
+    Right now, they're kinda there, but largely out of order and broken
