@@ -707,11 +707,12 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             state.expect(TokenKind::Punctuator(Punctuator::LBrace))?;
             let mut pairs = Vec::new();
             let mut other = None;
-            state.skip_delim();
+            state.skip_delim_and_comment_strings();
             while !state.consume(TokenKind::Punctuator(Punctuator::RBrace)) {
                 if state.consume(TokenKind::Punctuator(Punctuator::Arrow)) {
                     other = Some(state.expr(0)?.into());
                     state.expect_delim()?;
+                    state.skip_delim_and_comment_strings();
                     state.expect(TokenKind::Punctuator(Punctuator::RBrace))?;
                     break;
                 } else {
@@ -720,6 +721,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                     let body = state.expr(0)?;
                     pairs.push((match_, body));
                     state.expect_delim()?;
+                    state.skip_delim_and_comment_strings();
                 }
             }
             Ok(Expr::new(

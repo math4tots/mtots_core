@@ -64,3 +64,13 @@ def __test_switch_str() {
         1,
     )
 }
+
+def __test_comments() {
+    s = switch 0 {
+        # Foo
+        # Some comments
+        0 => 'zero'
+        => 'other'
+    }
+    assert_eq(s, 'zero')
+}
