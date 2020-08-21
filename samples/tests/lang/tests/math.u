@@ -5,3 +5,12 @@ def __test_trig() {
     assert_eq(math.sin(2) ** 2 + math.cos(2) ** 2, 1)
     assert_eq(math.cos(math.pi), -1)
 }
+
+def __test_absrem() {
+    # Corresponds to Rust's 'rem_euclid'
+    assert_eq(-1 %% 5, 4)
+    assert_eq(-1 %% -5, 4)
+    assert_eq(9 %% 5, 4)
+    assert_eq(-6 %% 5, 4)
+    assert_eq(-9 %% 5, 1)
+}

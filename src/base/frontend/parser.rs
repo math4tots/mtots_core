@@ -1019,6 +1019,7 @@ fn geninfix() -> (
                         Token::Punctuator(Punctuator::SlashEq) => Binop::Div,
                         Token::Punctuator(Punctuator::DoubleSlashEq) => Binop::TruncDiv,
                         Token::Punctuator(Punctuator::RemEq) => Binop::Rem,
+                        Token::Punctuator(Punctuator::Rem2Eq) => Binop::AbsRem,
                         Token::Punctuator(Punctuator::Star2Eq) => Binop::Pow,
                         tok => panic!("Unhandled augassign binop {:?}", tok),
                     };
@@ -1078,6 +1079,9 @@ fn geninfix() -> (
         &[
             (&["%"], |state, lhs, prec| {
                 mkbinop(state, lhs, prec, Binop::Rem)
+            }),
+            (&["%%"], |state, lhs, prec| {
+                mkbinop(state, lhs, prec, Binop::AbsRem)
             }),
             (&["*"], |state, lhs, prec| {
                 mkbinop(state, lhs, prec, Binop::Mul)

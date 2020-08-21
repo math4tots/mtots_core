@@ -334,6 +334,7 @@ pub enum Binop {
     Div,
     TruncDiv,
     Rem,
+    AbsRem,
     Pow,
     Lt,
     Le,

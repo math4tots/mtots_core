@@ -297,6 +297,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                     Value::Number(a) => Value::Number(a % get0!(rhs.number())),
                     _ => get1!(lhs.apply_method(globals, "__rem", vec![rhs], None)),
                 },
+                Binop::AbsRem => match lhs {
+                    Value::Number(a) => Value::Number(a.rem_euclid(get0!(rhs.number()))),
+                    _ => get1!(lhs.apply_method(globals, "__absrem", vec![rhs], None)),
+                },
                 Binop::Pow => match lhs {
                     Value::Number(a) => Value::Number(a.powf(get0!(rhs.number()))),
                     _ => get1!(lhs.apply_method(globals, "__pow", vec![rhs], None)),
