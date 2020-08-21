@@ -330,6 +330,7 @@ impl Value {
     }
     pub fn convert_to_float(self) -> Result<f64> {
         match self {
+            Self::Bool(b) => Ok(if b { 1.0 } else { 0.0 }),
             Self::Number(x) => Ok(x),
             Self::String(r) => Ok(r.parse::<f64>()?),
             x => Err(rterr!("Could not convert {:?} into float", x)),
