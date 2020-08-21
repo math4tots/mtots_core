@@ -322,6 +322,7 @@ impl Value {
     }
     pub fn convert_to_int(self) -> Result<i64> {
         match self {
+            Self::Bool(b) => Ok(if b { 1 } else { 0 }),
             Self::Number(x) => Ok(x as i64),
             Self::String(r) => Ok(r.parse::<i64>()?),
             x => Err(rterr!("Could not convert {:?} into int", x)),
