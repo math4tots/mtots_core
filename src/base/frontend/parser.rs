@@ -1009,7 +1009,7 @@ fn geninfix() -> (
                 ))
             }),
             (
-                &["+=", "-=", "*=", "/=", "//=", "%=", "**="],
+                &["+=", "-=", "*=", "/=", "//=", "%=", "%%=", "**="],
                 |state, lhs, prec| {
                     let mark = state.mark();
                     let op = match state.gettok() {

@@ -14,3 +14,9 @@ def __test_absrem() {
     assert_eq(-6 %% 5, 4)
     assert_eq(-9 %% 5, 1)
 }
+
+def __test_inplace_absrem() {
+    x = -1
+    x %%= 5
+    assert_eq(x, 4)
+}
