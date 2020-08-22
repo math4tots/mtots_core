@@ -1,0 +1,9 @@
+def __test_for_var() {
+
+    ns = []
+    for i in range(6) {
+        ns.push(i)
+        i += 3
+    }
+    assert_eq(ns, [0, 1, 2, 3, 4, 5])
+}
