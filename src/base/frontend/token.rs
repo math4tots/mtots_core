@@ -257,6 +257,7 @@ define_punctuators! {
     Eq2 "==",
     Ne "!=",
     Exclamation "!",
+    VerticalBar "|",
     LParen "(",
     RParen ")",
     LBracket "[",

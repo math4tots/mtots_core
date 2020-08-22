@@ -45,7 +45,7 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         let owner = args.next().unwrap();
                         let x = args.next().unwrap();
                         Ok(contains(globals, owner, x)?.into())
-                    }
+                    },
                 ),
                 NativeFunction::new(
                     "__contains",
@@ -56,7 +56,7 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         let owner = args.next().unwrap();
                         let x = args.next().unwrap();
                         Ok(contains(globals, owner, x)?.into())
-                    }
+                    },
                 ),
                 NativeFunction::new(
                     "all",
@@ -77,12 +77,12 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                                     if !cond {
                                         return Ok(false.into());
                                     }
-                                },
+                                }
                                 ResumeResult::Err(error) => return Err(error),
                                 ResumeResult::Return(_) => return Ok(true.into()),
                             }
                         }
-                    }
+                    },
                 ),
                 NativeFunction::new(
                     "any",
@@ -103,12 +103,12 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                                     if cond {
                                         return Ok(true.into());
                                     }
-                                },
+                                }
                                 ResumeResult::Err(error) => return Err(error),
                                 ResumeResult::Return(_) => return Ok(false.into()),
                             }
                         }
-                    }
+                    },
                 ),
                 NativeFunction::new(
                     "enumerate",
@@ -234,7 +234,11 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
 fn contains(globals: &mut Globals, owner: Value, item: Value) -> Result<bool> {
     loop {
         match owner.resume(globals, Value::Nil) {
-            ResumeResult::Yield(value) => if item == value { return Ok(true) },
+            ResumeResult::Yield(value) => {
+                if item == value {
+                    return Ok(true);
+                }
+            }
             ResumeResult::Err(error) => return Err(error),
             ResumeResult::Return(_) => return Ok(false),
         }

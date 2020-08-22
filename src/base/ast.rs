@@ -232,7 +232,7 @@ pub enum ExprDesc {
     Parentheses(Box<Expr>),
     Block(Vec<Expr>),
 
-    Switch(Box<Expr>, Vec<(Expr, Expr)>, Option<Box<Expr>>),
+    Switch(Box<Expr>, Vec<(Vec<Expr>, Expr)>, Option<Box<Expr>>),
     If(Vec<(Expr, Expr)>, Option<Box<Expr>>),
     For(AssignTarget, Box<Expr>, Box<Expr>),
     While(Box<Expr>, Box<Expr>),

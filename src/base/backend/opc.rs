@@ -43,6 +43,7 @@ pub(crate) enum Opcode {
     Return,
     Jump(usize),
     JumpIfFalse(usize),
+    JumpIfTrue(usize),
     TeeJumpIfFalse(usize),
     TeeJumpIfTrue(usize),
     CallFunction(Box<CallFunctionDesc>),
@@ -57,6 +58,7 @@ impl Opcode {
         match self {
             Self::Jump(d) => *d = dest,
             Self::JumpIfFalse(d) => *d = dest,
+            Self::JumpIfTrue(d) => *d = dest,
             Self::TeeJumpIfFalse(d) => *d = dest,
             Self::TeeJumpIfTrue(d) => *d = dest,
             _ => panic!("patch_jump on non-jump: {:?}", self),
@@ -410,6 +412,11 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
         }
         Opcode::JumpIfFalse(dest) => {
             if !frame.pop().truthy() {
+                frame.jump(*dest);
+            }
+        }
+        Opcode::JumpIfTrue(dest) => {
+            if frame.pop().truthy() {
                 frame.jump(*dest);
             }
         }

@@ -162,14 +162,22 @@ impl Builder {
                 self.expr(valexpr, true)?;
                 let mut end_jumps = Vec::new();
                 let mut last = None;
-                for (cond, body) in pairs {
+                for (cases, body) in pairs {
                     if let Some(last) = last {
                         self.patch_jump(last);
                     }
-                    self.add(Opcode::Dup, mark.clone());
-                    self.expr(cond, true)?;
-                    self.add(Opcode::Binop(Binop::Eq), mark.clone());
-                    last = Some(self.add(Opcode::JumpIfFalse(INVALID_JUMP), mark.clone()));
+                    let mut jumps_to_body = Vec::new();
+                    for case in cases {
+                        self.add(Opcode::Dup, mark.clone());
+                        self.expr(case, true)?;
+                        self.add(Opcode::Binop(Binop::Eq), mark.clone());
+                        jumps_to_body
+                            .push(self.add(Opcode::JumpIfTrue(INVALID_JUMP), mark.clone()));
+                    }
+                    last = Some(self.add(Opcode::Jump(INVALID_JUMP), mark.clone()));
+                    for i in jumps_to_body {
+                        self.patch_jump(i);
+                    }
                     self.expr(body, used)?;
                     end_jumps.push(self.add(Opcode::Jump(INVALID_JUMP), mark.clone()));
                 }

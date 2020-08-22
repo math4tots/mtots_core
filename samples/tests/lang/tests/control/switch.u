@@ -74,3 +74,51 @@ def __test_comments() {
     }
     assert_eq(s, 'zero')
 }
+
+def __test_multi_option_switches() {
+    s = switch 10 {
+        1 | 2 => 'one or two'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'nine or ten')
+    s = switch 9 {
+        1 | 2 => 'one or two'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'nine or ten')
+    s = switch 1 {
+        1 | 2 => 'one or two'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'one or two')
+    s = switch 2 {
+        1 | 2 => 'one or two'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'one or two')
+    s = switch 3 {
+        1 | 2 => 'one or two'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'other')
+
+    s = switch 3 {
+        1 | 2 | 3 => 'one, two or three'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'one, two or three')
+
+    s = switch 0 {
+        1 | 2 | 3 => 'one, two or three'
+        0 => 'zero'
+        9 | 10 => 'nine or ten'
+        => 'other'
+    }
+    assert_eq(s, 'zero')
+}
