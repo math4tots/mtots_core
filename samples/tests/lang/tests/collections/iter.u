@@ -69,3 +69,24 @@ def __test_contains() {
     assert(4 in [1, 2, 3, 4].iter())
     assert(16 not in [1, 2, 3, 4].iter())
 }
+
+def __test_any() {
+    assert_eq([0, false, nil].iter().any(), false)
+    assert_eq([0, false, nil].iter().any(def(x) = x == false), true)
+    assert_eq([1, 2, 3].iter().any(), true)
+    assert_eq([0, false, 1, 2, 3].iter().any(), true)
+    assert_eq([1, 2, 3].iter().any(def(x) = x > 3), false)
+    assert_eq([1, 2, 3].iter().any(def(x) = x > 2), true)
+}
+
+def __test_all() {
+    assert_eq([1, 2, 3].iter().all(), true)
+    assert_eq([0, 1, 2, 3].iter().all(), false)
+    assert_eq([0, false, nil].iter().all(), false)
+    assert_eq([0, false, nil].iter().all(def(x) = !x), true)
+    assert_eq([1, 2, 3].iter().all(def(x) = x > 3), false)
+    assert_eq([1, 2, 3].iter().all(def(x) = x > 2), false)
+    assert_eq([1, 2, 3].iter().all(def(x) = x < 4), true)
+    assert_eq(range(10).all(def(x) = x < 10), true)
+    assert_eq(range(10).all(def(x) = x < 4), false)
+}

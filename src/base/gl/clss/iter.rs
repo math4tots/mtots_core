@@ -59,6 +59,58 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                 ),
                 NativeFunction::new(
+                    "all",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    "",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let f = args.next().unwrap();
+                        loop {
+                            match owner.resume(globals, Value::Nil) {
+                                ResumeResult::Yield(value) => {
+                                    let cond = if f.is_nil() {
+                                        value.truthy()
+                                    } else {
+                                        f.apply(globals, vec![value], None)?.truthy()
+                                    };
+                                    if !cond {
+                                        return Ok(false.into());
+                                    }
+                                },
+                                ResumeResult::Err(error) => return Err(error),
+                                ResumeResult::Return(_) => return Ok(true.into()),
+                            }
+                        }
+                    }
+                ),
+                NativeFunction::new(
+                    "any",
+                    ArgSpec::builder().req("self").def("f", ()),
+                    "",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let f = args.next().unwrap();
+                        loop {
+                            match owner.resume(globals, Value::Nil) {
+                                ResumeResult::Yield(value) => {
+                                    let cond = if f.is_nil() {
+                                        value.truthy()
+                                    } else {
+                                        f.apply(globals, vec![value], None)?.truthy()
+                                    };
+                                    if cond {
+                                        return Ok(true.into());
+                                    }
+                                },
+                                ResumeResult::Err(error) => return Err(error),
+                                ResumeResult::Return(_) => return Ok(false.into()),
+                            }
+                        }
+                    }
+                ),
+                NativeFunction::new(
                     "enumerate",
                     ArgSpec::builder().req("self").def("start", 0),
                     "",
