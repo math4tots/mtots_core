@@ -162,3 +162,8 @@ def __test_reverse() {
     assert_eq(reversed([1, 2, 3]), [3, 2, 1])
 }
 
+def __test_contains() {
+    assert(1 in [1, 2, 3])
+    assert(4 not in [1, 2, 3])
+}
+

@@ -313,6 +313,8 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
                 Binop::Ne => Value::from(lhs != rhs),
                 Binop::Is => Value::from(lhs.is(&rhs)),
                 Binop::IsNot => Value::from(!lhs.is(&rhs)),
+                Binop::In => Value::from(get1!(lhs.in_(globals, &rhs))),
+                Binop::NotIn => Value::from(!get1!(lhs.in_(globals, &rhs))),
             };
             frame.push(result);
         }

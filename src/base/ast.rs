@@ -344,6 +344,8 @@ pub enum Binop {
     Ne,
     Is,
     IsNot,
+    In,
+    NotIn,
 }
 
 #[derive(Debug, Clone, Copy)]

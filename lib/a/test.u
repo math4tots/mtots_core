@@ -42,7 +42,7 @@ def* _get_module_names(root, package_name) {
             fs.join(root, package_name.replace('.', fs.sep)),
             sort=true,
     ) {
-        if filenames.has('__init.u') {
+        if '__init.u' in filenames {
             yield str(fs.relpath(root, dirpath)).replace(fs.sep, '.')
         }
         for filename in sorted(filenames) {

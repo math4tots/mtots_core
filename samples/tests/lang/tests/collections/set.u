@@ -51,3 +51,10 @@ def __test_from_iter() {
     set = ['a', 'b', 'c', 1, 2, 3].iter().set()
     assert_eq(set, Set(['a', 'b', 'c', 1, 2, 3]))
 }
+
+def __test_contains() {
+    set = ['a', 'b', 'c', 1, 2, 3].iter().set()
+    assert('a' in set)
+    assert(3 in set)
+    assert('d' not in set)
+}

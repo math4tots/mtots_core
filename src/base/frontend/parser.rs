@@ -732,7 +732,8 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
         (&["for"], |state: &mut ParserState| {
             let mark = state.mark();
             state.gettok();
-            let target = to_target(state.expr(0)?)?;
+            let target =
+                to_target(state.expr(1 + state.prec(TokenKind::Punctuator(Punctuator::In)))?)?;
             state.expect(TokenKind::Punctuator(Punctuator::In))?;
             let iterable = state.expr(0)?.into();
             let body = state.block()?.into();
@@ -1055,6 +1056,17 @@ fn geninfix() -> (
             }),
             (&["!="], |state, lhs, prec| {
                 mkbinop(state, lhs, prec, Binop::Ne)
+            }),
+            (&["not", "in"], |state, lhs, prec| {
+                let mark = state.mark();
+                let op = if state.consume(TokenKind::Punctuator(Punctuator::Not)) {
+                    Binop::NotIn
+                } else {
+                    Binop::In
+                };
+                state.expect(TokenKind::Punctuator(Punctuator::In))?;
+                let rhs = state.expr(prec)?;
+                Ok(Expr::new(mark, ExprDesc::Binop(op, lhs.into(), rhs.into())))
             }),
             (&["is"], |state, lhs, prec| {
                 let mark = state.mark();

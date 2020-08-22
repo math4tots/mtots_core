@@ -155,6 +155,17 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     }
                     Ok(ret.into())
                 }),
+                NativeFunction::new("__contains", ["self", "x"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_list()?;
+                    let x = args.next().unwrap();
+                    for value in owner.borrow().iter() {
+                        if &x == value {
+                            return Ok(true.into());
+                        }
+                    }
+                    Ok(false.into())
+                }),
                 NativeFunction::new("has", ["self", "x"], None, |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;

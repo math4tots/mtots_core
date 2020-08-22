@@ -62,3 +62,10 @@ def __test_filter() {
         [4, 5],
     )
 }
+
+def __test_contains() {
+    assert([1, 2, 3, 4].iter().has(2))
+    assert(![1, 2, 3, 4].iter().has(20))
+    assert(4 in [1, 2, 3, 4].iter())
+    assert(16 not in [1, 2, 3, 4].iter())
+}

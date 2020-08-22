@@ -141,6 +141,11 @@ impl Value {
             _ => false,
         }
     }
+    pub fn in_(&self, globals: &mut Globals, other: &Self) -> Result<bool> {
+        Ok(other
+            .apply_method(globals, "__contains", vec![self.clone()], None)?
+            .truthy())
+    }
     pub fn lt(&self, other: &Self) -> Result<bool> {
         match self.partial_cmp(other) {
             Some(ord) => Ok(matches!(ord, cmp::Ordering::Less)),

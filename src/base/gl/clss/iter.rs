@@ -37,6 +37,28 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     },
                 ),
                 NativeFunction::new(
+                    "has",
+                    ["self", "x"],
+                    "Checks whether x is an element in this iterator\nConsumes the iterator",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let x = args.next().unwrap();
+                        Ok(contains(globals, owner, x)?.into())
+                    }
+                ),
+                NativeFunction::new(
+                    "__contains",
+                    ["self", "x"],
+                    "Checks whether x is an element in this iterator\nConsumes the iterator",
+                    |globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap();
+                        let x = args.next().unwrap();
+                        Ok(contains(globals, owner, x)?.into())
+                    }
+                ),
+                NativeFunction::new(
                     "enumerate",
                     ArgSpec::builder().req("self").def("start", 0),
                     "",
@@ -155,4 +177,14 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
         ),
         HashMap::new(),
     )
+}
+
+fn contains(globals: &mut Globals, owner: Value, item: Value) -> Result<bool> {
+    loop {
+        match owner.resume(globals, Value::Nil) {
+            ResumeResult::Yield(value) => if item == value { return Ok(true) },
+            ResumeResult::Err(error) => return Err(error),
+            ResumeResult::Return(_) => return Ok(false),
+        }
+    }
 }

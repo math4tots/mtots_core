@@ -26,6 +26,13 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                     let key = Key::try_from(args.next().unwrap())?;
                     Ok(owner.contains(&key).into())
                 }),
+                NativeFunction::new("__contains", ["self", "x"], None, |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap().into_set()?;
+                    let owner = owner.borrow();
+                    let key = Key::try_from(args.next().unwrap())?;
+                    Ok(owner.contains(&key).into())
+                }),
                 NativeFunction::new("__add", ["self", "other"], None, |_globals, args, _| {
                     let mut args = args.into_iter();
                     let mut owner = Set::unwrap_or_clone(args.next().unwrap().into_set()?);
