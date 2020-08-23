@@ -122,3 +122,13 @@ def __test_multi_option_switches() {
     }
     assert_eq(s, 'zero')
 }
+
+def __test_multiline_matches() {
+    x = switch 10 {
+        0 |
+        1 => 'zero or one'
+        9 |
+        10 => 'nine or ten'
+    }
+    assert_eq(x ,'nine or ten')
+}

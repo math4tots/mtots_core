@@ -718,6 +718,7 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
                 } else {
                     let mut match_ = vec![state.expr(0)?];
                     while state.consume(TokenKind::Punctuator(Punctuator::VerticalBar)) {
+                        state.skip_delim();
                         match_.push(state.expr(0)?);
                     }
                     state.expect(TokenKind::Punctuator(Punctuator::Arrow))?;
