@@ -6,7 +6,7 @@ def __test_trig() {
     assert_eq(math.cos(math.pi), -1)
 }
 
-def __test_absrem() {
+def __test_erem() {
     # Corresponds to Rust's 'rem_euclid'
     assert_eq(-1 %% 5, 4)
     assert_eq(-1 %% -5, 4)
@@ -15,7 +15,7 @@ def __test_absrem() {
     assert_eq(-9 %% 5, 1)
 }
 
-def __test_inplace_absrem() {
+def __test_inplace_erem() {
     x = -1
     x %%= 5
     assert_eq(x, 4)

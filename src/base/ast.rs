@@ -335,7 +335,7 @@ pub enum Binop {
     Div,
     TruncDiv,
     Rem,
-    AbsRem,
+    ERem, // Euclidean remainder
     Pow,
     Lt,
     Le,
