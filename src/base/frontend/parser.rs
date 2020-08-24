@@ -982,15 +982,8 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             state.gettok();
             let name = state.expect_name()?;
             match name {
-                "GetCallingModule" => {
-                    Ok(Expr::new(
-                        mark,
-                        ExprDesc::GetCallingModule,
-                    ))
-                }
-                _ => {
-                    Err(rterr!("Unrecognized intrinsic: {}", name))
-                }
+                "GetCallingModule" => Ok(Expr::new(mark, ExprDesc::GetCallingModule)),
+                _ => Err(rterr!("Unrecognized intrinsic: {}", name)),
             }
         }),
     ];

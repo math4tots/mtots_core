@@ -1,0 +1,9 @@
+
+class Foo {
+    static x = 100
+}
+
+def __test_getattr_opt() {
+    assert_eq(getattr(Foo, 'x', 'default'), 100)
+    assert_eq(getattr(Foo, 'y', 'default'), 'default')
+}

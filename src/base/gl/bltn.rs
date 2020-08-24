@@ -155,12 +155,28 @@ impl Globals {
                 let name = args.next().unwrap().into_string()?;
                 Ok(owner.getattr_opt(globals, &name)?.is_some().into())
             }),
-            NativeFunction::new("getattr", ["owner", "name"], None, |globals, args, _| {
-                let mut args = args.into_iter();
-                let owner = args.next().unwrap();
-                let name = args.next().unwrap().into_string()?;
-                owner.getattr(globals, &name)
-            }),
+            NativeFunction::new(
+                "getattr",
+                ArgSpec::builder()
+                    .req("owner")
+                    .req("name")
+                    .def("default", ConstVal::Invalid),
+                None,
+                |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let owner = args.next().unwrap();
+                    let name = args.next().unwrap().into_string()?;
+                    let default = args.next().unwrap();
+                    if let Value::Invalid = default {
+                        owner.getattr(globals, &name)
+                    } else {
+                        match owner.getattr_opt(globals, &name)? {
+                            Some(value) => Ok(value),
+                            None => Ok(default),
+                        }
+                    }
+                },
+            ),
             NativeFunction::new(
                 "getattrs",
                 ["owner"],
