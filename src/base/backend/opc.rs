@@ -52,6 +52,7 @@ pub(crate) enum Opcode {
     NewFunction(Box<NewFunctionDesc>),
     NewClass(Box<NewClassDesc>),
 
+    GetCallingModule,
     Breakpoint,
 }
 
@@ -516,6 +517,10 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let cls = Class::new(desc.name.clone(), map, static_map);
 
             frame.push(cls.into());
+        }
+        Opcode::GetCallingModule => {
+            let name = globals.get_calling_module_name();
+            frame.push(name.map(Value::from).unwrap_or(Value::Nil));
         }
         Opcode::Breakpoint => {
             panic!("TODO: implement breakpoints");

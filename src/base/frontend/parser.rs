@@ -977,6 +977,22 @@ fn genprefix() -> Vec<Option<fn(&mut ParserState) -> Result<Expr>>> {
             let prec = state.prec(TokenKind::Punctuator(Punctuator::Star2)) - PREC_STEP / 2;
             mkunop(state, prec, op)
         }),
+        (&["$"], |state| {
+            let mark = state.mark();
+            state.gettok();
+            let name = state.expect_name()?;
+            match name {
+                "GetCallingModule" => {
+                    Ok(Expr::new(
+                        mark,
+                        ExprDesc::GetCallingModule,
+                    ))
+                }
+                _ => {
+                    Err(rterr!("Unrecognized intrinsic: {}", name))
+                }
+            }
+        }),
     ];
 
     let mut ret = vec![None; TokenKind::LEN];

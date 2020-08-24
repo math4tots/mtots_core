@@ -185,6 +185,7 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
         }
         ExprDesc::Import(_) => {}
         ExprDesc::BreakPoint => {}
+        ExprDesc::GetCallingModule => {}
         ExprDesc::AssignDoc(expr, _name, _doc) => {
             get(expr, out)?;
         }

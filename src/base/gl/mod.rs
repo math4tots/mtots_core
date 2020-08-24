@@ -141,6 +141,13 @@ impl Globals {
     pub(crate) fn trace_pop(&mut self) {
         self.trace.pop().unwrap();
     }
+    pub(crate) fn get_calling_module_name(&mut self) -> Option<RcStr> {
+        if let Some(mark) = self.trace.last() {
+            Some(mark.source().name().clone())
+        } else {
+            None
+        }
+    }
     pub fn register_module(&mut self, module: Rc<Module>) -> Result<()> {
         let name = module.name().clone();
         if self.module_map.contains_key(&name) {

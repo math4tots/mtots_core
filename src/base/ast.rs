@@ -258,6 +258,7 @@ pub enum ExprDesc {
 
     Import(RcStr),
     BreakPoint,
+    GetCallingModule,
 
     /// AssignDoc at runtime is more or less a nop.
     /// However, it attaches docstrings to field assignments

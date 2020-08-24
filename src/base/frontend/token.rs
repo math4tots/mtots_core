@@ -233,6 +233,7 @@ define_punctuators! {
     Colon ":",
     Semicolon ";",
     Comma ",",
+    Dollar "$",
     Plus "+",
     Minus "-",
     Rem "%",

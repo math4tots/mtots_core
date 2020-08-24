@@ -632,11 +632,11 @@ mod tests {
     fn error_unrecognized() {
         let lexer = Lexer::new();
         assert_eq!(
-            lex(&lexer, "asdf $%^"),
+            lex(&lexer, "asdf &%^"),
             Err(LexError {
                 offset: 5,
                 lineno: 1,
-                kind: LexErrorKind::UnrecognizedToken("$%^".into()),
+                kind: LexErrorKind::UnrecognizedToken("&%^".into()),
             }),
         );
     }

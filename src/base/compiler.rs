@@ -480,6 +480,11 @@ impl Builder {
                     self.add(Opcode::Nil, mark);
                 }
             }
+            ExprDesc::GetCallingModule => {
+                if used {
+                    self.add(Opcode::GetCallingModule, mark);
+                }
+            }
             ExprDesc::AssignDoc(expr, name, doc) => {
                 self.docmap.insert(name.clone(), doc.clone());
                 self.expr(expr, used)?;

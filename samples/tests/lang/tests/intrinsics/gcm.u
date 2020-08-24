@@ -1,0 +1,9 @@
+import ..sample
+
+def __test_get_calling_module() {
+    # $GetCallingModule should get the name of the module that the function that's
+    # calling the given function is defined in.
+    assert_eq(sample.foo(), 'lang.tests.intrinsics.gcm')
+    assert_eq(sample.foo2(), 'lang.tests.intrinsics.sample')
+}
+
