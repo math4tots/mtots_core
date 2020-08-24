@@ -167,3 +167,9 @@ def __test_contains() {
     assert(4 not in [1, 2, 3])
 }
 
+def __test_index() {
+    assert_eq(['a', 'b', 'c'].index('c', 'foo'), 2)
+    assert_eq(['a', 'b', 'c'].index('d', 'foo'), 'foo')
+    assert_eq(['a', 'b', 'c'].index('c'), 2)
+    assert_throws(def = ['a', 'b', 'c'].index('d'))
+}

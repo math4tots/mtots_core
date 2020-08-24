@@ -28,6 +28,31 @@ pub(super) fn new(iterable: &Rc<Class>) -> Rc<Class> {
                         Err(rterr!("Pop from empty list"))
                     }
                 }),
+                NativeFunction::new(
+                    "index",
+                    ArgSpec::builder()
+                        .req("self")
+                        .req("x")
+                        .def("default", ConstVal::Invalid),
+                    None,
+                    |_globals, args, _| {
+                        let mut args = args.into_iter();
+                        let owner = args.next().unwrap().into_list()?;
+                        let owner = owner.borrow();
+                        let x = args.next().unwrap();
+                        let default = args.next().unwrap();
+                        for (i, t) in owner.iter().enumerate() {
+                            if x == *t {
+                                return Ok(i.into());
+                            }
+                        }
+                        if let Value::Invalid = default {
+                            Err(rterr!("Item not found in list"))
+                        } else {
+                            Ok(default)
+                        }
+                    },
+                ),
                 NativeFunction::new("insert", ["self", "i", "x"], None, |_globals, args, _| {
                     let mut args = args.into_iter();
                     let owner = args.next().unwrap().into_list()?;
