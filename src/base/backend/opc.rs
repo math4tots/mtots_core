@@ -51,6 +51,8 @@ pub(crate) enum Opcode {
 
     NewFunction(Box<NewFunctionDesc>),
     NewClass(Box<NewClassDesc>),
+
+    Breakpoint,
 }
 
 impl Opcode {
@@ -514,6 +516,9 @@ pub(super) fn step(globals: &mut Globals, code: &Code, frame: &mut Frame) -> Ste
             let cls = Class::new(desc.name.clone(), map, static_map);
 
             frame.push(cls.into());
+        }
+        Opcode::Breakpoint => {
+            panic!("TODO: implement breakpoints");
         }
     }
     StepResult::Ok

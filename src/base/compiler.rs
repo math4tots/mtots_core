@@ -474,6 +474,12 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
+            ExprDesc::BreakPoint => {
+                self.add(Opcode::Breakpoint, mark.clone());
+                if used {
+                    self.add(Opcode::Nil, mark);
+                }
+            }
             ExprDesc::AssignDoc(expr, name, doc) => {
                 self.docmap.insert(name.clone(), doc.clone());
                 self.expr(expr, used)?;
@@ -573,7 +579,6 @@ impl Builder {
                     self.add(Opcode::Pop, mark);
                 }
             }
-            desc => panic!("TODO compile {:?}", desc),
         }
         Ok(())
     }

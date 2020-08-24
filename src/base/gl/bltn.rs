@@ -347,13 +347,22 @@ impl Globals {
                 let string = func.code().disasm()?;
                 Ok(Value::from(string))
             }),
-            NativeFunction::new("__main", (), None, |globals, _args, _| {
-                Ok(globals
-                    .get_main()
-                    .as_ref()
-                    .map(Value::from)
-                    .unwrap_or(Value::Nil))
-            }),
+            NativeFunction::new(
+                "__main",
+                (),
+                concat!(
+                    "Name of the designated 'main' module to run\n",
+                    "You can compare the return value of this function with ",
+                    "__name to see if the current module should act like main",
+                ),
+                |globals, _args, _| {
+                    Ok(globals
+                        .get_main()
+                        .as_ref()
+                        .map(Value::from)
+                        .unwrap_or(Value::Nil))
+                },
+            ),
         ];
 
         for func in funcs {

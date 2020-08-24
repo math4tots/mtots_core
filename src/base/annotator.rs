@@ -184,6 +184,7 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
             }
         }
         ExprDesc::Import(_) => {}
+        ExprDesc::BreakPoint => {}
         ExprDesc::AssignDoc(expr, _name, _doc) => {
             get(expr, out)?;
         }
@@ -231,7 +232,6 @@ fn get(expr: &mut Expr, out: &mut State) -> Result<()> {
 
             out.class_stack.pop();
         }
-        desc => panic!("TODO: annotate {:?}", desc),
     }
     Ok(())
 }
