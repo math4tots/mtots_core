@@ -1,0 +1,22 @@
+from a.bytes import Bytes
+from a.int import u32
+from a.int import u16
+
+
+def __test_int() {
+    assert_eq(Bytes.le(u32, 123), Bytes([123, 0, 0, 0]))
+    assert_eq(Bytes.le(u32, 123 + 4 * 256), Bytes([123, 4, 0, 0]))
+    assert_eq(Bytes.be(u32, 123), Bytes([0, 0, 0, 123]))
+    assert_eq(Bytes.be(u32, 123 + 4 * 256), Bytes([0, 0, 4, 123]))
+
+    assert_eq(Bytes.le(u32, 123).le(u32), 123)
+    assert_eq(Bytes.le(u32, 123 + 4 * 256).le(u32), 123 + 4 * 256)
+    assert_eq(Bytes.be(u32, 123).be(u32), 123)
+    assert_eq(Bytes.be(u32, 123 + 4 * 256).be(u32), 123 + 4 * 256)
+
+    assert_eq(Bytes.le(u32, 123).be(u16, 0), 123 * 256)
+
+    # if offset is specified and the length doesn't match exactly,
+    # it will throw
+    assert_throws(def = Bytes.le(u32, 123).be(u16))
+}

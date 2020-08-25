@@ -129,6 +129,7 @@ impl fmt::Debug for Class {
 ///         fairly unpleasant
 #[derive(Default)]
 pub struct Behavior {
+    eq: Option<Rc<dyn Fn(&HandleData, &HandleData) -> bool>>,
     str: Option<Rc<dyn Fn(Value) -> RcStr>>,
     repr: Option<Rc<dyn Fn(Value) -> RcStr>>,
     getattr: Option<Rc<dyn Fn(&mut Globals, Value, &str) -> Result<Option<Value>>>>,
@@ -152,6 +153,9 @@ impl Behavior {
             behavior: Default::default(),
             phantom: PhantomData,
         }
+    }
+    pub fn eq(&self) -> &Option<Rc<dyn Fn(&HandleData, &HandleData) -> bool>> {
+        &self.eq
     }
     pub fn str(&self) -> &Option<Rc<dyn Fn(Value) -> RcStr>> {
         &self.str
@@ -193,6 +197,22 @@ pub struct HandleBehaviorBuilder<T: Any> {
 impl<T: Any> HandleBehaviorBuilder<T> {
     pub fn build(self) -> Behavior {
         self.behavior
+    }
+    pub fn eq<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T, &T) -> bool + 'static,
+    {
+        self.behavior.eq = Some(Rc::new(move |a, b| {
+            let a = a.borrow::<T>();
+            if b.is::<T>() {
+                let b = b.borrow::<T>();
+                let eq = f(&a, &b);
+                eq
+            } else {
+                false
+            }
+        }));
+        self
     }
     pub fn str<F>(&mut self, f: F) -> &mut Self
     where

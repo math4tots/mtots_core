@@ -270,6 +270,14 @@ impl<'a, T: Any> NativeClassBuilder<'a, T> {
         self.static_map.insert(name, func.into());
         self
     }
+    /// Customize the default behavior for equality
+    pub fn eq<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&T, &T) -> bool + 'static,
+    {
+        self.behavior.eq(f);
+        self
+    }
     /// Customize the default behavior when 'str' function is called
     pub fn str<F>(&mut self, f: F) -> &mut Self
     where

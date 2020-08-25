@@ -41,7 +41,11 @@ impl HandleData {
 
 impl cmp::PartialEq for HandleData {
     fn eq(&self, other: &Self) -> bool {
-        (self as *const Self).eq(&(other as *const Self))
+        if let Some(eq) = self.cls().behavior().eq() {
+            eq(self, other)
+        } else {
+            (self as *const Self).eq(&(other as *const Self))
+        }
     }
 }
 
