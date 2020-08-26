@@ -15,3 +15,8 @@ def __test_instance_methods() {
     assert_eq(getmethods(Foo), ['abc', 'f'])
     assert_eq(getattrs(Foo), ['f', 'ss'])
 }
+
+def __test_hasmethod() {
+    assert(hasmethod(Foo, 'abc'))
+    assert(!hasmethod(Foo, 'qwer'))
+}

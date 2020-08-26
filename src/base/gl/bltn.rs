@@ -193,6 +193,12 @@ impl Globals {
                     ))
                 },
             ),
+            NativeFunction::new("hasmethod", ["cls", "name"], None, |_globals, args, _| {
+                let mut args = args.into_iter();
+                let cls = args.next().unwrap().into_class()?;
+                let name = args.next().unwrap().into_string()?;
+                Ok(cls.map().contains_key(&name).into())
+            }),
             NativeFunction::new("getmethod", ["cls", "name"], None, |_globals, args, _| {
                 let mut args = args.into_iter();
                 let cls = args.next().unwrap().into_class()?;
